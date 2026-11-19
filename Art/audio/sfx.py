@@ -167,6 +167,18 @@ def snore(scale=1.0, seed=0):
     return room(mix(inhale, at(exhale, d_in + 0.18)), 0.12, 0.3)
 
 
+def thunder(seed=0):
+    """Lightning close by: a hard crack, then rolling thunder that bumps and fades."""
+    r = np.random.default_rng(500 + seed)
+    d = 3.4
+    t = t_(d)
+    crack = hp(r.normal(0, 1, int(0.3 * SR)), 1100) * env(0.3, 0.001, 0.06) * 1.3
+    src = r.normal(0, 1, len(t))
+    bumps = sum(a * np.exp(-((t - c) / w) ** 2) for c, w, a in ((0.12, 0.10, 1.0), (0.55, 0.22, 0.85), (1.15, 0.35, 0.6), (1.9, 0.5, 0.4), (2.7, 0.5, 0.2)))
+    rumble = lp(src, 170, 4) * bumps * 3.0 + lp(src, 650, 2) * bumps * 0.35
+    return room(mix(crack, rumble), 0.35, 1.6)
+
+
 def build():
     os.makedirs(OUT, exist_ok=True)
     # --- the khopesh
@@ -248,6 +260,8 @@ def build():
     # --- sleepers
     save('snore', snore(1.0, 0), 0.8)
     save('snore_small', snore(1.7, 1), 0.7)
+    # --- the storm over the summit
+    save('thunder', thunder(0), 0.9)
     print('sfx done', len([f for f in os.listdir(OUT) if f.endswith('.wav')]))
 
 
