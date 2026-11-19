@@ -35,6 +35,7 @@ namespace Wakefire
 
         void Update()
         {
+            TouchControls.Poll();
             if (Paused) return;
             Save.PlayTime += Time.unscaledDeltaTime;
             var p = Player.I;

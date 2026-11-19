@@ -197,8 +197,8 @@ def hero_strip():
     """Azar idling on the roof, facing the ziggurat: the frames side by side, trimmed."""
     import sys
     sys.path.insert(0, '/srv/Wakefire/Art/pixel')
-    import hero
-    fr = hero.frames_for('idle', 'side')
+    import azar
+    fr = azar.frames_for('idle', 'side', 4)
     ys, xs = [], []
     for f in fr:
         yy, xx = np.nonzero(f.a[:, :, 3])
@@ -210,7 +210,7 @@ def hero_strip():
         sub = Canvas(fw, fh)
         sub.a[:, :] = f.a[y0:y1, x0:x1]
         strip.blit(sub, i * fw, 0)
-    feet_x = hero.FX - x0
+    feet_x = azar.FX - x0
     return strip, fw, fh, feet_x
 
 
