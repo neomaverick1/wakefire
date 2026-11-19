@@ -43,6 +43,7 @@ namespace Wakefire
 #endif
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             Controls.Init();
+            Settings.Load();
             View = PixelView.Create();
             Dream = Dream.Create();
             Pause.Ensure();

@@ -68,6 +68,17 @@ namespace Wakefire
             Frame(new Vector2(690, 400));
             yield return t.Shot("p6-sea-a", 0.8f);
             yield return t.Shot("p6-sea-b", 0.7f);
+            // the pause menu, with the sound switches
+            Controls.FakePress = Controls.Pause;
+            yield return new WaitForSecondsRealtime(0.4f);
+            t.Note("paused: " + Game.Paused);
+            Settings.Toggle(true);
+            yield return t.Shot("p7-pause", 0.3f);
+            t.Note($"music off: volume {Music.Volume}");
+            Settings.Toggle(true);
+            Controls.FakePress = Controls.Pause;
+            yield return new WaitForSecondsRealtime(0.3f);
+            t.Note("unpaused: " + !Game.Paused + $", music back to {Music.Volume}");
             int crests = 0, moths = 0;
             foreach (var pr in Object.FindObjectsByType<Prop>(FindObjectsSortMode.None)) if (pr.Kind == "crest") crests++;
             moths = Object.FindObjectsByType<TorchMoths>(FindObjectsSortMode.None).Length;
