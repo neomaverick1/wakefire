@@ -98,12 +98,21 @@ namespace Wakefire
             Story.Set("bull_dead");
             yield return Enter("zig_3", "south");
             Story.Flags.Remove("bull_dead");
-            var bull = BrazenBull.Spawn(Map.ToWorld(240, 210));
-            bull.Begin();
-            p.pos = Map.ToWorld(240, 292);
+            var bull = BrazenBull.Spawn(Map.ToWorld(240, 196));
+            p.pos = Map.ToWorld(240, 268);
+            p.Face(Facing.Up);
             p.health.invulnerable = 999;
-            Frame(new Vector2(240, 196));
-            for (int i = 0; i < 8; i++) yield return t.Shot("m11-bull-" + i, 0.45f);
+            Frame(new Vector2(240, 176));
+            yield return new WaitForSeconds(0.4f);
+            // the bull breathes fire, the mirror shield sends it back
+            bull.Pose("shoot", Facing.Down);
+            for (int i = 0; i < 8; i++)
+            {
+                if (i == 1)
+                    for (int k = -1; k <= 1; k++)
+                        Projectile.Fireball(bull.Mouth, (Vector2)(Quaternion.Euler(0, 0, k * 14f) * Vector2.down) * 5.2f, bull.gameObject);
+                yield return t.Shot("m11-bull-" + i, 0.1f);
+            }
             // the ending: the god mumbles, the watchman nearly gives in
             Object.Destroy(bull.gameObject);
             p.pos = Map.ToWorld(240, 180);

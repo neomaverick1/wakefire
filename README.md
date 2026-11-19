@@ -21,7 +21,7 @@ When Azar nods off, the world flips. A ring of gold sweeps out from where he sta
 | ![The lower town](docs/screens/05-lower-town.png) | ![The road of moonlight](docs/screens/06-road-of-moonlight.png) |
 | The lower town: every sleeper's dream-self has something to say | A road of moonlight over the sea, only there while you dream |
 | ![The temple yard](docs/screens/07-temple-yard.png) | ![The Brazen Bull](docs/screens/08-brazen-bull.png) |
-| The long road across the chasm, for someone who can dream long enough | The Brazen Bull, the high priest's guilt cast in bronze |
+| The long road across the chasm, for someone who can dream long enough | The summit: the Brazen Bull, the high priest's guilt cast in bronze, breathing fire at the Mirror Shield |
 
 ## The chapter
 
@@ -30,7 +30,7 @@ When Azar nods off, the world flips. A ring of gold sweeps out from where he sta
 - **The sea cliffs.** Brine crabs have stolen Abu-Nur's Night Oil. Get it back and your dreams last twice as long.
 - **The olive terraces.** Jackals hunt in pairs. An old shrine keeps something for anyone who looks twice.
 - **The temple yard.** A chasm with a long road of moonlight across it, for someone who can dream long enough.
-- **The ziggurat.** Walls that exist in only one world, blocks to shove, bronze sentinels, a bull's head that breathes fire, the Bronze Mirror Shield, and at the summit, the reason the god won't wake up.
+- **The ziggurat.** Walls that exist in only one world, blocks to shove, bronze sentinels, a bull's head that breathes fire, the Bronze Mirror Shield, and at the summit, open to the storm, the reason the god won't wake up.
 
 And the goat. The goat is everywhere.
 
@@ -38,7 +38,7 @@ And the goat. The goat is everywhere.
 
 | | Keyboard | Gamepad | Touch |
 |---|---|---|---|
-| Move | WASD / arrows | Left stick / d-pad | Left thumbstick |
+| Move | WASD / arrows | Left stick / d-pad | Thumb down anywhere on the left |
 | Khopesh (3-hit combo) | J / Space | X / Square | Blade button |
 | Roll | K / Shift | B / Circle | Roll button |
 | Talk, look, open | E / Enter | A / Cross | Speech button |
@@ -46,7 +46,7 @@ And the goat. The goat is everywhere.
 | Nod off / wake up | Q / L | Y / Triangle | Moon button |
 | Pause | Esc / P | Start | Pause button |
 
-The game saves every time you walk into a new place and every time you find something.
+The game saves every time you walk into a new place and every time you find something. On phones the controls stay clear of notches and rounded corners.
 
 ## How it's made
 
