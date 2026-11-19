@@ -41,6 +41,7 @@ namespace Wakefire
             body.transform.SetParent(go.transform, false);
             var sr = body.AddComponent<SpriteRenderer>();
             sr.sharedMaterial = new Material(Map.SpriteMat);
+            sr.sharedMaterial.SetFloat("_DreamKeep", 0.8f);      // the dream changes around him, not him
             p.anim = body.AddComponent<SpriteAnim>();
             p.anim.sr = sr;
             p.anim.sheet = SpriteSheet.Load("azar");
