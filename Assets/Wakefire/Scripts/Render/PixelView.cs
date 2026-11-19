@@ -150,8 +150,12 @@ namespace Wakefire
             lastH = Screen.height;
             int scale = Mathf.Max(1, Mathf.RoundToInt(Screen.height / 216f));
             Height = Mathf.Clamp(Screen.height / scale, 196, 248);
-            if (Height % 2 == 1) Height--;
-            width = Mathf.Max(320, Mathf.RoundToInt(Height * Screen.width / (float)Mathf.Max(1, Screen.height)));
+            // pixels stay square on every shape of screen: on narrow ones (4:3 tablets, a phone
+            // held upright in a browser) the view grows taller rather than the picture squashing
+            float aspect = Screen.width / (float)Mathf.Max(1, Screen.height);
+            if (Height * aspect < 256) Height = Mathf.Min(560, Mathf.CeilToInt(256 / aspect));
+            if (Height % 2 == 1) Height++;
+            width = Mathf.Max(2, Mathf.RoundToInt(Height * aspect));
             if (width % 2 == 1) width++;
             foreach (var (cam, rt) in new[] { (world, worldRT), (light, lightRT), (ui, uiRT) })
                 if (rt) { cam.targetTexture = null; rt.Release(); Destroy(rt); }
