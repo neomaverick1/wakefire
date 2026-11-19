@@ -369,6 +369,31 @@ namespace Wakefire
             Sfx.Play("dream_out");
             yield return AzarSays("Nope.");
             Dream.I.SetInstant(false);
+            // up the stairs behind him, unhurried: of course
+            var goatEnd = Npc.Create("goat_end", Map.ToWorld(240, 372), "goat", "walk", WorldLayer.Both, Facing.Up, false);
+            goatEnd.turnsToTalk = false;
+            var lo = Map.ToWorld(72, 330); var hi = Map.ToWorld(408, 110);
+            var goatTo = p.pos + new Vector2(p.pos.x + 2.4f > hi.x ? -2.4f : 2.4f, -1.4f);
+            goatTo = new Vector2(Mathf.Clamp(goatTo.x, lo.x, hi.x), Mathf.Clamp(goatTo.y, lo.y, hi.y));
+            while (Vector2.Distance(goatEnd.pos, goatTo) > 0.08f)
+            {
+                var step = Vector2.MoveTowards(goatEnd.pos, goatTo, 1.6f * Time.deltaTime) - goatEnd.pos;
+                goatEnd.pos += step;
+                goatEnd.facing = Mathf.Abs(step.x) > Mathf.Abs(step.y) ? (step.x < 0 ? Facing.Left : Facing.Right) : Facing.Up;
+                goatEnd.Play("walk");
+                yield return null;
+            }
+            goatEnd.FaceTowards(p.pos);
+            goatEnd.SetIdle("stare");
+            p.Face(goatEnd.pos.x > p.pos.x ? Facing.Right : Facing.Left);
+            yield return Wait(0.9f);
+            goatEnd.Play("bleat", true);
+            Sfx.Play("goat");
+            yield return Wait(1.0f);
+            goatEnd.SetIdle("stare");
+            yield return AzarSays("...Four hundred steps.| To tell me that.");
+            yield return Wait(0.6f);
+            yield return AzarSays("Fair.");
             ApplyItems();
             Set("chapter_done");
             Save.Write(Game.I.CurrentMap, null);
@@ -379,6 +404,7 @@ namespace Wakefire
                 "WAKEFIRE\nmade by Randy Kundinger",
                 "Thank you for staying awake.");
             Destroy(self.gameObject);
+            if (goatEnd) Destroy(goatEnd.gameObject);
             Title.Show();
             yield return Fade.In(0.8f);
         }
