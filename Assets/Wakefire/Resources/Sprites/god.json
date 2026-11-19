@@ -1,20 +1,14 @@
 {
- "size": 128,
+ "size": 144,
  "pivot": [
-  64.0,
-  81.32049560546875
+  72.0,
+  89.32049560546875
  ],
  "anims": [
   {
    "name": "lie",
    "dir": "down",
    "row": 0,
-   "frames": 2
-  },
-  {
-   "name": "sleep",
-   "dir": "down",
-   "row": 1,
    "frames": 2
   }
  ]

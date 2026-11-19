@@ -86,18 +86,21 @@ namespace Wakefire
         /// <summary>Text on the dark, between scenes.</summary>
         public static IEnumerator Card(params string[] lines)
         {
+            Fade.Backdrop("title_bg");
             foreach (var l in lines)
             {
                 for (float t = 0; t < 0.25f; t += Time.unscaledDeltaTime) yield return null;
-                Fade.Set(1, l);
+                Fade.Set(0.8f, l, true);
                 float hold = 1.2f + l.Length * 0.045f;
                 for (float t = 0; t < hold; t += Time.unscaledDeltaTime)
                 {
                     if (t > 0.4f && (Controls.Down(Controls.Interact) || Controls.Down(Controls.Attack))) break;
                     yield return null;
                 }
-                Fade.Set(1, "");
+                Fade.Set(0.8f, "", true);
             }
+            Fade.Set(1);
+            Fade.Backdrop(null);
         }
 
         public IEnumerator Intro()
@@ -211,6 +214,7 @@ namespace Wakefire
             yield return Narrate(text);
             Destroy(go);
             p.SetState(Player.State.Talk, "idle");
+            if (Game.I && Game.I.CurrentMap != null) Save.Write(Game.I.CurrentMap, Game.I.CurrentSpawn);
         }
     }
 }
