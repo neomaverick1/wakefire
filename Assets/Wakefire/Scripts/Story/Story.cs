@@ -152,6 +152,20 @@ namespace Wakefire
         /// <summary>Increments a counter and returns its value before the increment (0 the first time).</summary>
         public static int Bump(string key) { int n = Count(key); counts[key] = n + 1; return n; }
 
+        /// <summary>Drop whatever scene is playing (a new game or a return to the title must never
+        /// wait behind, or be swallowed by, the end of the last one).</summary>
+        public static void Abort()
+        {
+            var s = Ensure();
+            s.StopAllCoroutines();
+            if (s.Speaker) s.Speaker.EndTalk();
+            s.Speaker = null;
+            s.Running = false;
+            DialogueBox.Reset();
+            var v = PixelView.I;
+            if (v && Player.I) v.target = Player.I.transform;
+        }
+
         public static void Run(IEnumerator scene, Npc speaker = null)
         {
             var s = Ensure();
