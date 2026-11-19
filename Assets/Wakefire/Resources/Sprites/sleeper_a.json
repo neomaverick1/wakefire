@@ -1,0 +1,51 @@
+{
+ "size": 48,
+ "pivot": [
+  24.0,
+  38.55444073677063
+ ],
+ "anims": [
+  {
+   "name": "lie",
+   "dir": "down",
+   "row": 0,
+   "frames": 2
+  },
+  {
+   "name": "sleep",
+   "dir": "down",
+   "row": 1,
+   "frames": 4
+  },
+  {
+   "name": "sleepwalk",
+   "dir": "down",
+   "row": 2,
+   "frames": 8
+  },
+  {
+   "name": "sleepwalk",
+   "dir": "left",
+   "row": 3,
+   "frames": 8
+  },
+  {
+   "name": "sleepwalk",
+   "dir": "up",
+   "row": 4,
+   "frames": 8
+  },
+  {
+   "name": "idle",
+   "dir": "down",
+   "row": 5,
+   "frames": 4
+  },
+  {
+   "name": "talk",
+   "dir": "down",
+   "row": 6,
+   "frames": 6
+  }
+ ]
+}

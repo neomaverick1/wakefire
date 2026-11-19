@@ -1,0 +1,33 @@
+{
+ "size": 48,
+ "pivot": [
+  24.0,
+  29.821781158447266
+ ],
+ "anims": [
+  {
+   "name": "idle",
+   "dir": "down",
+   "row": 0,
+   "frames": 4
+  },
+  {
+   "name": "walk",
+   "dir": "down",
+   "row": 1,
+   "frames": 4
+  },
+  {
+   "name": "attack",
+   "dir": "down",
+   "row": 2,
+   "frames": 5
+  },
+  {
+   "name": "hurt",
+   "dir": "down",
+   "row": 3,
+   "frames": 2
+  }
+ ]
+}
