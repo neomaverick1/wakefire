@@ -9,7 +9,10 @@ namespace Wakefire
     public class Title : MonoBehaviour
     {
         public static Title I;
-        RawImage bg, logo, menuImg;
+        RawImage bg, logo, menuImg, hero;
+        int heroFrames = 1;
+
+        [System.Serializable] class HeroInfo { public int frames, w, h, x, y; }
         PixelCanvas menu;
         string[] options;
         int sel;
@@ -52,6 +55,18 @@ namespace Wakefire
             var bgt = Resources.Load<Texture2D>("UI/title_bg");
             bgt.filterMode = FilterMode.Point;
             bg = Img("bg", bgt, Mathf.Round((W - bgt.width) / 2f), H - bgt.height);
+            // Azar on a roof in the foreground, cape and crest moving in the night wind
+            var ht = Resources.Load<Texture2D>("UI/title_hero");
+            var hj = Resources.Load<TextAsset>("UI/title_hero");
+            if (ht && hj)
+            {
+                var hi = JsonUtility.FromJson<HeroInfo>(hj.text);
+                ht.filterMode = FilterMode.Point;
+                heroFrames = Mathf.Max(1, hi.frames);
+                hero = Img("hero", ht, Mathf.Round((W - bgt.width) / 2f) + hi.x, H - bgt.height + hi.y);
+                ((RectTransform)hero.transform).sizeDelta = new Vector2(hi.w, hi.h);
+                hero.uvRect = new Rect(0, 0, 1f / heroFrames, 1);
+            }
             var lt = Resources.Load<Texture2D>("UI/title_logo");
             lt.filterMode = FilterMode.Point;
             logo = Img("logo", lt, Mathf.Round((W - lt.width) / 2f), 18 + off);
@@ -91,6 +106,7 @@ namespace Wakefire
         {
             if (leaving) return;
             clock += Time.unscaledDeltaTime;
+            if (hero) hero.uvRect = new Rect(((int)(clock * 5f) % heroFrames) / (float)heroFrames, 0, 1f / heroFrames, 1);
             var mv = Controls.MoveVector;
             int before = sel;
             if (Controls.Move.WasPerformedThisFrame() || Keyboard.current != null && (Keyboard.current.upArrowKey.wasPressedThisFrame || Keyboard.current.downArrowKey.wasPressedThisFrame))

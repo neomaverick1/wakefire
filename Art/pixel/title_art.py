@@ -4,6 +4,7 @@ fire with a khopesh beneath it."""
 import math
 import sys
 import numpy as np
+import json
 from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, '/srv/Wakefire/Art/pixel')
 from px import Canvas, R, OUTLINE, BAYER, pick
@@ -171,13 +172,60 @@ def logo():
     return cv
 
 
+HERO_AT = (92, H - 31)       # where Azar's feet rest on the title: a roof in the foreground
+
+
+def hero_roof(cv):
+    """A nearer roof for Azar to stand on, its parapet catching the moon."""
+    mud = R['mud']
+    x0, x1, top = HERO_AT[0] - 46, HERO_AT[0] + 40, HERO_AT[1]
+    for yy in range(top, H):
+        for xx in range(x0, x1):
+            c = mud[1] if xx < x1 - 5 else mud[0]
+            cv.px(xx, yy, (c[0] * 6 // 10, c[1] * 6 // 10, int(c[2] * 0.8), 255))
+    cv.hline(x0, x1 - 1, top, (150, 120, 130, 255))
+    cv.hline(x0, x1 - 1, top + 1, (96, 70, 84, 255))
+    for xx in range(x0 - 1, x1 + 1):
+        cv.px(xx, top - 1, (12, 8, 20, 255))
+    for yy in range(top - 1, H):
+        cv.px(x0 - 1, yy, (12, 8, 20, 255)); cv.px(x1, yy, (12, 8, 20, 255))
+    # a lit window below him
+    cv.rect(x0 + 14, top + 10, 4, 5, (255, 190, 96, 255)); cv.px(x0 + 15, top + 10, (255, 230, 170, 255))
+
+
+def hero_strip():
+    """Azar idling on the roof, facing the ziggurat: the frames side by side, trimmed."""
+    import sys
+    sys.path.insert(0, '/srv/Wakefire/Art/pixel')
+    import hero
+    fr = hero.frames_for('idle', 'side')
+    ys, xs = [], []
+    for f in fr:
+        yy, xx = np.nonzero(f.a[:, :, 3])
+        ys += [yy.min(), yy.max()]; xs += [xx.min(), xx.max()]
+    x0, x1, y0, y1 = min(xs), max(xs) + 1, min(ys), max(ys) + 1
+    fw, fh = x1 - x0, y1 - y0
+    strip = Canvas(fw * len(fr), fh)
+    for i, f in enumerate(fr):
+        sub = Canvas(fw, fh)
+        sub.a[:, :] = f.a[y0:y1, x0:x1]
+        strip.blit(sub, i * fw, 0)
+    feet_x = hero.FX - x0
+    return strip, fw, fh, feet_x
+
+
 def main():
     bg = Canvas(W, H)
     sky(bg)
     moon(bg, 88, 44 + OY, 20)
     ziggurat(bg, W // 2, 182 + OY)
     rooftops(bg)
+    hero_roof(bg)
     bg.save(f'{OUT}/title_bg.png')
+    strip, fw, fh, feet_x = hero_strip()
+    strip.save(f'{OUT}/title_hero.png')
+    json.dump({"frames": int(strip.w // fw), "w": int(fw), "h": int(fh), "x": int(HERO_AT[0] - feet_x), "y": int(HERO_AT[1] - fh)},
+              open(f'{OUT}/title_hero.json', 'w'))
     lg = logo()
     lg.save(f'{OUT}/title_logo.png')
     print('title', bg.w, bg.h, 'logo', lg.w, lg.h)

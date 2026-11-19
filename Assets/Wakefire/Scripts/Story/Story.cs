@@ -230,7 +230,7 @@ namespace Wakefire
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sharedMaterial = Map.SpriteMat;
             sr.sprite = Map.GetSprite("Items/" + itemSprite, 8, 16);
-            go.transform.position = (Vector3)(p.pos + new Vector2(0, 2.15f));
+            go.transform.position = (Vector3)(p.pos + new Vector2(0, 2.75f));
             sr.sortingOrder = Map.Order(p.pos.y) + 2;
             Sfx.Play("itemget", 1f, 0f);
             PixelView.I.Shake(0, 0);

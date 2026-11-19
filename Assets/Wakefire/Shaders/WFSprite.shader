@@ -12,6 +12,7 @@ Shader "Wakefire/Sprite"
         _FlashColor ("Flash colour", Color) = (1,1,1,1)
         _Dissolve ("Dissolve", Float) = 0
         _DreamGlow ("Dream glow", Float) = 0
+        _DreamKeep ("Keep own colours in the dream", Float) = 0
     }
     SubShader
     {
@@ -37,6 +38,7 @@ Shader "Wakefire/Sprite"
                 float4 _FlashColor;
                 float _Dissolve;
                 float _DreamGlow;
+                float _DreamKeep;
             CBUFFER_END
 
             struct A { float4 positionOS : POSITION; float2 uv : TEXCOORD0; float4 color : COLOR; };
@@ -63,7 +65,7 @@ Shader "Wakefire/Sprite"
                 float vis = _Layer < 0.5 ? 1 : (_Layer < 1.5 ? 1 - dream : dream);
                 clip(vis - 0.5);
                 float3 col = c.rgb;
-                float3 dcol = WF_DreamPalette(col) + col * _DreamGlow;
+                float3 dcol = lerp(WF_DreamPalette(col) + col * _DreamGlow, col * 1.08, _DreamKeep);
                 col = lerp(col, dcol, dream);
                 col = lerp(col, float3(1.0, 0.55, 0.14), saturate(WF_RingAt(i.world)));
                 col = lerp(col, _FlashColor.rgb, saturate(_Flash));
