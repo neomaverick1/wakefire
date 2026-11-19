@@ -218,7 +218,7 @@ def smear(cv, cx, cy, r0, r1, a0, a1, fade=1.0):
 
 # ----------------------------------------------------------------------------- composing a frame
 def frame(view, k=0, bob=0, lift=(0, 0), stride=None, eye='open', mouth=False, head_dy=0, lean=0,
-          blade=None, swing=None, cape=0, arms_up=False, lantern_up=0, squash=0, flash=False, lie=False):
+          blade=None, swing=None, cape=0, arms_up=False, lantern_up=0, squash=0, flash=False, lie=False, recolor=None):
     cv = Canvas(CELL, CELL)
     head, body, legs = parts(view)
     head = eyes(head, view, eye)
@@ -306,6 +306,13 @@ def frame(view, k=0, bob=0, lift=(0, 0), stride=None, eye='open', mouth=False, h
                 if 0 <= ty < CELL and 0 <= tx < CELL:
                     out[ty, tx] = rot[y, x]
         cv.a = out
+    if recolor:
+        a = cv.a
+        src = a.copy()
+        for letter, h in recolor.items():
+            old = np.array(RGB[letter][:3], np.uint8)
+            m = (src[:, :, 0] == old[0]) & (src[:, :, 1] == old[1]) & (src[:, :, 2] == old[2]) & (src[:, :, 3] > 0)
+            a[m, :3] = hx(h)[:3]
     if flash:
         m = cv.a[:, :, 3] > 0
         cv.a[m, :3] = (cv.a[m, :3].astype(np.int32) * 0.3 + 255 * 0.7).astype(np.uint8)

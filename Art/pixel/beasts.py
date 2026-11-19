@@ -59,126 +59,139 @@ HORN = [rgb('#c8b494'), rgb('#8c7a62'), rgb('#5a4c40')]
 AMBER = rgb('#f0b440')
 
 
+GP = {'O': O, 'W': rgb('#fbf7ec'), 'w': rgb('#d8d0c0'), 'g': rgb('#a89e92'), 'G': rgb('#6e6660'), 'H': rgb('#d8c4a0'),
+      'h': rgb('#8c7a62'), 'A': rgb('#f0b440'), 'P': rgb('#e8a0a0'), 'K': rgb('#3a3030')}
+G_BODY = [
+    ".O...............",
+    "OWO.OOOOOOOO.....",
+    "OWWOWWWWWWWWOO...",
+    ".OWWWWWWWWWWWWO..",
+    ".OWWWWWWWWWWWWWO.",
+    ".OWWWWWWWWWWWWwO.",
+    ".OwWWWWWWWWWWwwO.",
+    ".OwwWWWWWWWwwwgO.",
+    "..OgwwwwwwwwggO..",
+    "...OOOOOOOOOOO...",
+]
+G_HEAD = [
+    "......OO.....",
+    ".....OHHO....",
+    "....OHhOOO...",
+    "...OhhOWWWO..",
+    ".OOOOOWWAOWO.",
+    "OwwOWWWWWWWPO",
+    ".OwOWWWWWWOO.",
+    "..OOwWWWwO...",
+    "....OwwOgO...",
+    ".....OOOgO...",
+    ".......OOO...",
+]
+G_FRONT = [
+    "..OO......OO..",
+    ".OHhO....OhHO.",
+    ".OhHOOOOOOHhO.",
+    "..OOWWWWWWOO..",
+    "OOOWWWWWWWWOOO",
+    "OwwWAOWWOAWwwO",
+    ".OOWWWWWWWWOO.",
+    "..OWWwPPwWWO..",
+    "..OwWWWWWWwO..",
+    ".OWWWOggOWWWO.",
+    ".OWWWWggWWWWO.",
+    ".OWWWWWWWWWwO.",
+    ".OwWWWWWWWwwO.",
+    "..OwwwwwwwgO..",
+]
+G_BACK = [
+    "..OO......OO..",
+    ".OHhO....OhHO.",
+    ".OhHOOOOOOHhO.",
+    "..OOWWWWWWOO..",
+    "OOOWWWWWWWWOOO",
+    "OwwWWWWWWWWwwO",
+    ".OOWWWWWWwwOO.",
+    "..OWWWWWWWwO..",
+    ".OWWWWOOWWWwO.",
+    ".OWWWWOWOWWwO.",
+    ".OWWWWWOWWwwO.",
+    ".OWWWWWWWWwwO.",
+    ".OwWWWWWWwwgO.",
+    "..OwwwwwwggO..",
+]
+
+
+def stamp(cv, rows, x0, y0, pal=None):
+    pal = pal or GP
+    for j, r in enumerate(rows):
+        for i, ch in enumerate(r):
+            if ch != '.' and 0 <= x0 + i < CELL and 0 <= y0 + j < CELL:
+                cv.a[y0 + j, x0 + i] = pal[ch]
+
+
+def gleg(cv, x, top, base, far, dx=0, lift=0):
+    """A goat leg: two pixels wide, outlined, a dark hoof."""
+    c1, c2 = ('g', 'G') if far else ('w', 'g')
+    n = base - 2 - lift - top
+    for k in range(max(1, n)):
+        xx = x + int(round(dx * (k + 1) / max(1, n)))
+        y = top + k
+        cv.a[y, xx] = GP[c1]; cv.a[y, xx + 1] = GP[c2]
+        for ox in (-1, 2):
+            if cv.a[y, xx + ox, 3] == 0:
+                cv.a[y, xx + ox] = O
+    fy = base - 2 - lift
+    for ox in (-1, 0, 1, 2):
+        cv.a[fy, x + dx + ox] = GP['K'] if ox in (0, 1) else O
+        cv.a[fy + 1, x + dx + ox] = O
+
+
 def goat(view, t=0.0, step=0.0, head='normal', bob=0, mouth=False, chew=0):
-    """side view faces right. head: normal, down (eating), up (bleating), stare (turned to us), butt."""
+    """The goat, pixel by pixel. side faces right. head: normal, down, up, stare, butt."""
     cv = Canvas(CELL, CELL)
-    cx, base = FX, FY
-    by = base - 11 + bob
+    base = FY
     if view == 'side':
-        # far legs
-        legs = layer()
-        for k, (lx, ph) in enumerate(((-7, 0.0), (5, 0.5), (-5, 0.5), (7, 0.0))):
-            sw = math.sin((t + ph) * 2 * math.pi) * step
-            lift = max(0, int(round(-math.cos((t + ph) * 2 * math.pi) * step * 1.5)))
-            hip = cx + lx
-            x = hip + int(round(sw * 2))
-            c = GOAT[3] if k < 2 else GOAT[2]
-            line(legs, hip, by + 3, x, base - 2 - lift, c, 2)
-            legs.px(x, base - 1 - lift, rgb('#3a3030')); legs.px(x + 1, base - 1 - lift, rgb('#3a3030'))
-            if k == 1:
-                put(cv, legs); legs = layer()
-        put(cv, legs)
-        body = layer()
-        ellipse(body, cx - 1, by, 9, 5, GOAT)
-        # tail tuft
-        line(body, cx - 10, by - 3, cx - 11, by - 6, GOAT[1])
-        put(cv, body)
-        # neck and head
-        hd = layer()
-        if head == 'down':
-            hx, hy = cx + 10, by + 4
-        elif head == 'up':
-            hx, hy = cx + 9, by - 9
-        elif head == 'butt':
-            hx, hy = cx + 11, by + 1
-        else:
-            hx, hy = cx + 8, by - 6
-        line(hd, cx + 5, by - 1, hx - 1, hy + 1, GOAT[1], 3)
+        bx, by = FX - 9, base - 15 + bob
+        ph = [0.0, 0.5, 0.5, 0.0]
+        xs = [bx + 3, bx + 11, bx + 5, bx + 13]
+        for k in (0, 1, 2, 3):
+            sw = math.sin((t + ph[k]) * 2 * math.pi) * step
+            lift = max(0, int(round(-math.cos((t + ph[k]) * 2 * math.pi) * step * 1.4)))
+            if k == 2:
+                stamp(cv, G_BODY, bx, by)
+            gleg(cv, xs[k], by + 9, base, k < 2, int(round(sw * 2)), lift)
+        if step == 0 and False:
+            pass
+        # make sure the body covers the far legs' tops
+        stamp(cv, G_BODY, bx, by)
+        for k in (2, 3):
+            sw = math.sin((t + ph[k]) * 2 * math.pi) * step
+            lift = max(0, int(round(-math.cos((t + ph[k]) * 2 * math.pi) * step * 1.4)))
+            gleg(cv, xs[k], by + 9, base, False, int(round(sw * 2)), lift)
         if head == 'stare':
-            goat_face(hd, int(hx), int(hy) - 1, False, False, 0)
-            put(cv, hd)
-            goat_horns(cv, int(hx), int(hy) - 1)
-            goat_eyes(cv, int(hx), int(hy) - 1)
+            stamp(cv, G_FRONT[:10], bx + 9, by - 7)
             return cv
-        ellipse(hd, hx, hy, 3.6, 3.0, GOAT)
-        # muzzle
-        mx = hx + (3 if head != 'down' else 2)
-        my = hy + (1 if head not in ('down',) else 2)
-        ellipse(hd, mx, my, 2.0, 1.6, GOAT)
-        hd.px(int(mx + 1), int(my), rgb('#d89a9a'))
+        hx_, hy_ = {'normal': (10, -6), 'down': (12, 3), 'up': (9, -8), 'butt': (13, -2)}[head]
+        hrows = [list(r) for r in G_HEAD]
         if mouth:
-            hd.px(int(mx), int(my + 1), O); hd.px(int(mx + 1), int(my + 1), O)
-        # beard
-        for k in range(3 + chew):
-            hd.px(int(mx - 1), int(my + 2 + k), GOAT[2] if k else GOAT[1])
-        # ear
-        line(hd, hx - 2, hy - 1, hx - 5, hy + 1, GOAT[2], 1)
-        hd.px(int(hx - 5), int(hy + 2), GOAT[3])
-        put(cv, hd)
-        # horns, curving back
-        hn = layer()
-        for k in range(6):
-            a = math.radians(-100 - k * 18)
-            hn.px(int(round(hx - 1 + math.cos(a) * (2 + k * 0.7))), int(round(hy - 2 + math.sin(a) * (2 + k * 0.6))), HORN[min(2, k // 2)])
-        put(cv, hn)
-        # the eye: amber with a goat's flat black pupil
-        cv.px(int(hx), int(hy - 1), AMBER); cv.px(int(hx + 1), int(hy - 1), AMBER); cv.px(int(hx + 1), int(hy - 1), O)
+            hrows[6] = list(".OwOWWWWWOO..")
+            hrows[7] = list("..OOwWWwOOO..")
+        if chew:
+            hrows[8] = list("....OwwOgO...") if chew % 2 == 0 else list("....OwwgOO...")
+        stamp(cv, hrows, bx + hx_, by + hy_)
         return cv
-    # front (down) and back (up)
-    back = view == 'up'
-    legs = layer()
-    for k, lx in enumerate((-4, 3)):
+    rows = G_FRONT if view == 'down' else G_BACK
+    gx, gy = FX - 7, base - 18 + bob
+    for k, x in enumerate((gx + 3, gx + 9)):
         sw = math.sin((t + k * 0.5) * 2 * math.pi) * step
-        lift = max(0, int(round(sw * 1.5)))
-        for y in range(by + 2, base - 1 - lift):
-            legs.px(cx + lx, y, GOAT[2]); legs.px(cx + lx + 1, y, GOAT[3])
-        legs.px(cx + lx, base - 1 - lift, rgb('#3a3030')); legs.px(cx + lx + 1, base - 1 - lift, rgb('#3a3030'))
-    put(cv, legs)
-    body = layer()
-    ellipse(body, cx, by - 1, 6, 6 if not back else 6.5, GOAT)
-    if back:
-        line(body, cx, by - 7, cx, by - 9, GOAT[1])
-    put(cv, body)
-    hd = layer()
-    hy = by - 8 if head != 'down' else by - 3
-    goat_face(hd, cx, hy, back, mouth, chew)
-    put(cv, hd)
-    goat_horns(cv, cx, hy)
-    if not back:
-        goat_eyes(cv, cx, hy)
-    return cv
-
-
-def goat_face(hd, cx, hy, back=False, mouth=False, chew=0):
-    if not back:
-        ellipse(hd, cx, hy, 4.2, 3.6, GOAT)
-        ellipse(hd, cx, hy + 3, 2.4, 2.0, GOAT)
-        hd.px(cx - 1, hy + 4, rgb('#d89a9a')); hd.px(cx, hy + 4, rgb('#d89a9a'))
+        gleg(cv, x, gy + 13, base, k == 1, 0, max(0, int(round(sw * 1.5))))
+    rr = [list(r) for r in rows]
+    if view == 'down':
         if mouth:
-            hd.px(cx - 1, hy + 5, O); hd.px(cx, hy + 5, O)
-        for k in range(3 + chew):
-            hd.px(cx - 1 + (k % 2), hy + 6 + k, GOAT[2])
-        # ears stick out sideways
-        line(hd, cx - 4, hy - 1, cx - 7, hy, GOAT[2]); line(hd, cx + 4, hy - 1, cx + 7, hy, GOAT[3])
-    else:
-        ellipse(hd, cx, hy, 4.0, 3.4, [GOAT[1], GOAT[2], GOAT[2], GOAT[3]])
-        line(hd, cx - 4, hy, cx - 7, hy + 1, GOAT[2]); line(hd, cx + 4, hy, cx + 7, hy + 1, GOAT[3])
-
-
-def goat_horns(cv, cx, hy):
-    hn = layer()
-    for s_ in (-1, 1):
-        for k in range(6):
-            a = math.radians(-90 + s_ * (20 + k * 14))
-            hn.px(int(round(cx + s_ * 2 + math.cos(a) * (1 + k * 0.6))), int(round(hy - 3 + math.sin(a) * (1 + k * 0.7))), HORN[min(2, k // 2)])
-    put(cv, hn)
-
-
-def goat_eyes(cv, cx, hy):
-    # the stare: two amber eyes with the flat black bar of a goat's pupil, set wide
-    for ex in (cx - 3, cx + 2):
-        cv.px(ex, hy - 1, AMBER); cv.px(ex + 1, hy - 1, AMBER)
-        cv.px(ex + (1 if ex < cx else 0), hy - 1, O)
+            rr[8] = list("..OwWWOOWWwO..")
+        if head == 'down':
+            gy += 0
+    stamp(cv, rr, gx, gy + (3 if head == 'down' else 0))
+    return cv
 
 
 def goat_frames(name, view, n):

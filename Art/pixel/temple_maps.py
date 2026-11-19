@@ -227,7 +227,7 @@ def zig_3():
     E, wall_h, P = 40, 64, 12          # drop beyond the edge, sanctuary wall height, parapet thickness
     G.night_drop(g, 0, 0, W, H, seed=111)
     # the platform
-    A.slabs(g, E, wall_h, W - 2 * E, H - wall_h - 24, R['lime'], 16, 12, seed=102)
+    A.marble(g, E, wall_h, W - 2 * E, H - wall_h - 24, 24, seed=102)
     G.glazed_wall(g, E, 0, W - 2 * E, wall_h, seed=101)
     for x in range(E, W - E):
         g.px(x, wall_h, OUTLINE)
