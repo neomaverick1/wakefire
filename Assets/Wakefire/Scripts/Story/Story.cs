@@ -1,0 +1,216 @@
+// Story state and the script runner: flags, counters, and coroutine scenes that hold Azar
+// still while people talk, items are handed over, and gates groan open.
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace Wakefire
+{
+    public partial class Story : MonoBehaviour
+    {
+        public static Story I;
+        public static readonly HashSet<string> Flags = new HashSet<string>();
+        static readonly Dictionary<string, int> counts = new Dictionary<string, int>();
+        public static IEnumerable<KeyValuePair<string, int>> Counts => counts;
+        public static void SetCount(string k, int v) => counts[k] = v;
+        public static void ResetAll() { Flags.Clear(); counts.Clear(); }
+
+        public bool Running { get; private set; }
+        public Npc Speaker { get; private set; }
+        System.Action<Prop> propHandler;
+
+        /// <summary>Called whenever a map has loaded: people, and what touching things does.</summary>
+        public void Setup(string map, Map m)
+        {
+            var p = Player.I;
+            p.Interacted -= OnPropAny;
+            p.Interacted += OnPropAny;
+            propHandler = null;
+            switch (map)
+            {
+                case "ashkel": SetupAshkel(m); break;
+                default: SetupRegion(map, m); break;
+            }
+        }
+
+        partial void SetupRegion(string map, Map m);
+
+        void OnPropAny(Prop pr)
+        {
+            if (Running) return;
+            if (Game.CommonProp(pr)) return;
+            propHandler?.Invoke(pr);
+        }
+
+        /// <summary>Stats that follow from what Azar carries.</summary>
+        public void ApplyItems()
+        {
+            var p = Player.I;
+            if (!p) return;
+            p.hasShield = Has("item_shield");
+            Dream.I.Seconds = Has("item_oil") ? 14f : 7f;
+            int max = 6 + (Has("item_lamp") ? 2 : 0) + 2 * Count("vessels");
+            if (p.health.max != max) { p.health.max = max; p.health.hp = Mathf.Min(max, Mathf.Max(p.health.hp, 1)); }
+        }
+
+        public static IEnumerator GiveItem(string what)
+        {
+            switch (what)
+            {
+                case "shield":
+                    Set("item_shield"); I.ApplyItems();
+                    yield return ItemGet("mirror_shield", "You got the {g}BRONZE MIRROR SHIELD{/}!^Polished so bright you can see how tired you look.| Face fire with it, and the fire goes back where it came from.");
+                    break;
+                case "oil":
+                    Set("item_oil"); I.ApplyItems();
+                    yield return ItemGet("night_oil", "You got the {g}NIGHT OIL{/}!^A sip before you nod off and your dreams last twice as long.| Abu-Nur swears it isn't just fish oil.| It's mostly fish oil.");
+                    break;
+                case "lamp":
+                    Set("item_lamp"); I.ApplyItems(); Player.I.health.hp = Player.I.health.max;
+                    yield return ItemGet("bronze_lamp", "You got the {g}BRONZE LAMP{/}!^A second little flame to keep the Wakefire company.| Your {g}LIFE{/} grows by one flame.");
+                    break;
+                case "bigkey":
+                    Set("bigkey");
+                    yield return ItemGet("big_key", "You got the {g}BULL KEY{/}!^Horned, heavy, and warm to the touch, as if something has been breathing on it.");
+                    break;
+                case "vessel":
+                    Bump("vessels"); I.ApplyItems(); Player.I.health.hp = Player.I.health.max;
+                    yield return ItemGet("flame_vessel", "A {g}FLAME VESSEL{/}! Your {g}LIFE{/} grows by one flame.");
+                    break;
+                default:
+                    yield return Narrate("...");
+                    break;
+            }
+        }
+
+        /// <summary>Text on the dark, between scenes.</summary>
+        public static IEnumerator Card(params string[] lines)
+        {
+            foreach (var l in lines)
+            {
+                for (float t = 0; t < 0.25f; t += Time.unscaledDeltaTime) yield return null;
+                Fade.Set(1, l);
+                float hold = 1.2f + l.Length * 0.045f;
+                for (float t = 0; t < hold; t += Time.unscaledDeltaTime)
+                {
+                    if (t > 0.4f && (Controls.Down(Controls.Interact) || Controls.Down(Controls.Attack))) break;
+                    yield return null;
+                }
+                Fade.Set(1, "");
+            }
+        }
+
+        public IEnumerator Intro()
+        {
+            var p = Player.I;
+            Fade.Set(1);
+            Music.Play("intro");
+            yield return Card("Ashkel. The fortieth night.",
+                "Forty nights ago, Ninhal, god of the sky,\nlay down on top of his ziggurat for a nap.",
+                "The city fell asleep with him.\nBakers. Priests. Soldiers. Babies. Dogs.",
+                "Everyone.",
+                "Almost everyone.");
+            Music.Play(Map.Current.data.music);
+            yield return Fade.In(1.2f);
+            yield return Wait(0.4f);
+            yield return AzarSays("Night forty. Still awake. Still on watch.| Still nobody to watch.");
+            Sfx.Play("goat");
+            yield return Wait(0.6f);
+            yield return AzarSays("...Almost nobody.");
+            yield return Narrate("The temple gate is locked, and Captain Dur has the key.");
+            if (TouchControls.Wanted)
+                yield return Narrate("Move with the {g}stick{/}. Talk and look with the {g}speech{/} button. Swing the khopesh with the {g}blade{/}.^Hold out the {g}Wakefire{/} with the {g}lamp{/}. And when you must, nod off with the {t}moon{/}.");
+            else
+                yield return Narrate("Move with {g}WASD{/} or the arrows. Talk and look with {g}E{/}. Swing the khopesh with {g}J{/} or {g}Space{/}, roll with {g}K{/}.^Hold out the {g}Wakefire{/} with {g}F{/}. And when you must, nod off with {t}Q{/}.");
+        }
+
+        public static Story Ensure()
+        {
+            if (I) return I;
+            var go = new GameObject("Story");
+            DontDestroyOnLoad(go);
+            I = go.AddComponent<Story>();
+            return I;
+        }
+
+        public static bool Has(string f) => Flags.Contains(f);
+        public static void Set(string f) => Flags.Add(f);
+        public static int Count(string key) => counts.TryGetValue(key, out var n) ? n : 0;
+        /// <summary>Increments a counter and returns its value before the increment (0 the first time).</summary>
+        public static int Bump(string key) { int n = Count(key); counts[key] = n + 1; return n; }
+
+        public static void Run(IEnumerator scene, Npc speaker = null)
+        {
+            var s = Ensure();
+            if (s.Running) return;
+            s.StartCoroutine(s.Wrap(scene, speaker));
+        }
+
+        IEnumerator Wrap(IEnumerator scene, Npc speaker)
+        {
+            Running = true;
+            Speaker = speaker;
+            var p = Player.I;
+            if (p) p.SetState(Player.State.Talk, "idle");
+            if (speaker) speaker.BeginTalk(p ? p.pos : speaker.pos);
+            yield return scene;
+            if (speaker) speaker.EndTalk();
+            if (p && p.state == Player.State.Talk) p.SetState(Player.State.Free, "idle");
+            Speaker = null;
+            Running = false;
+        }
+
+        // ------------------------------------------------------------------ scene helpers
+        public static IEnumerator Say(string who, string text, string voice = "narrator", bool dream = false) => DialogueBox.Say(who, text, voice, dream);
+        public static IEnumerator Narrate(string text) => DialogueBox.Say(null, text, "narrator");
+        public static IEnumerator AzarSays(string text) => DialogueBox.Say("Azar", text, "azar");
+
+        /// <summary>Glide the camera to a point (the player stops being followed until CamBack).</summary>
+        public static IEnumerator CamTo(Vector2 to, float seconds)
+        {
+            var v = PixelView.I;
+            v.target = null;
+            var from = v.focus;
+            for (float t = 0; t < seconds; t += Time.deltaTime)
+            {
+                v.focus = Vector2.Lerp(from, to, Mathf.SmoothStep(0, 1, t / seconds));
+                yield return null;
+            }
+            v.focus = to;
+        }
+
+        public static IEnumerator CamBack(float seconds)
+        {
+            var p = Player.I;
+            if (!p) yield break;
+            yield return CamTo(p.pos, seconds);
+            PixelView.I.target = p.transform;
+        }
+
+        public static IEnumerator Wait(float s)
+        {
+            float t = 0;
+            while (t < s) { t += Time.deltaTime; yield return null; }
+        }
+
+        /// <summary>Azar lifts a new item over his head while the fanfare plays.</summary>
+        public static IEnumerator ItemGet(string itemSprite, string text)
+        {
+            var p = Player.I;
+            p.Face(Facing.Down);
+            p.SetState(Player.State.ItemGet, "itemget");
+            var go = new GameObject("ItemShown");
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sharedMaterial = Map.SpriteMat;
+            sr.sprite = Map.GetSprite("Items/" + itemSprite, 8, 16);
+            go.transform.position = (Vector3)(p.pos + new Vector2(0, 2.15f));
+            sr.sortingOrder = Map.Order(p.pos.y) + 2;
+            Sfx.Play("itemget", 1f, 0f);
+            PixelView.I.Shake(0, 0);
+            yield return Wait(0.5f);
+            yield return Narrate(text);
+            Destroy(go);
+            p.SetState(Player.State.Talk, "idle");
+        }
+    }
+}
