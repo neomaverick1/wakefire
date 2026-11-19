@@ -81,10 +81,45 @@
         font-size: 12px;
         letter-spacing: 0.12em;
       }
+      #turn {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        place-items: center;
+        align-content: center;
+        gap: 18px;
+        background: radial-gradient(130% 90% at 50% 100%, #2c2140 0%, #120d26 50%, #06040c 100%);
+        color: #f4ead8;
+        font: 600 14px Georgia, 'Times New Roman', serif;
+        letter-spacing: 0.14em;
+        text-align: center;
+      }
+      #turn svg {
+        width: 64px;
+        height: 64px;
+        image-rendering: pixelated;
+      }
+      @media (orientation: portrait) and (pointer: coarse) {
+        #turn {
+          display: grid;
+        }
+      }
     </style>
   </head>
   <body>
     <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="turn">
+      <svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="5" y="1" width="6" height="11" fill="none" stroke="#ffd88a" stroke-width="1" />
+        <rect x="7" y="10" width="2" height="1" fill="#ffd88a" />
+        <rect x="1" y="12" width="3" height="1" fill="#bc7a34" />
+        <rect x="1" y="10" width="1" height="2" fill="#bc7a34" />
+        <rect x="12" y="4" width="3" height="1" fill="#bc7a34" />
+        <rect x="14" y="5" width="1" height="2" fill="#bc7a34" />
+      </svg>
+      <div>Turn your phone sideways to play</div>
+    </div>
     <div id="loading">
       <svg viewBox="0 0 14 18" shape-rendering="crispEdges" aria-hidden="true">
         <rect x="6" y="0" width="2" height="2" fill="#fff3c0" />
