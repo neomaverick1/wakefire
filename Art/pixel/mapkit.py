@@ -5,9 +5,46 @@ import os
 import json
 import numpy as np
 from PIL import Image
-from px import Canvas
+from px import Canvas, R
 
 RES = "/srv/Wakefire/Assets/Wakefire/Resources"
+
+
+SURF_CELL = 8
+_SURF = {'g': ('grass', 'grass_dark', 'leaf', 'olive', 'cypress', 'flower_y', 'flower_w', 'flower_r'),
+         's': ('sand', 'dirt', 'mud', 'straw'),
+         'w': ('wood', 'cedar', 'trunk'),
+         'a': ('sea', 'water')}
+
+
+def surface_grid(cv):
+    """What Azar's sandals land on, one letter per 8x8 cell: g grass, s sand and earth, w wood,
+    a water, c stone (everything else). Found from the ground picture's own palette ramps."""
+    import numpy as np
+    names, cols = [], []
+    for k, ramp in R.items():
+        for c in ramp:
+            names.append(k); cols.append(c[:3])
+    cols = np.array(cols, float)
+    letter = {}
+    for ch, ks in _SURF.items():
+        for k in ks:
+            letter[k] = ch
+    a = cv.a[:, :, :3].astype(float)
+    H, W = a.shape[:2]
+    rows = []
+    for y0 in range(0, H, SURF_CELL):
+        row = []
+        for x0 in range(0, W, SURF_CELL):
+            px = a[y0:y0 + SURF_CELL:2, x0:x0 + SURF_CELL:2].reshape(-1, 3)
+            d = ((px[:, None, :] - cols[None, :, :]) ** 2).sum(2)
+            votes = {}
+            for i in d.argmin(1):
+                ch = letter.get(names[i], 'c')
+                votes[ch] = votes.get(ch, 0) + 1
+            row.append(max(votes, key=votes.get))
+        rows.append(''.join(row))
+    return rows
 
 
 class MapBuilder:
@@ -103,7 +140,9 @@ class MapBuilder:
                 o["bx0"], o["by0"], o["bx1"], o["by1"] = b
                 o["solid"] = True
             objs.append(o)
+        surface = surface_grid(self.ground)
         meta = {"name": self.name, "music": self.music, "w": self.W, "h": self.H, "ground": f"Maps/{self.name}_ground",
+                "surface": surface, "cell": SURF_CELL,
                 "objects": objs, "boxes": boxes, "lights": self.lights, "markers": self.markers}
         json.dump(meta, open(f"{RES}/Maps/{self.name}.json", "w"))
         print(f"map {self.name}: {self.W}x{self.H}px, {len(self.objects)} props, {len(self.sprite_cache)} sprites")

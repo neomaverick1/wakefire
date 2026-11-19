@@ -63,10 +63,10 @@ def build():
     water, dock, bridge = masks()
     A.grass(g, 0, 0, 520, 380, seed=21, dense=0.8, flowers=0.02)
     G.sand(g, 0, 380, 560, 148, seed=22)
-    G.sand(g, 800, 100, 96, 230, seed=23)
     is_water = lambda x, y: 0 <= x < W and 0 <= y < H and water[min(H // C - 1, y // C), min(W // C - 1, x // C)]
     G.water(g, 560, 100, W - 560, H - 100, seed=24, deep_from=lambda x, y: (x - 560) / 300)
     G.water(g, 0, 528, 560, 48, seed=25, deep_from=lambda x, y: (y - 528) / 60)
+    G.sand(g, 800, 100, 96, 230, seed=23)          # the crabs' cove, across the water
     G.shore(g, is_water, 0, 96, W, H - 96)
     # cliffs: along the top east, and the drop from the clifftop to the beach
     G.cliff(g, 520, 0, W - 520, 100, seed=26)
