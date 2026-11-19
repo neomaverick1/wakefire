@@ -225,9 +225,9 @@ def zig_3():
     # the summit floor, the altar, the god's bed beyond it
     A.slabs(g, 24, 64, W - 48, 70, R['lime'], 16, 12, seed=102)
     A.sigil(g, W // 2, 230, 26)
-    m.marker("god", W // 2, 92)
-    m.marker("altar", W // 2, 150)
-    m.marker("boss", W // 2, 200)
+    m.marker("god", W // 2 - 10, 126)
+    m.marker("altar", W // 2 + 64, 132)
+    m.marker("boss", W // 2, 212)
     for (x, y) in ((110, 190), (W - 110, 190), (110, 300), (W - 110, 300)):
         m.prop("pillar", lambda cv, ax, ay, fi: G.pillar(cv, ax, ay), x, y, box=(-7, -5, 7, 0), size=(24, 48), pad=4, kind="pillar")
     torches(m, ((60, 150), (W - 60, 150), (60, 330), (W - 60, 330)))

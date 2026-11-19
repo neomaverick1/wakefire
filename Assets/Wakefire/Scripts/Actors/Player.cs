@@ -173,7 +173,7 @@ namespace Wakefire
                 anim.Play("run", facing);
                 anim.SetFacing(facing);
                 idleClock = 0;
-                if (anim.Frame == 2 || anim.Frame == 6) { if (stepPuff) { Fx.Dust(pos, 1); stepPuff = false; } }
+                if (anim.Frame == 2 || anim.Frame == 6) { if (stepPuff) { Fx.Dust(pos, 1); Sfx.Play(anim.Frame == 2 ? "step0" : "step1", 0.32f, 0.08f); stepPuff = false; } }
                 else stepPuff = true;
             }
             else

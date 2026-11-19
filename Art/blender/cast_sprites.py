@@ -56,7 +56,7 @@ PLAN = {
     'bull': (1.0, {'idle': DLU, 'walk': DLU, 'charge': DLU, 'stun': DLU, 'shoot': DLU, 'hurt': DLU, 'death': D}),
     'god': (2.4, {'lie': D, 'sleep': D}),
 }
-SIZE = {'bull': 80, 'god': 128}
+SIZE = {'bull': 112, 'god': 128}
 OVERRIDE = {
     'goat': {'idle': [0, 8, 16, 24, 32, 46], 'walk': [0, 3, 6, 9, 12, 15, 18, 21]},
     'crab': {'idle': [0, 10, 20, 30], 'walk': [0, 3, 6, 9], 'attack': [0, 3, 5, 8, 11], 'hurt': [2, 5]},
@@ -92,7 +92,7 @@ def render(name, test=False):
         target = (0, 0, 15.0)
     meshes = list(obs.values())
     size = SIZE.get(name, 48)
-    ppm = {'bull': 1.45}.get(name, 1.0)
+    ppm = {'bull': 2.1, 'jackal': 1.3, 'crab': 1.25}.get(name, 1.0)
     rig = sprites.SpriteRig(ao, meshes, size=size, target=target, px_per_m=ppm, elev=14.0 if name != 'god' else 30.0, scales={}, dist=60.0 if size <= 48 else 120.0)
     os.makedirs(TMP, exist_ok=True)
     out = {}

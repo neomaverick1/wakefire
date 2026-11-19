@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0818" />
+    <meta name="description" content="WAKEFIRE: a top-down action-adventure. The god of the sky fell asleep and took the whole city with him. One night watchman is still awake. Built in Unity." />
+    <title>WAKEFIRE</title>
+    <link rel="icon" type="image/png" href="icon.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #06040c;
+        overflow: hidden;
+        overscroll-behavior: none;
+        touch-action: none;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      #unity-canvas {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        background: #06040c;
+        outline: none;
+        image-rendering: pixelated;
+      }
+      #loading {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        align-content: center;
+        gap: 20px;
+        background: radial-gradient(130% 90% at 50% 100%, #2c2140 0%, #120d26 50%, #06040c 100%);
+        color: #f4ead8;
+        font: 600 14px Georgia, 'Times New Roman', serif;
+        letter-spacing: 0.32em;
+        transition: opacity 0.6s ease;
+      }
+      #loading.done {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #loading svg {
+        width: 56px;
+        height: 72px;
+        filter: drop-shadow(0 0 16px rgba(255, 170, 70, 0.75));
+        animation: flicker 1.6s ease-in-out infinite;
+        image-rendering: pixelated;
+      }
+      @keyframes flicker {
+        50% {
+          transform: scaleY(0.92) translateY(2px);
+        }
+      }
+      #title {
+        font-size: 22px;
+        color: #f6c85a;
+      }
+      #bar {
+        width: 200px;
+        height: 4px;
+        background: rgba(255, 216, 138, 0.14);
+        overflow: hidden;
+      }
+      #fill {
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, #bc7a34, #ffd88a);
+        transition: width 0.2s ease;
+      }
+      #note {
+        color: rgba(244, 234, 216, 0.55);
+        font-size: 12px;
+        letter-spacing: 0.12em;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="loading">
+      <svg viewBox="0 0 14 18" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="6" y="0" width="2" height="2" fill="#fff3c0" />
+        <rect x="5" y="2" width="4" height="2" fill="#ffd88a" />
+        <rect x="4" y="4" width="6" height="3" fill="#ffac34" />
+        <rect x="5" y="5" width="4" height="2" fill="#fff3c0" />
+        <rect x="3" y="7" width="8" height="2" fill="#f26a1e" />
+        <rect x="2" y="9" width="10" height="2" fill="#bc7a34" />
+        <rect x="1" y="11" width="12" height="4" fill="#8c5424" />
+        <rect x="2" y="15" width="10" height="2" fill="#5a3418" />
+      </svg>
+      <div id="title">WAKEFIRE</div>
+      <div id="bar"><div id="fill"></div></div>
+      <div id="note">lighting the lamps</div>
+    </div>
+    <script>
+      var canvas = document.querySelector('#unity-canvas');
+      var fill = document.querySelector('#fill');
+      var loading = document.querySelector('#loading');
+      var script = document.createElement('script');
+      script.src = 'Build/{{{ LOADER_FILENAME }}}';
+      script.onload = function () {
+        createUnityInstance(
+          canvas,
+          {
+            arguments: [],
+            dataUrl: 'Build/{{{ DATA_FILENAME }}}',
+            frameworkUrl: 'Build/{{{ FRAMEWORK_FILENAME }}}',
+#if USE_THREADS
+            workerUrl: 'Build/{{{ WORKER_FILENAME }}}',
+#endif
+#if USE_WASM
+            codeUrl: 'Build/{{{ CODE_FILENAME }}}',
+#endif
+#if MEMORY_FILENAME
+            memoryUrl: 'Build/{{{ MEMORY_FILENAME }}}',
+#endif
+#if SYMBOLS_FILENAME
+            symbolsUrl: 'Build/{{{ SYMBOLS_FILENAME }}}',
+#endif
+            streamingAssetsUrl: 'StreamingAssets',
+            companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+            productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+            productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+            matchWebGLToCanvasSize: true,
+            devicePixelRatio: Math.min(window.devicePixelRatio || 1, 3),
+          },
+          function (p) {
+            fill.style.width = Math.round(p * 100) + '%';
+          },
+        )
+          .then(function () {
+            loading.classList.add('done');
+            setTimeout(function () {
+              loading.remove();
+            }, 700);
+          })
+          .catch(function (e) {
+            document.querySelector('#note').textContent = 'This browser could not start the game: ' + e;
+          });
+      };
+      document.body.appendChild(script);
+    </script>
+  </body>
+</html>

@@ -8,7 +8,10 @@ namespace Wakefire
     public class Music : MonoBehaviour
     {
         static Music I;
-        AudioSource wake, dream, oldWake, oldDream;
+        AudioSource wake, dream, oldWake, oldDream, amb, oldAmb;
+        string ambName;
+        float ambIn = 1, ambOut;
+        public static float AmbVolume = 0.5f;
         string current;
         float fadeIn = 1, fadeOut;
         public static float Volume = 0.65f;
@@ -20,8 +23,27 @@ namespace Wakefire
             DontDestroyOnLoad(go);
             I = go.AddComponent<Music>();
             AudioSource Src() { var s = go.AddComponent<AudioSource>(); s.loop = true; s.playOnAwake = false; s.volume = 0; return s; }
-            I.wake = Src(); I.dream = Src(); I.oldWake = Src(); I.oldDream = Src();
+            I.wake = Src(); I.dream = Src(); I.oldWake = Src(); I.oldDream = Src(); I.amb = Src(); I.oldAmb = Src();
         }
+
+        /// <summary>The bed of night sounds under the music: crickets, the sea, wind, dripping water.</summary>
+        public static void Ambience(string name)
+        {
+            Ensure();
+            if (name == I.ambName) return;
+            I.ambName = name;
+            (I.oldAmb, I.amb) = (I.amb, I.oldAmb);
+            I.ambOut = 1; I.ambIn = 0;
+            var c = string.IsNullOrEmpty(name) ? null : Resources.Load<AudioClip>("Audio/amb_" + name);
+            I.amb.clip = c;
+            if (c) I.amb.Play(); else I.amb.Stop();
+        }
+
+        public static string AmbienceFor(string music) => music switch
+        {
+            "town" => "night", "title" => "night", "sea" => "sea", "hills" => "hills", "temple" => "temple",
+            "dungeon" => "dungeon", "summit" => "dungeon", _ => null,
+        };
 
         public static void Play(string name, bool loop = true)
         {
@@ -32,6 +54,8 @@ namespace Wakefire
             if (!w) return;
             var d = Resources.Load<AudioClip>("Music/" + name + "_dream");
             I.current = name;
+            var a = AmbienceFor(name);
+            if (a != null || name == "boss" || name == "ending") Ambience(a);
             // the old pair fades out while the new one comes in
             (I.oldWake, I.wake) = (I.wake, I.oldWake);
             (I.oldDream, I.dream) = (I.dream, I.oldDream);
@@ -59,6 +83,11 @@ namespace Wakefire
             oldWake.volume = Volume * fadeOut * (1 - amt);
             oldDream.volume = Volume * fadeOut * amt;
             if (fadeOut <= 0) { if (oldWake.isPlaying) oldWake.Stop(); if (oldDream.isPlaying) oldDream.Stop(); }
+            ambIn = Mathf.MoveTowards(ambIn, 1, dt / 1.5f);
+            ambOut = Mathf.MoveTowards(ambOut, 0, dt / 1.2f);
+            amb.volume = AmbVolume * ambIn * (1 - 0.65f * amt);
+            oldAmb.volume = AmbVolume * ambOut * (1 - 0.65f * amt);
+            if (ambOut <= 0 && oldAmb.isPlaying) oldAmb.Stop();
         }
     }
 }

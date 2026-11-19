@@ -318,7 +318,7 @@ namespace Wakefire
             bull.Begin();
         }
 
-        IEnumerator Ending()
+        public IEnumerator Ending()
         {
             Set("bull_dead");
             Music.Play("ending");
