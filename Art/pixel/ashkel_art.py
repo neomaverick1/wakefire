@@ -87,27 +87,66 @@ def grass(cv, x0, y0, w, h, seed=1, dense=1.0, flowers=0.0):
 
 
 def pavers(cv, x0, y0, w, h, seed=2):
+    """Slate flagstones: long slabs of uneven width in courses, each with a lit top-left bevel,
+    a shaded bottom-right one and a deep joint; a few worn pale, a few cracked."""
     c = R['cobble']
     rng = np.random.default_rng(seed)
-    cv.rect(x0, y0, w, h, c[1])
-    bw, bh = 14, 8
-    row = 0
+    x0, y0, w, h = int(x0), int(y0), int(w), int(h)
+    cv.rect(x0, y0, w, h, c[0])
+    bh = 12
     for y in range(y0, y0 + h, bh):
-        off = (row % 2) * (bw // 2)
-        for x in range(x0 - off, x0 + w, bw):
-            base = 3 if rng.random() > 0.12 else 2
+        x = x0 - int(rng.integers(0, 10))
+        while x < x0 + w:
+            bw = int(rng.integers(14, 27))
+            r_ = rng.random()
+            base = 2 if r_ < 0.62 else 3 if r_ < 0.9 else 1
             for yy in range(y, min(y + bh - 1, y0 + h)):
                 for xx in range(max(x, x0), min(x + bw - 1, x0 + w)):
                     lx, ly = xx - x, yy - y
                     col = c[base]
                     if ly == 0 or lx == 0:
-                        col = c[min(5, base + 1)]
-                    if ly == bh - 2 or lx == bw - 2:
-                        col = c[base - 1]
-                    if (lx == 0 and ly == 0) or (lx == bw - 2 and ly == bh - 2) or (lx == 0 and ly == bh - 2) or (lx == bw - 2 and ly == 0):
-                        col = c[1]
+                        col = c[base + 1]
+                    elif ly == bh - 2 or lx == bw - 2:
+                        col = c[max(0, base - 1)]
+                    elif (xx * 7 + yy * 13 + seed) % 31 == 0:
+                        col = c[max(0, base - 1)]
                     cv.px(xx, yy, col)
-        row += 1
+            if rng.random() < 0.14:
+                sx, sy = x + int(rng.integers(3, bw - 5)), y + 2
+                for k in range(int(rng.integers(3, 7))):
+                    if x0 <= sx < x0 + w and sy + k < y0 + h:
+                        cv.px(sx, sy + k, c[0])
+                    sx += int(rng.integers(-1, 2))
+            x += bw
+
+
+def marble(cv, x0, y0, w, h, T=24, seed=3):
+    """Polished marble in a big chequer of pale and blue-grey, each tile bevelled, veined, with a
+    small gold stud where four corners meet."""
+    mb = R['marble']; gd = R['gold']
+    rng = np.random.default_rng(seed)
+    x0, y0, w, h = int(x0), int(y0), int(w), int(h)
+    for y in range(y0, y0 + h):
+        for x in range(x0, x0 + w):
+            tx, ty = (x - x0) // T, (y - y0) // T
+            lx, ly = (x - x0) % T, (y - y0) % T
+            base = 3 if (tx + ty) % 2 == 0 else 2
+            col = mb[base]
+            if lx == T - 1 or ly == T - 1:
+                col = mb[0]
+            elif lx == 0 or ly == 0:
+                col = mb[base + 1]
+            elif lx == T - 2 or ly == T - 2:
+                col = mb[base - 1]
+            elif ((lx + ly * 2 + tx * 5 + ty * 3) % 19 == 0 and (lx * 3 + ly) % 5 < 3):
+                col = mb[base - 1]          # veins
+            cv.px(x, y, col)
+    for ty in range(1, h // T + 1):
+        for tx in range(1, w // T + 1):
+            cx_, cy_ = x0 + tx * T - 1, y0 + ty * T - 1
+            if cx_ + 1 < x0 + w and cy_ + 1 < y0 + h:
+                cv.px(cx_, cy_, gd[4]); cv.px(cx_ - 1, cy_, gd[3]); cv.px(cx_, cy_ - 1, gd[5]); cv.px(cx_ - 1, cy_ - 1, gd[4])
+                cv.px(cx_ + 1, cy_, gd[2]); cv.px(cx_, cy_ + 1, gd[2])
 
 
 def edge_line(cv, mask_fn, x0, y0, w, h, col):
@@ -177,9 +216,14 @@ def city_wall(cv, x0, y0, w, face_h=34, top_h=10, seed=4, crenel=True):
             cv.rect(x, y0 - 5, 7, 1, lime[5])
             cv.rect(x + 6, y0 - 5, 1, 6, lime[2])
     # the face, with its overhanging lip
-    ashlar(cv, x0, y0 + top_h, w, face_h, lime, seed)
+    ashlar(cv, x0, y0 + top_h, w, face_h, lime, seed, bw=18, bh=9)
     cv.hline(x0, x0 + w - 1, y0 + top_h, lime[5])
-    cv.hline(x0, x0 + w - 1, y0 + top_h + 1, lime[2])
+    cv.hline(x0, x0 + w - 1, y0 + top_h + 1, lime[1])
+    cv.hline(x0, x0 + w - 1, y0 + top_h + 2, lime[2])
+    for k in range(7):
+        for x in range(x0, x0 + w):
+            if k < 4 or (x + k) % 2 == 0:
+                cv.px(x, y0 + top_h + face_h + k, (10, 8, 30, 120 - k * 14))
 
 
 def tower(cv, x, y, w=36, h=58, seed=5):

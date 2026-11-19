@@ -28,7 +28,7 @@ namespace Wakefire
         public RectTransform pixelRoot;
         public Canvas display;
         public RectTransform touchRoot;
-        public Color ambient = new Color(0.68f, 0.74f, 0.96f);
+        public Color ambient = new Color(0.80f, 0.82f, 0.97f);
         public float nightStrength = 1f;
 
         public Transform target;
