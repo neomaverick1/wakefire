@@ -7,13 +7,13 @@ namespace Wakefire.EditorTools
 {
     public class Importers : AssetPostprocessor
     {
-        public override uint GetVersion() => 5;
+        public override uint GetVersion() => 7;
 
         void OnPreprocessAudio()
         {
             if (!assetPath.StartsWith("Assets/Wakefire/Resources/")) return;
             var a = (AudioImporter)assetImporter;
-            bool music = assetPath.Contains("/Resources/Music/");
+            bool music = assetPath.Contains("/Resources/Music/") || System.IO.Path.GetFileName(assetPath).StartsWith("amb_");
             var s = a.defaultSampleSettings;
             s.loadType = music ? AudioClipLoadType.Streaming : AudioClipLoadType.DecompressOnLoad;
             s.compressionFormat = AudioCompressionFormat.Vorbis;
@@ -27,6 +27,17 @@ namespace Wakefire.EditorTools
 
         void OnPreprocessTexture()
         {
+            if (assetPath.StartsWith("Assets/Wakefire/Icon/"))
+            {
+                var ic = (TextureImporter)assetImporter;
+                ic.textureType = TextureImporterType.Default;
+                ic.filterMode = FilterMode.Point;
+                ic.mipmapEnabled = false;
+                ic.textureCompression = TextureImporterCompression.Uncompressed;
+                ic.npotScale = TextureImporterNPOTScale.None;
+                ic.maxTextureSize = 1024;
+                return;
+            }
             if (!assetPath.StartsWith("Assets/Wakefire/Resources/")) return;
             var t = (TextureImporter)assetImporter;
             t.filterMode = FilterMode.Point;

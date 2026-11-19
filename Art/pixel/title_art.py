@@ -9,7 +9,8 @@ sys.path.insert(0, '/srv/Wakefire/Art/pixel')
 from px import Canvas, R, OUTLINE, BAYER, pick
 
 OUT = '/srv/Wakefire/Assets/Wakefire/Resources/UI'
-W, H = 480, 216
+W, H = 480, 248
+OY = H - 216
 
 
 def sky(cv):
@@ -173,8 +174,8 @@ def logo():
 def main():
     bg = Canvas(W, H)
     sky(bg)
-    moon(bg, 88, 44, 20)
-    ziggurat(bg, W // 2, 182)
+    moon(bg, 88, 44 + OY, 20)
+    ziggurat(bg, W // 2, 182 + OY)
     rooftops(bg)
     bg.save(f'{OUT}/title_bg.png')
     lg = logo()

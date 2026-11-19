@@ -15,6 +15,7 @@ namespace Wakefire
         int sel;
         float clock;
         bool leaving;
+        int off;
 
         public static void Show()
         {
@@ -46,16 +47,17 @@ namespace Wakefire
 
         void Build()
         {
-            int W = PixelView.I.width;
+            int W = PixelView.I.width, H = PixelView.Height;
+            off = (H - 216) / 2;
             var bgt = Resources.Load<Texture2D>("UI/title_bg");
             bgt.filterMode = FilterMode.Point;
-            bg = Img("bg", bgt, Mathf.Round((W - bgt.width) / 2f), 0);
+            bg = Img("bg", bgt, Mathf.Round((W - bgt.width) / 2f), H - bgt.height);
             var lt = Resources.Load<Texture2D>("UI/title_logo");
             lt.filterMode = FilterMode.Point;
-            logo = Img("logo", lt, Mathf.Round((W - lt.width) / 2f), 18);
+            logo = Img("logo", lt, Mathf.Round((W - lt.width) / 2f), 18 + off);
             options = Save.Exists ? new[] { "Continue", "New Game" } : new[] { "Begin" };
             menu = new PixelCanvas(W, 80);
-            menuImg = Img("menu", menu.tex, 0, 96);
+            menuImg = Img("menu", menu.tex, 0, 96 + off);
             Redraw();
         }
 
@@ -103,7 +105,7 @@ namespace Wakefire
                 var pos = tp.position.ReadValue();
                 float py = PixelView.Height - pos.y / PixelView.I.ScreenScale;   // render pixels from the top
                 for (int i = 0; i < options.Length; i++)
-                    if (Mathf.Abs(py - (96 + 22 + i * 14 + 4)) < 7) { sel = i; Choose(); return; }
+                    if (Mathf.Abs(py - (96 + off + 22 + i * 14 + 4)) < 7) { sel = i; Choose(); return; }
             }
             if (before != sel) Sfx.Play("menu_move", 0.6f, 0);
             Redraw();

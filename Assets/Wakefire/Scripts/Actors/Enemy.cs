@@ -158,7 +158,7 @@ namespace Wakefire
         Vector2 dir;
         float next;
         public static Crab Spawn(Vector2 at) => Make<Crab>("crab", "idle", at, WorldLayer.Waking, 2);
-        protected override void Init() { speed = 2.6f; half = new Vector2(0.38f, 0.14f); }
+        protected override void Init() { speed = 2.6f; half = new Vector2(0.45f, 0.16f); }
         protected override Color BurstColor => new Color(0.75f, 0.3f, 0.22f);
 
         protected override void Think(float dt, Player p)
@@ -193,7 +193,7 @@ namespace Wakefire
         Vector2 lungeDir;
         float orbit;
         public static Jackal Spawn(Vector2 at) => Make<Jackal>("jackal", "idle", at, WorldLayer.Waking, 3);
-        protected override void Init() { speed = 3.2f; half = new Vector2(0.4f, 0.15f); orbit = Random.value * 6f; }
+        protected override void Init() { speed = 3.2f; half = new Vector2(0.5f, 0.16f); orbit = Random.value * 6f; }
         protected override Color BurstColor => new Color(0.62f, 0.5f, 0.34f);
 
         protected override void Think(float dt, Player p)

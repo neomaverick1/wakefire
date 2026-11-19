@@ -23,7 +23,7 @@ namespace Wakefire
         Vector2 dir;
         int charges;
         LightBlob glow;
-        readonly Vector2 half = new Vector2(1.0f, 0.35f);
+        readonly Vector2 half = new Vector2(1.45f, 0.5f);
         public System.Action Defeated;
         public bool Enraged => health.hp <= health.max / 2;
 
@@ -45,8 +45,8 @@ namespace Wakefire
             b.anim.Play("idle", Facing.Down, true);
             b.health = go.AddComponent<Health>();
             b.health.max = b.health.hp = 16;
-            b.shadow = Npc.MakeShadow(go.transform, WorldLayer.Both, 30);
-            b.glow = LightBlob.Create(go.transform, at + new Vector2(0, 1f), 4.5f, new Color(1f, 0.55f, 0.22f), 0.7f, true);
+            b.shadow = Npc.MakeShadow(go.transform, WorldLayer.Both, 44);
+            b.glow = LightBlob.Create(go.transform, at + new Vector2(0, 1.6f), 6f, new Color(1f, 0.55f, 0.22f), 0.75f, true);
             b.Place();
             return b;
         }
@@ -60,7 +60,7 @@ namespace Wakefire
             if (!open)
             {
                 Sfx.Play("clank");
-                Fx.Sparks(pos + new Vector2(0, 1.4f), new Color(1f, 0.85f, 0.5f), 6);
+                Fx.Sparks(pos + new Vector2(0, 2.0f), new Color(1f, 0.85f, 0.5f), 6);
                 return true;
             }
             if (!health.Take(h)) return false;
@@ -138,14 +138,14 @@ namespace Wakefire
                     break;
                 }
                 case S.Stun:
-                    if (((int)(clock * 8)) % 4 == 0) Fx.Sparks(pos + new Vector2(0, 2.2f), new Color(1f, 0.9f, 0.5f), 1);
+                    if (((int)(clock * 8)) % 4 == 0) Fx.Sparks(pos + new Vector2(0, 3.2f), new Color(1f, 0.9f, 0.5f), 1);
                     if (clock > 2.6f) { s = S.Idle; clock = 0; }
                     break;
                 case S.Shoot:
                     if (anim.Frame == 2 && clock < 10f)
                     {
                         int n = Enraged ? 5 : 3;
-                        var mouth = pos + FaceVec(facing) * 1.4f + new Vector2(0, 0.2f);
+                        var mouth = pos + FaceVec(facing) * 2.0f + new Vector2(0, 0.3f);
                         var aim = (p.pos - mouth).normalized;
                         for (int i = 0; i < n; i++)
                         {
@@ -164,7 +164,7 @@ namespace Wakefire
         {
             var m = Map.Current;
             foreach (var pr in m.props)
-                if (pr && pr.Kind == "pillar" && Vector2.Distance(pr.basePos, pos + dir * 1.2f) < 1.9f)
+                if (pr && pr.Kind == "pillar" && Vector2.Distance(pr.basePos, pos + dir * 1.6f) < 2.4f)
                 {
                     Fx.Dust(pr.basePos, 8);
                     return true;
@@ -179,7 +179,7 @@ namespace Wakefire
             Sfx.Play("boss_die");
             for (int i = 0; i < 24; i++)
             {
-                Fx.Sparks(pos + new Vector2(Random.Range(-1f, 1f), Random.Range(0.5f, 2.4f)), new Color(1f, 0.75f, 0.35f), 4);
+                Fx.Sparks(pos + new Vector2(Random.Range(-1.4f, 1.4f), Random.Range(0.6f, 3.4f)), new Color(1f, 0.75f, 0.35f), 4);
                 PixelView.I.Shake(2, 0.1f);
                 yield return new WaitForSeconds(0.08f);
             }
@@ -202,7 +202,7 @@ namespace Wakefire
             int o = Map.Order(pos.y);
             anim.sr.sortingOrder = o;
             shadow.sortingOrder = o - 1;
-            if (glow) glow.transform.position = (Vector3)(pos + new Vector2(0, 1.2f));
+            if (glow) glow.transform.position = (Vector3)(pos + new Vector2(0, 1.7f));
         }
     }
 

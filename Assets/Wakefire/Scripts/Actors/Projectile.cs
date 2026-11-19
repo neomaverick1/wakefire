@@ -70,7 +70,7 @@ namespace Wakefire
                     return;
                 }
                 if (owner && owner.GetComponent<IHittable>() is IHittable h && !(owner.GetComponent<Enemy>()) &&
-                    Vector2.Distance((Vector2)owner.transform.position + new Vector2(0, 1f), pos) < 1.6f)
+                    Vector2.Distance((Vector2)owner.transform.position + new Vector2(0, 1f), pos) < 2.0f)
                 {
                     h.Hit(new HitInfo { damage = damage * 2, from = pos - vel.normalized, knockback = 0, kind = HitKind.Reflected, source = gameObject });
                     Burst();

@@ -29,6 +29,7 @@ namespace Wakefire.EditorTools
                 PlayerSettings.Android.bundleVersionCode = 1000 + minor * 100 + patch;
                 PlayerSettings.iOS.buildNumber = (1000 + minor * 100 + patch).ToString();
             }
+            ApplyIconAndSplash();
             if (EditorUserBuildSettings.activeBuildTarget != target) EditorUserBuildSettings.SwitchActiveBuildTarget(group, target);
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path)));
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
@@ -42,6 +43,15 @@ namespace Wakefire.EditorTools
             var s = report.summary;
             Debug.Log($"[build] {target}: {s.result}, {s.totalSize / 1048576f:0.0} MB, {s.totalTime.TotalSeconds:0}s, {s.totalErrors} errors");
             if (s.result != BuildResult.Succeeded) EditorApplication.Exit(1);
+        }
+
+        /// <summary>The lantern icon everywhere, and straight into the game (no engine splash).</summary>
+        static void ApplyIconAndSplash()
+        {
+            var icon = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Wakefire/Icon/icon_512.png");
+            if (icon) PlayerSettings.SetIcons(UnityEditor.Build.NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);
+            PlayerSettings.SplashScreen.show = false;
+            PlayerSettings.SplashScreen.showUnityLogo = false;
         }
 
         public static void Linux() => Run(BuildTarget.StandaloneLinux64, BuildTargetGroup.Standalone, "Builds/Linux/Wakefire.x86_64");

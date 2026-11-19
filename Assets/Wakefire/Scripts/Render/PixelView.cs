@@ -12,7 +12,8 @@ namespace Wakefire
     public class PixelView : MonoBehaviour
     {
         public static PixelView I;
-        public const int Height = 216;
+        /// <summary>Render lines: about 216, picked so the screen is a whole multiple of it (crisp pixels on every phone).</summary>
+        public static int Height { get; private set; } = 216;
         public const float PPU = 16f;            // pixels per world unit (one tile)
         public const int PixelUILayer = 6;
         public const int LightLayer = 11;
@@ -144,6 +145,9 @@ namespace Wakefire
         {
             lastW = Screen.width;
             lastH = Screen.height;
+            int scale = Mathf.Max(1, Mathf.RoundToInt(Screen.height / 216f));
+            Height = Mathf.Clamp(Screen.height / scale, 196, 248);
+            if (Height % 2 == 1) Height--;
             width = Mathf.Max(320, Mathf.RoundToInt(Height * Screen.width / (float)Mathf.Max(1, Screen.height)));
             if (width % 2 == 1) width++;
             foreach (var (cam, rt) in new[] { (world, worldRT), (light, lightRT), (ui, uiRT) })
