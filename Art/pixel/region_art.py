@@ -343,17 +343,30 @@ def glazed_wall(cv, x0, y0, w, h, seed=60, frieze=True):
 
 
 def tile_floor(cv, x0, y0, w, h, seed=61):
+    """Big fired-clay floor tiles, one to a grid square: each a slightly different burn, a lit
+    top-left edge, a dark joint, here and there a chip or a crack, worn paler where feet go."""
     br = R['brick']
     rng = np.random.default_rng(seed)
+    T = 16
+    tones = {}
+    for ty in range((h + T - 1) // T + 1):
+        for tx in range((w + T - 1) // T + 1):
+            r = rng.random()
+            tones[(tx, ty)] = (3 if r < 0.55 else 2 if r < 0.9 else 4, rng.random() < 0.12, int(rng.integers(3, 12)), int(rng.integers(3, 12)))
     for y in range(y0, y0 + h):
         for x in range(x0, x0 + w):
-            lx, ly = (x - x0) % 12, (y - y0) % 12
-            base = 3 if ((x - x0) // 12 + (y - y0) // 12) % 2 == 0 else 2
+            tx, ty = (x - x0) // T, (y - y0) // T
+            lx, ly = (x - x0) % T, (y - y0) % T
+            base, cracked, cx, cy = tones[(tx, ty)]
             c = br[base]
-            if lx == 0 or ly == 0:
+            if lx == T - 1 or ly == T - 1:
                 c = br[1]
-            elif lx == 1 or ly == 1:
-                c = br[base + 1]
+            elif lx == 0 or ly == 0:
+                c = br[min(5, base + 1)]
+            elif cracked and (lx - cx) == (ly - cy) // 2 and 0 <= ly - cy < 6:
+                c = br[base - 1]
+            elif (x * 7 + y * 13) % 29 == 0:
+                c = br[base - 1]          # grit
             cv.px(x, y, c)
 
 
@@ -580,16 +593,32 @@ def carpet(cv, x0, y0, w, h):
             cv.px(x, y, c)
 
 
-def floor_inlays(cv, x0, y0, w, h, step=48):
-    """Lapis diamonds set into the brick floor on a wide grid."""
+def floor_inlays(cv, x0, y0, w, h, inset=12, band=7):
+    """A lapis border set into the floor all the way round the room, edged in gold and studded
+    with gold squares, like the edge of a great rug in stone; small lapis lozenges at its corners."""
     lp = R['lapis']; gd = R['gold']
-    for cy in range(y0 + step // 2, y0 + h, step):
-        for cx in range(x0 + step // 2, x0 + w, step):
-            for y in range(cy - 5, cy + 6):
-                for x in range(cx - 5, cx + 6):
-                    d = abs(x - cx) + abs(y - cy)
-                    if d <= 5:
-                        cv.px(x, y, gd[3] if d == 5 else lp[3] if d > 2 else lp[4])
+    bx0, by0, bx1, by1 = x0 + inset, y0 + inset, x0 + w - inset - 1, y0 + h - inset - 1
+    for y in range(by0, by1 + 1):
+        for x in range(bx0, bx1 + 1):
+            dx = min(x - bx0, bx1 - x); dy = min(y - by0, by1 - y)
+            d = min(dx, dy)
+            if d >= band:
+                continue
+            if d == 0 or d == band - 1:
+                c = gd[3] if (x + y) % 2 else gd[4]
+            else:
+                c = lp[3] if d in (1, band - 2) else lp[2]
+                along = x if dy < dx else y
+                if d == band // 2 and along % 10 in (0, 1):
+                    c = gd[4]
+            cv.px(x, y, c)
+    for (cx, cy) in ((bx0 + band // 2, by0 + band // 2), (bx1 - band // 2, by0 + band // 2),
+                     (bx0 + band // 2, by1 - band // 2), (bx1 - band // 2, by1 - band // 2)):
+        for yy in range(cy - 5, cy + 6):
+            for xx in range(cx - 5, cx + 6):
+                dd = abs(xx - cx) + abs(yy - cy)
+                if dd <= 5:
+                    cv.px(xx, yy, gd[3] if dd == 5 else lp[3] if dd > 2 else lp[4])
 
 
 def cobweb(cv, x, y, flip=False):
