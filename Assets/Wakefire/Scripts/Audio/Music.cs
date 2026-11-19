@@ -16,6 +16,28 @@ namespace Wakefire
         float fadeIn = 1, fadeOut;
         public static float Volume = 0.65f;
 
+        // loudness trims (dB) measured from the rendered tracks, so every place sits at the same level,
+        // waking and dream versions match for the crossfade, and the boss hits a little harder
+        static readonly System.Collections.Generic.Dictionary<string, float> TrimDb = new System.Collections.Generic.Dictionary<string, float>
+        {
+            { "boss", +2.8f },
+            { "dungeon", +0.0f },
+            { "dungeon_dream", -2.1f },
+            { "ending", -0.5f },
+            { "hills", -2.3f },
+            { "hills_dream", -1.7f },
+            { "sea", -3.3f },
+            { "sea_dream", -0.9f },
+            { "summit", +0.2f },
+            { "temple", +1.6f },
+            { "temple_dream", -0.7f },
+            { "title", +1.5f },
+            { "town", +0.4f },
+            { "town_dream", -1.5f },
+        };
+
+        static float Trim(AudioSource s) => s.clip && TrimDb.TryGetValue(s.clip.name, out var db) ? Mathf.Pow(10f, db / 20f) : 1f;
+
         static void Ensure()
         {
             if (I) return;
@@ -76,12 +98,14 @@ namespace Wakefire
             float amt = Dream.I ? Dream.I.Amount : 0;
             bool hasDream = dream.clip && dream.isPlaying;
             float duck = DialogueBox.I && DialogueBox.I.Busy ? 0.8f : 1f;
-            wake.volume = Volume * fadeIn * duck * (hasDream ? 1 - amt : 1);
-            dream.volume = Volume * fadeIn * duck * amt;
+            // equal-power crossfade between the worlds, so there's no dip halfway through nodding off
+            float wg = Mathf.Cos(amt * Mathf.PI * 0.5f), dg = Mathf.Sin(amt * Mathf.PI * 0.5f);
+            wake.volume = Volume * Trim(wake) * fadeIn * duck * (hasDream ? wg : 1);
+            dream.volume = Volume * Trim(dream) * fadeIn * duck * dg;
             if (hasDream && wake.isPlaying && Mathf.Abs(dream.timeSamples - wake.timeSamples) > 2048 && dream.clip.samples == wake.clip.samples)
                 dream.timeSamples = wake.timeSamples;
-            oldWake.volume = Volume * fadeOut * (1 - amt);
-            oldDream.volume = Volume * fadeOut * amt;
+            oldWake.volume = Volume * Trim(oldWake) * fadeOut * (oldDream.clip ? wg : 1);
+            oldDream.volume = Volume * Trim(oldDream) * fadeOut * dg;
             if (fadeOut <= 0) { if (oldWake.isPlaying) oldWake.Stop(); if (oldDream.isPlaying) oldDream.Stop(); }
             ambIn = Mathf.MoveTowards(ambIn, 1, dt / 1.5f);
             ambOut = Mathf.MoveTowards(ambOut, 0, dt / 1.2f);
