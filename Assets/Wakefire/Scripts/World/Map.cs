@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Wakefire
 {
-    [Serializable] public class MapJson { public string name, music; public int w, h; public string ground; public PropJson[] objects; public BoxJson[] boxes; public LightJson[] lights; public MarkerJson[] markers; }
+    [Serializable] public class MapJson { public string name, music; public int w, h; public string ground; public PropJson[] objects; public BoxJson[] boxes; public LightJson[] lights; public MarkerJson[] markers; public string[] surface; public int cell; }
     [Serializable] public class PropJson { public string s; public int x, y, px, py, w, h, layer; public string[] frames; public bool solid; public int bx0, by0, bx1, by1; public string kind, id, text, who; }
     [Serializable] public class BoxJson { public int x0, y0, x1, y1, layer; public string kind; }
     [Serializable] public class LightJson { public int x, y; public float r; public float[] c; public float i; public bool f; public string tag; }
@@ -24,6 +24,17 @@ namespace Wakefire
         static Mesh quad;
 
         public static Vector2 ToWorld(float px, float py) => new Vector2(px / 16f, -py / 16f);
+
+        /// <summary>What the ground is made of at a world point: g grass, s sand or earth, w wood,
+        /// a water, c stone.</summary>
+        public char Surface(Vector2 world)
+        {
+            if (data.surface == null || data.surface.Length == 0 || data.cell <= 0) return 'c';
+            int cx = Mathf.FloorToInt(world.x * 16f / data.cell), cy = Mathf.FloorToInt(-world.y * 16f / data.cell);
+            if (cy < 0 || cy >= data.surface.Length) return 'c';
+            var row = data.surface[cy];
+            return cx < 0 || cx >= row.Length ? 'c' : row[cx];
+        }
         public static int Order(float worldY) => Mathf.RoundToInt(-worldY * 16f);
 
         public static Material SpriteMat

@@ -114,4 +114,27 @@ if __name__ == '__main__':
     for i in range(2):
         st = S.mix(S.lp(S.noise(0.08), 900 + i * 300) * S.env(0.08, 0.002, 0.02), S.bp(S.noise(0.05), 2000, 5000) * S.env(0.05, 0.001, 0.01) * 0.3)
         S.save(f'step{i}', st, 0.35)
+    # footsteps on other ground: grass, sand, planks, and moonlight in the dream
+    import numpy as np
+    r = np.random.default_rng(71)
+    for i in range(2):
+        n = S.noise(0.12)
+        crackle = n * (r.random(len(n)) > 0.82)
+        grass = S.mix(S.bp(crackle, 1800 + i * 500, 7000) * S.env(0.12, 0.006, 0.035) * 1.3,
+                      S.lp(S.noise(0.06), 260) * S.env(0.06, 0.003, 0.015) * 0.5)
+        S.save(f'step_grass{i}', grass, 0.3)
+        n = S.noise(0.13)
+        grains = n * (r.random(len(n)) > 0.6)
+        sand = S.mix(S.bp(grains, 900 + i * 300, 5200) * S.env(0.13, 0.01, 0.045) * 1.2,
+                     S.lp(S.noise(0.07), 400) * S.env(0.07, 0.004, 0.02) * 0.6)
+        S.save(f'step_sand{i}', sand, 0.32)
+        t = S.t_(0.16)
+        knock = (np.sin(2 * np.pi * (150 + i * 18) * t) * np.exp(-t / 0.045) + 0.45 * np.sin(2 * np.pi * (330 + i * 30) * t) * np.exp(-t / 0.03))
+        wood = S.mix(knock * np.minimum(1, t / 0.002), S.hp(S.noise(0.01), 2500) * S.env(0.01, 0.0005, 0.003) * 0.4)
+        S.save(f'step_wood{i}', wood, 0.36)
+        t = S.t_(0.3)
+        f = 1320 * (1.0 if i == 0 else 1.12)
+        moon = (np.sin(2 * np.pi * f * t) + 0.5 * np.sin(2 * np.pi * f * 1.5 * t)) * np.exp(-t / 0.09) * np.minimum(1, t / 0.004)
+        moon = S.mix(moon, S.bp(S.noise(0.08), 3000, 9000) * S.env(0.08, 0.004, 0.02) * 0.2)
+        S.save(f'step_moon{i}', S.room(moon, 0.3, 0.6), 0.22)
     print('ambience done')

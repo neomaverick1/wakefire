@@ -174,7 +174,7 @@ namespace Wakefire
                 anim.Play("run", facing);
                 anim.SetFacing(facing);
                 idleClock = 0;
-                if (anim.Frame == 2 || anim.Frame == 6) { if (stepPuff) { Fx.Dust(pos, 1); Sfx.Play(anim.Frame == 2 ? "step0" : "step1", 0.32f, 0.08f); stepPuff = false; } }
+                if (anim.Frame == 2 || anim.Frame == 6) { if (stepPuff) { Fx.Dust(pos, 1); Sfx.Play(StepSound(anim.Frame == 2 ? 0 : 1), 0.32f, 0.08f); stepPuff = false; } }
                 else stepPuff = true;
             }
             else
@@ -395,6 +395,15 @@ namespace Wakefire
                 Interacted?.Invoke(b);
             }
             else Sfx.Play("lantern");
+        }
+
+        /// <summary>Sandals on grass, sand, planks, stone; in the dream, over water, on moonlight.</summary>
+        string StepSound(int i)
+        {
+            var m = Map.Current;
+            char c = m ? m.Surface(pos) : 'c';
+            if (c == 'a') c = Dream.I && Dream.I.IsDreamAt(pos) ? 'm' : 'c';
+            return c switch { 'g' => "step_grass" + i, 's' => "step_sand" + i, 'w' => "step_wood" + i, 'm' => "step_moon" + i, _ => "step" + i };
         }
 
         void TryInteract()
