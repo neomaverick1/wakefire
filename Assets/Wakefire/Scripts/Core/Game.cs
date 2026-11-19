@@ -84,6 +84,7 @@ namespace Wakefire
         public void Begin(bool resume)
         {
             var d = resume ? Save.Read() : null;
+            Story.Abort();
             Story.ResetAll();
             if (d != null)
             {
@@ -92,8 +93,12 @@ namespace Wakefire
                 Save.PlayTime = d.playTime;
             }
             var p = EnterMap(d != null ? d.map : "ashkel", d != null ? d.spawn : null);
-            if (d != null) { p.coins = d.coins; p.keys = d.keys; p.health.max = Mathf.Max(6, d.maxHp); p.health.hp = p.health.max; }
+            if (d != null) { p.coins = d.coins; p.keys = d.keys; p.health.max = Mathf.Max(6, d.maxHp); }
+            else { p.coins = 0; p.keys = 0; Save.PlayTime = 0; }          // a new game starts with empty pockets
             Story.I.ApplyItems();
+            p.health.hp = p.health.max;
+            p.SetState(Player.State.Free, "idle");
+            if (Dream.I.Dreaming) Dream.I.SetInstant(false);
             if (d == null) Story.Run(Story.I.Intro());
         }
     }

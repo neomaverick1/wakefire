@@ -57,6 +57,16 @@ namespace Wakefire
             return img;
         }
 
+        /// <summary>Close the box at once, mid-sentence if need be.</summary>
+        public static void Reset()
+        {
+            if (!I) return;
+            I.StopAllCoroutines();
+            I.options = null;
+            I.boxImg.enabled = I.tabImg.enabled = false;
+            I.Busy = false;
+        }
+
         /// <summary>Show text and wait until the player has read every box.</summary>
         public static IEnumerator Say(string speaker, string text, string voice = "narrator", bool dreamVoice = false)
         {
