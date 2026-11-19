@@ -7,9 +7,10 @@ using UnityEngine;
 
 namespace Wakefire
 {
-    public abstract class Enemy : MonoBehaviour, IHittable
+    public abstract class Enemy : MonoBehaviour, IHittable, IHitBox
     {
         public static readonly List<Enemy> All = new List<Enemy>();
+        public virtual Rect HitBox => new Rect(pos.x - half.x - 0.1f, pos.y - half.y, half.x * 2 + 0.2f, half.y * 2 + 0.8f + (flying ? hover : 0));
 
         public Vector2 pos, home;
         public Facing facing = Facing.Down;

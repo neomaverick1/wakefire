@@ -308,18 +308,28 @@ namespace Wakefire
 
         IEnumerator BullRises(Map m)
         {
+            // the whole scene the first time; after a defeat, straight back to the fight
+            bool again = Has("bull_seen");
+            Set("bull_seen");
             Music.Stop();
-            yield return CamTo(god.pos + new Vector2(0, -1.5f), 1.6f);
-            yield return Narrate("The summit. Ninhal, god of the sky, asleep on his own altar steps, snoring like distant thunder.^Beside him, High Priest Ebrum, asleep and smiling.");
-            yield return Say("Ebrum", "Quiet...| finally quiet...| don't let anyone...| wake him...", "priest");
+            if (!again)
+            {
+                yield return CamTo(god.pos + new Vector2(0, -1.5f), 1.6f);
+                yield return Narrate("The summit. Ninhal, god of the sky, asleep on his own altar steps, snoring like distant thunder.^Beside him, High Priest Ebrum, asleep and smiling.");
+                yield return Say("Ebrum", "Quiet...| finally quiet...| don't let anyone...| wake him...", "priest");
+            }
             Sfx.Play("bull_roar");
             PixelView.I.Shake(3, 1.0f);
             var bm = m.Marker("boss");
             var bull = BrazenBull.Spawn(Map.ToWorld(bm.x, bm.y));
-            yield return CamTo(bull.pos + new Vector2(0, 1f), 0.8f);
-            yield return Wait(0.6f);
-            yield return Narrate("Bronze groans. Something in the priest's dream has been sitting on his chest for forty nights.^Now it stands up.");
-            yield return CamBack(0.7f);
+            if (!again)
+            {
+                yield return CamTo(bull.pos + new Vector2(0, 1f), 0.8f);
+                yield return Wait(0.6f);
+                yield return Narrate("Bronze groans. Something in the priest's dream has been sitting on his chest for forty nights.^Now it stands up.");
+                yield return CamBack(0.7f);
+            }
+            else yield return Wait(0.9f);
             Music.Play("boss");
             bull.Defeated = () => Run(Ending());
             bull.Begin();

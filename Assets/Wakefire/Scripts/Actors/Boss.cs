@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Wakefire
 {
-    public class BrazenBull : MonoBehaviour, IHittable
+    public class BrazenBull : MonoBehaviour, IHittable, IHitBox
     {
         public static BrazenBull I;
         enum S { Wait, Idle, Aim, Charge, Stun, Shoot, Dying }
@@ -22,10 +22,18 @@ namespace Wakefire
         float clock, flash;
         Vector2 dir;
         int charges;
+        bool fired;
+        int stunDamage;        // the blade gets one good combo per stagger, then the bull shakes it off
+        float grace;           // a moment after a stagger when touching the bull doesn't hurt yet
         LightBlob glow;
         readonly Vector2 half = new Vector2(1.45f, 0.5f);
         public System.Action Defeated;
         public bool Enraged => health.hp <= health.max / 2;
+        public bool Stunned => s == S.Stun;
+        public bool Charging => s == S.Charge || s == S.Aim;
+        public bool Fighting => s != S.Wait && s != S.Dying;
+        public string StateName => s.ToString();
+        public Rect HitBox => new Rect(pos.x - half.x, pos.y - half.y, half.x * 2, half.y * 2 + 2.6f);
 
         public static BrazenBull Spawn(Vector2 at)
         {
@@ -63,12 +71,26 @@ namespace Wakefire
                 Fx.Sparks(pos + new Vector2(0, 2.0f), new Color(1f, 0.85f, 0.5f), 6);
                 return true;
             }
+            bool wasEnraged = Enraged;
             if (!health.Take(h)) return false;
+            if (!health.Dead)
+            {
+                if (Enraged && !wasEnraged)
+                    for (int i = 0; i < 2; i++) Pickup.Drop(Pickup.Kind.Flame, pos + new Vector2(i == 0 ? -2.2f : 2.2f, -0.6f));
+                else if (Random.value < 0.25f)
+                    Pickup.Drop(Pickup.Kind.Flame, pos + new Vector2(Random.value < 0.5f ? -2.2f : 2.2f, -0.6f));
+            }
             flash = 0.2f;
-            health.invulnerable = 0.2f;
+            // a whole fan of returned fire lands as one blow
+            health.invulnerable = h.kind == HitKind.Reflected ? 0.8f : 0.2f;
             Sfx.Play(h.kind == HitKind.Reflected ? "boss_burn" : "boss_hit");
             PixelView.I.Shake(h.kind == HitKind.Reflected ? 3 : 1, 0.2f);
-            if (h.kind == HitKind.Reflected && s != S.Stun) { s = S.Stun; clock = 0.6f; anim.Play("hurt", facing, true); }
+            if (h.kind == HitKind.Reflected && s != S.Stun) { s = S.Stun; clock = 0.6f; stunDamage = 0; anim.Play("hurt", facing, true); }
+            else if (s == S.Stun && h.kind != HitKind.Reflected)
+            {
+                stunDamage += h.damage;
+                if (stunDamage >= 4 && !health.Dead) ShakeOff();
+            }
             if (health.Dead) StartCoroutine(Die());
             return true;
         }
@@ -80,12 +102,13 @@ namespace Wakefire
             clock += dt;
             var p = Player.I;
             if (flash > 0) flash -= dt;
+            if (grace > 0) grace -= dt;
             mat.SetFloat("_Flash", flash > 0 ? 0.9f : 0);
             if (p && s != S.Wait && s != S.Dying && !(Story.I && Story.I.Running)) Think(dt, p);
             anim.Tick(dt);
             // touching the bull hurts, a charging bull hurts a lot
-            if (p && s != S.Wait && s != S.Dying && s != S.Stun && Mathf.Abs(p.pos.x - pos.x) < half.x + 0.3f && Mathf.Abs(p.pos.y - pos.y) < half.y + 0.35f)
-                p.Hurt(new HitInfo { damage = s == S.Charge ? 3 : 2, from = pos, knockback = 9f, kind = HitKind.Crush, source = gameObject });
+            if (p && s != S.Wait && s != S.Dying && s != S.Stun && grace <= 0 && Mathf.Abs(p.pos.x - pos.x) < half.x + 0.3f && Mathf.Abs(p.pos.y - pos.y) < half.y + 0.35f)
+                p.Hurt(new HitInfo { damage = s == S.Charge ? (Enraged ? 3 : 2) : 1, from = pos, knockback = 9f, kind = HitKind.Crush, source = gameObject });
             Place();
         }
 
@@ -103,7 +126,7 @@ namespace Wakefire
                     if (clock > (Enraged ? 0.7f : 1.3f))
                     {
                         clock = 0;
-                        if (Random.value < (Enraged ? 0.45f : 0.38f)) { s = S.Shoot; anim.Play("shoot", facing, true); }
+                        if (Random.value < (Enraged ? 0.45f : 0.38f)) { s = S.Shoot; fired = false; anim.Play("shoot", facing, true); }
                         else { s = S.Aim; anim.Play("idle", facing, true); Sfx.Play("bull_snort"); }
                     }
                     break;
@@ -132,17 +155,17 @@ namespace Wakefire
                         PixelView.I.Shake(pillar ? 4 : 2, 0.35f);
                         Sfx.Play("bull_crash");
                         charges++;
-                        if (pillar || charges % 3 == 0) { s = S.Stun; clock = 0; anim.Play("stun", facing, true); Sfx.Play("bull_daze"); }
+                        if (pillar || charges % 3 == 0) { s = S.Stun; clock = 0; stunDamage = 0; anim.Play("stun", facing, true); Sfx.Play("bull_daze"); }
                         else { s = S.Idle; clock = Enraged ? 0.3f : 0; }
                     }
                     break;
                 }
                 case S.Stun:
                     if (((int)(clock * 8)) % 4 == 0) Fx.Sparks(pos + new Vector2(0, 3.2f), new Color(1f, 0.9f, 0.5f), 1);
-                    if (clock > 2.6f) { s = S.Idle; clock = 0; }
+                    if (clock > 2.6f) { s = S.Idle; clock = 0; grace = 0.5f; }
                     break;
                 case S.Shoot:
-                    if (anim.Frame == 2 && clock < 10f)
+                    if (!fired && (anim.Frame >= 2 || clock > 0.5f))
                     {
                         int n = Enraged ? 5 : 3;
                         var mouth = pos + FaceVec(facing) * 2.0f + new Vector2(0, 0.3f);
@@ -153,11 +176,23 @@ namespace Wakefire
                             var v = (Vector2)(Quaternion.Euler(0, 0, a) * aim) * 5.2f;
                             Projectile.Fireball(mouth, v, gameObject);
                         }
-                        clock = 10f;   // fire once per breath
+                        fired = true;   // fire once per breath
                     }
-                    if (anim.Done) { s = S.Idle; clock = 0; }
+                    // back to the hunt when the breath is spent (and never stand there forever)
+                    if ((fired && anim.Done) || clock > 1.8f) { s = S.Idle; clock = 0; }
                     break;
             }
+        }
+
+        void ShakeOff()
+        {
+            s = S.Idle;
+            clock = Enraged ? 0.2f : 0f;
+            grace = 0.7f;
+            anim.Play("idle", facing, true);
+            Sfx.Play("bull_snort");
+            PixelView.I.Shake(2, 0.25f);
+            Fx.Dust(pos, 6);
         }
 
         bool HitPillar()
