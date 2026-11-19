@@ -22,6 +22,13 @@ def main():
     piece("key", 7, 10, lambda cv: hud.key_icon(cv, 1, 1))
     piece("life_full", 11, 12, lambda cv: hud.lamp(cv, 1, 1, True))
     piece("life_empty", 11, 12, lambda cv: hud.lamp(cv, 1, 1, False))
+    def half(cv):
+        full, empty = Canvas(11, 12), Canvas(11, 12)
+        hud.lamp(full, 1, 1, True); hud.lamp(empty, 1, 1, False)
+        for y in range(12):
+            for x in range(11):
+                cv.px(x, y, (full if x <= 5 else empty).get(x, y))
+    piece("life_half", 11, 12, half)
     piece("life_label", 64, 10, lambda cv: hud.text(cv, 1, 1, "-- LIFE --"))
     for d in "0123456789":
         piece(f"digit_{d}", 7, 9, lambda cv, d=d: hud.text(cv, 1, 1, d))

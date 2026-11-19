@@ -32,3 +32,6 @@ crashlytics-build.properties
 
 # big tool inputs that are downloaded, not authored
 Art/audio/*.sf2
+
+__pycache__/
+*.pyc

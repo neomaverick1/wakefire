@@ -21,6 +21,9 @@ namespace Wakefire
         public Camera world, light, ui;
         public RenderTexture worldRT, lightRT, uiRT;
         public int width;
+        /// <summary>Notch and corner insets in render pixels: x = left, y = bottom, width = right, height = top.</summary>
+        public RectInt safe;
+        Rect lastSafe;
         public Canvas pixelCanvas;               // HUD and dialogue, in render pixels
         public RectTransform pixelRoot;
         public Canvas display;
@@ -166,6 +169,15 @@ namespace Wakefire
             composite.SetTexture("_LightTex", lightRT);
             uiImage.texture = uiRT;
             uiImage.uvRect = new Rect(0, 0, 1, 1);
+            Insets();
+        }
+
+        void Insets()
+        {
+            var sa = lastSafe = Screen.safeArea;
+            float kx = width / (float)Mathf.Max(1, Screen.width), ky = Height / (float)Mathf.Max(1, Screen.height);
+            safe = new RectInt(Mathf.CeilToInt(sa.xMin * kx), Mathf.CeilToInt(sa.yMin * ky),
+                               Mathf.CeilToInt((Screen.width - sa.xMax) * kx), Mathf.CeilToInt((Screen.height - sa.yMax) * ky));
         }
 
         public void Shake(float pixels, float seconds)
@@ -180,6 +192,7 @@ namespace Wakefire
         void LateUpdate()
         {
             if (Screen.width != lastW || Screen.height != lastH) Resize();
+            else if (Screen.safeArea != lastSafe) Insets();
             light.backgroundColor = ambient;
             composite.SetFloat("_Strength", nightStrength);
             if (target)
