@@ -369,7 +369,8 @@ namespace Wakefire
                 if (h is IHittable hit && h is Component c && c.gameObject != gameObject)
                 {
                     Vector2 hp = c.transform.position;
-                    if (r.Contains(hp) || r.Contains(hp + new Vector2(0, 0.4f)))
+                    bool inReach = h is IHitBox hb ? hb.HitBox.Overlaps(r) : (r.Contains(hp) || r.Contains(hp + new Vector2(0, 0.4f)));
+                    if (inReach)
                     {
                         if (hit.Hit(new HitInfo { damage = heavy ? 2 : 1, from = pos, knockback = heavy ? 7f : 4f, kind = heavy ? HitKind.Heavy : HitKind.Slash, source = gameObject }))
                             hitAny = true;

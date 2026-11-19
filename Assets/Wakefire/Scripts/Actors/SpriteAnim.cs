@@ -78,6 +78,8 @@ namespace Wakefire
             // the goat
             { "goat:idle", (6f, true) }, { "goat:walk", (9f, true) }, { "stare", (0.5f, true) }, { "eat", (5f, true) }, { "bleat", (6f, false) },
             { "butt", (14f, false) },
+            // creatures and the bull
+            { "crab:attack", (12f, false) }, { "bull:shoot", (8f, false) }, { "bull:charge", (14f, true) }, { "bull:stun", (5f, true) },
         };
 
         public void Play(string name, Facing f, bool restart = false)

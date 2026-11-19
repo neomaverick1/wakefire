@@ -53,7 +53,14 @@ namespace Wakefire
             }
         }
 
-        public static bool Down(InputAction a) => Enabled && a.WasPressedThisFrame();
+        /// <summary>Test runs press a button through here; it counts as pressed for one check.</summary>
+        public static InputAction FakePress;
+
+        public static bool Down(InputAction a)
+        {
+            if (FakePress != null && FakePress == a) { FakePress = null; return true; }
+            return Enabled && a.WasPressedThisFrame();
+        }
         public static bool Held(InputAction a) => Enabled && a.IsPressed();
         public static bool Up(InputAction a) => Enabled && a.WasReleasedThisFrame();
     }

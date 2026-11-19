@@ -23,6 +23,13 @@ namespace Wakefire
         bool Hit(HitInfo h);
     }
 
+    /// <summary>Something with a body worth aiming at: blades connect anywhere on this box, not
+    /// just at its feet (a bull is a lot of bull).</summary>
+    public interface IHitBox
+    {
+        Rect HitBox { get; }
+    }
+
     public class Health : MonoBehaviour
     {
         public int max = 6, hp = 6;
