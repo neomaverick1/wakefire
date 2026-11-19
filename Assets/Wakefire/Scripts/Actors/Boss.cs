@@ -62,6 +62,10 @@ namespace Wakefire
 
         public void Begin() { s = S.Idle; clock = 0; }
 
+        /// <summary>Hold a pose without thinking (for staged pictures).</summary>
+        public void Pose(string a, Facing f) { facing = f; anim.Play(a, f, true); }
+        public Vector2 Mouth => pos + new Vector2(0, -2.0f + 0.3f);
+
         public bool Hit(HitInfo h)
         {
             if (s == S.Wait || s == S.Dying) return false;
