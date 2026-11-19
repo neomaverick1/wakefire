@@ -91,6 +91,13 @@ namespace Wakefire
                         () => One(Narrate("A young man asleep under a window, lyre in hand, mid-serenade.")),
                         () => One(Say("Young Man", "Forty nights I've been singing to her. She's asleep too.| It's the best relationship I've ever had.", "man", true)));
                     break;
+                case "dog":
+                    Pair("dog", at, "dog", "sleep", "idle", "dog",
+                        () => One(Narrate("A dog, asleep by the well, paws twitching. Chasing something.^Probably the goat.")),
+                        () => Bump("dog") == 0
+                            ? One(Say("Dog", "In here, I'm a lion.| Well.| A big dog.| A medium dog.", "dog", true))
+                            : One(Say("Dog", "If you see the goat, tell it I said nothing. I'm a lion. Lions don't talk to goats.", "dog", true)), Facing.Left);
+                    break;
                 case "goat_roof":
                 {
                     var g = Npc.Create("goat_roof", at, "goat", "idle", WorldLayer.Both, Facing.Down, false);

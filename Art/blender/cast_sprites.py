@@ -55,6 +55,7 @@ PLAN = {
     'sentinel': (1.0, {'idle': DLU, 'walk': DLU, 'hurt': DLU}),
     'bull': (1.0, {'idle': DLU, 'walk': DLU, 'charge': DLU, 'stun': DLU, 'shoot': DLU, 'hurt': DLU, 'death': D}),
     'god': (2.9, {'lie': D}),
+    'dog': (1.0, {'sleep': DL, 'idle': DL, 'walk': DL}),
 }
 SIZE = {'bull': 112, 'god': 144}
 OVERRIDE = {
@@ -65,6 +66,7 @@ OVERRIDE = {
     'bull': {'idle': [0, 10, 20, 30], 'walk': [0, 3, 6, 9, 12, 15, 18, 21], 'charge': [0, 2, 3, 5, 6, 8, 9, 11], 'stun': [0, 20],
              'shoot': [0, 6, 10, 14], 'hurt': [2], 'death': [0, 8, 16, 28, 40]},
     'god': {'lie': [0, 30], 'sleep': [0, 30]},
+    'dog': {'sleep': [0, 30], 'idle': [0, 10, 20, 30], 'walk': [0, 5, 10, 15]},
 }
 BUILD = {
     'goat': (goat.build, 10.0),
@@ -72,6 +74,7 @@ BUILD = {
     'jackal': (enemies.build_jackal, 10.0),
     'moth': (enemies.build_moth, 12.0),
     'bull': (enemies.build_bull, 20.0),
+    'dog': (enemies.build_dog, 8.0),
 }
 
 
@@ -92,7 +95,7 @@ def render(name, test=False):
         target = (0, 0, 15.0)
     meshes = list(obs.values())
     size = SIZE.get(name, 48)
-    ppm = {'bull': 2.1, 'jackal': 1.3, 'crab': 1.25}.get(name, 1.0)
+    ppm = {'bull': 2.1, 'jackal': 1.3, 'crab': 1.25, 'dog': 1.3}.get(name, 1.0)
     rig = sprites.SpriteRig(ao, meshes, size=size, target=target, px_per_m=ppm, elev=14.0 if name != 'god' else 30.0, scales={}, dist=60.0 if size <= 48 else 120.0)
     os.makedirs(TMP, exist_ok=True)
     out = {}

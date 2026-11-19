@@ -38,9 +38,12 @@ def build():
         A.tower(cv, 486, ay - 58, 38, 60, seed=12)
         A.torch_bracket(cv, 454, ay - 30, 0)
         A.torch_bracket(cv, 505, ay - 30, 2)
-        for bx in (300, 404, 546, 650):
-            A.banner(cv, bx, ay - 34, 10, 28, frame=bx % 3)
+
     m.prop("wall_temple", wall, 0, 58, size=(W, 120), anchor=(0, 100), pad=0)
+    def banner(cv, ax, ay, fi):
+        A.banner(cv, ax - 5, ay - 35, 10, 28, frame=fi)
+    for bx in (300, 404, 546, 650):
+        m.prop("banner", banner, bx + 5, 59, size=(24, 40), pad=2, frames=4, kind="banner")
     m.solid(0, 0, 457, 58)
     m.solid(503, 0, W, 58)
     def gate_doors(open_):

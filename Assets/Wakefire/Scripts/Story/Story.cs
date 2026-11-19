@@ -25,6 +25,8 @@ namespace Wakefire
             var p = Player.I;
             p.Interacted -= OnPropAny;
             p.Interacted += OnPropAny;
+            p.Fell -= OnFell;
+            p.Fell += OnFell;
             propHandler = null;
             switch (map)
             {
@@ -34,6 +36,14 @@ namespace Wakefire
         }
 
         partial void SetupRegion(string map, Map m);
+
+        void OnFell()
+        {
+            if (Game.I.CurrentMap == "temple_yard" && !Has("item_oil") && Bump("yard_falls") == 0)
+                Run(Narrate("Too far for one nap. The dream gave out halfway and the chasm took you.^Somebody in town must know how to dream for longer."));
+            else if (Game.I.CurrentMap == "cliffs" && Bump("sea_falls") == 0)
+                Run(Narrate("Cold, salty and awake. The road of moonlight is only there while you dream.^Nod off right at the end of the pier, and run."));
+        }
 
         void OnPropAny(Prop pr)
         {
