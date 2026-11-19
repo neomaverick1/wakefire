@@ -273,16 +273,22 @@ namespace Wakefire
         }
 
         float emberClock;
+        float crestPhase = UnityEngine.Random.value * 7f;
+        bool mothsMade;
 
         void Update()
         {
             if (frames != null)
             {
-                frameClock += Time.deltaTime * 9f;
-                sr.sprite = frames[(int)frameClock % frames.Length];
+                float fps = Kind == "banner" ? 2.2f : Kind == "crest" ? 3.0f : 9f;
+                frameClock += Time.deltaTime * fps;
+                int f = (int)frameClock % frames.Length;
+                if (Kind == "crest") { f = (int)(frameClock + crestPhase) % (frames.Length + 3); sr.enabled = f < frames.Length; f = Mathf.Min(f, frames.Length - 1); }
+                sr.sprite = frames[f];
             }
             // live fire throws the odd ember up into the night
             bool fire = (Kind == "brazier" && lit) || Kind == "torch";
+            if (fire && !mothsMade) { mothsMade = true; TorchMoths.Add(this); }
             if (fire && !Game.Paused)
             {
                 emberClock -= Time.deltaTime;

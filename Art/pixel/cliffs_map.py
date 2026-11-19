@@ -115,6 +115,19 @@ def build():
     # the stolen oil, in the cove
     m.prop("chest", lambda cv, ax, ay, fi: cv.blit(Canvas.load('/srv/Wakefire/Assets/Wakefire/Resources/Objects/chest.png'), ax - 8, ay - 15),
            860, 140, box=(-7, -6, 7, 0), size=(24, 24), pad=4, kind="chest", data={"id": "cove_oil", "text": "oil"})
+    # crests of small waves that come and go
+    rng = np.random.default_rng(77)
+    def crest(cv, ax, ay, fi):
+        L = [3, 6, 8, 5][fi]
+        sea = R['sea']
+        for k in range(L):
+            cv.px(ax - L // 2 + k, ay - 1, sea[5] if k in (L // 2, L // 2 - 1) else sea[4])
+    placed = 0
+    while placed < 34:
+        x, y = int(rng.integers(560, W - 8)), int(rng.integers(104, H - 8))
+        if water[y // C, x // C] and not bridge[y // C, x // C] and not (800 <= x and y < 336):
+            m.prop("crest", crest, x, y, size=(16, 6), pad=2, frames=4, kind="crest")
+            placed += 1
     # people and crabs
     m.marker("npc", 604, 476, who="abunur")
     for i, (x, y) in enumerate(((100, 470), (200, 500), (330, 470), (440, 500), (60, 430))):

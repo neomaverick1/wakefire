@@ -129,6 +129,7 @@ namespace Wakefire
                 Player.I.keys++;
                 Set("key");
                 yield return Say(who, "Don't tell the captain.", "child", true);
+                yield return Say(who, "And if you're going up the ziggurat, ask the oracle in the {g}lower town{/} first. Down the road, south.^She knows everything. She says so herself.", "child", true);
                 yield break;
             }
             int n = Bump("dur_child");

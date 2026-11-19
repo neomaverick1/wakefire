@@ -358,3 +358,26 @@ def build_bull():
 GOD = dict(width=1.25, belly=1.0, tunic='#1c2464', tunic_d='#121848', robe=True, trim='#e8b848', skin='#e0ae84', hair='#f0ecf6',
            beard='long', beard_col='#f4f0fa', headwear='horned', head_col='#f2d27a', eyes='closed', sash='#e8b848', stars=True,
            hair_style='long')
+
+
+# ------------------------------------------------------------------ a town dog (the jackal's build, friendlier colours)
+def build_dog():
+    global FUR, FUR_D, FUR_L, MUZ, JEYE
+    saved = (FUR, FUR_D, FUR_L, MUZ, JEYE)
+    FUR, FUR_D, FUR_L, MUZ, JEYE = hexc('#a8683a'), hexc('#6e4024'), hexc('#ecdcc0'), hexc('#2a1c18'), hexc('#2a1c18')
+    wf.reset()
+    ao = wf.armature("Dog", JACKAL_BONES)
+    b = Builder()
+    jackal(b)
+    mo = b.mesh_object("DogBody")
+    wf.bind(mo, ao)
+    A = jackal_anims()
+    a = Anim('sleep', 60, True)     # lying flat, chin on its front paws, flank rising and falling
+    pose = dict(fleg_L=(-86, 0, 0), fleg_R=(-84, 0, 0), fshin_L=(-4, 0, 0), fshin_R=(-6, 0, 0), bleg_L=(-80, 0, 0), bleg_R=(-78, 0, 0),
+                bshin_L=(158, 0, 0), bshin_R=(156, 0, 0), neck=(56, 0, 0), head=(-24, 0, 0), tail=(16, 0, 26))
+    a.key(0, loc={'body': (0, 0, -7.0 / 15)}, body=(0, 0, 0), **pose)
+    a.key(30, loc={'body': (0, 0, -6.7 / 15)}, body=(-1.5, 0, 0), **pose)
+    A.append(a)
+    wf.apply_anims(ao, [_scale(x, 15) for x in A])
+    FUR, FUR_D, FUR_L, MUZ, JEYE = saved
+    return ao, {'body': mo}

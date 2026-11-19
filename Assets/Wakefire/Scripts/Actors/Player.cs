@@ -28,6 +28,7 @@ namespace Wakefire
         Vector2 vel, knock;
         SpriteRenderer shadow;
         public event Action<Prop> Interacted;
+        public event Action Fell;
         public void Notify(Prop p) => Interacted?.Invoke(p);
 
         public static Player Spawn(Vector2 at)
@@ -236,6 +237,7 @@ namespace Wakefire
             Fx.Spawn(pos, Vector2.zero, 0, 0, 0.01f, Color.clear, Color.clear);
             pos = lastSafe;
             Place();
+            Fell?.Invoke();
             health.hp = Mathf.Max(0, health.hp - 1);
             hurtFlash = 1f;
             health.invulnerable = 1f;

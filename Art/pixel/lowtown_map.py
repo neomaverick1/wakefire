@@ -104,6 +104,7 @@ def build():
     m.marker("npc", 522, 330, who="taxman")
     m.marker("npc", 178, 512, who="flourboy")
     m.marker("npc", 700, 170, who="lover")
+    m.marker("npc", 604, 262, who="dog")
     # the dream has its own residents here
     for (x, y, uid) in ((200, 420, "lt_m1"), (720, 400, "lt_m2"), (480, 520, "lt_m3")):
         m.enemy("moth", x, y, uid)

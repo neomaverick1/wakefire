@@ -30,19 +30,43 @@ def sand(cv, x0, y0, w, h, seed=51):
 
 
 def water(cv, x0, y0, w, h, seed=52, deep_from=None):
+    """Open water: depth bands that wander with the swell and blend through an ordered dither,
+    then loose rows of wave marks (a lit crest over a little shadow)."""
     sea = R['sea']
     rng = np.random.default_rng(seed)
+    ph = rng.uniform(0, 6.283, 3)
+    bayer = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) / 16.0
+
+    def depth(x, y):
+        if deep_from is None:
+            return 0.0
+        wob = (math.sin(x * 0.045 + ph[0]) * 0.05 + math.sin(y * 0.06 + ph[1]) * 0.05
+               + math.sin((x + y) * 0.11 + ph[2]) * 0.025)
+        return max(0.0, min(1.0, deep_from(x, y) + wob))
+
+    def level(x, y):
+        d = depth(x, y)
+        base = 3 if d < 0.35 else 2 if d < 0.7 else 1
+        for edge in (0.35, 0.7):
+            z = 0.03
+            if edge - z < d < edge + z:
+                frac = (d - (edge - z)) / (2 * z)
+                shallow = 3 if edge == 0.35 else 2
+                base = shallow - 1 if bayer[y % 4, x % 4] < frac else shallow
+        return base
+
     for y in range(y0, y0 + h):
         for x in range(x0, x0 + w):
-            depth = 0 if deep_from is None else max(0.0, min(1.0, (deep_from(x, y))))
-            base = 3 if depth < 0.35 else 2 if depth < 0.7 else 1
-            cv.px(x, y, sea[base])
-    # crests of small waves
-    for _ in range(int(w * h / 70)):
-        x, y = int(rng.integers(x0, x0 + w - 4)), int(rng.integers(y0, y0 + h))
-        L = int(rng.integers(2, 5))
+            cv.px(x, y, sea[level(x, y)])
+    for _ in range(int(w * h / 230)):
+        x, y = int(rng.integers(x0 + 2, x0 + w - 7)), int(rng.integers(y0 + 1, y0 + h - 2))
+        L = int(rng.integers(3, 6))
+        lv = level(x, y)
+        hi = sea[min(5, lv + 2)]
         for k in range(L):
-            cv.px(x + k, y, sea[4] if k < L - 1 else sea[5])
+            cv.px(x + k, y, hi if 0 < k < L - 1 else sea[min(5, lv + 1)])
+        cv.px(x, y + 1, sea[max(0, lv - 1)])
+        cv.px(x + L - 1, y + 1, sea[max(0, lv - 1)])
 
 
 def shore(cv, is_water, x0, y0, w, h):
