@@ -4,6 +4,7 @@
 // and WAKEFIRE_KEY_PASS when they're set; otherwise the debug key signs it.
 using System;
 using System.IO;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
@@ -71,9 +72,32 @@ namespace Wakefire.EditorTools
             PlayerSettings.Android.keyaliasPass = Environment.GetEnvironmentVariable("WAKEFIRE_KEY_PASS");
         }
 
+        /// <summary>Android 8+ masks icons into circles and squircles: give it the night sky and the
+        /// lantern as separate layers so the launcher can shape them cleanly. Found by reflection
+        /// so this file still compiles on machines without the Android module.</summary>
+        static void AdaptiveIcon()
+        {
+            Type kindType = null;
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+                if ((kindType = asm.GetType("UnityEditor.Android.AndroidPlatformIconKind")) != null) break;
+            if (kindType == null) { Debug.Log("[build] adaptive icon skipped (no Android module)"); return; }
+            var member = (object)kindType.GetProperty("Adaptive", BindingFlags.Public | BindingFlags.Static)?.GetValue(null)
+                         ?? kindType.GetField("Adaptive", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+            if (!(member is PlatformIconKind adaptive)) { Debug.Log("[build] adaptive icon kind not found"); return; }
+            var bg = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Wakefire/Icon/icon_bg_432.png");
+            var fg = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Wakefire/Icon/icon_fg_432.png");
+            if (!bg || !fg) return;
+            var target = UnityEditor.Build.NamedBuildTarget.Android;
+            var icons = PlayerSettings.GetPlatformIcons(target, adaptive);
+            foreach (var ic in icons) ic.SetTextures(bg, fg);
+            PlayerSettings.SetPlatformIcons(target, adaptive, icons);
+            Debug.Log($"[build] adaptive icon set ({icons.Length} sizes)");
+        }
+
         public static void Android()
         {
             Sign();
+            AdaptiveIcon();
             EditorUserBuildSettings.buildAppBundle = false;
             Run(BuildTarget.Android, BuildTargetGroup.Android, "Builds/Android/Wakefire.apk");
         }
@@ -81,6 +105,7 @@ namespace Wakefire.EditorTools
         public static void AndroidBundle()
         {
             Sign();
+            AdaptiveIcon();
             EditorUserBuildSettings.buildAppBundle = true;
             Run(BuildTarget.Android, BuildTargetGroup.Android, "Builds/Android/Wakefire-Play.aab");
             EditorUserBuildSettings.buildAppBundle = false;
