@@ -25,6 +25,8 @@ namespace Wakefire
         public string voice = "man";
         public int orderBias;
         public System.Func<IEnumerator> notice;   // said once, when Azar first comes near
+        public string snore;                       // sleepers breathe loud enough to hear when Azar is close
+        float snoreClock = UnityEngine.Random.Range(1.5f, 8f);
 
         // optional route (sleepwalkers): walk between points, pausing at each
         public Vector2[] route;
@@ -56,6 +58,7 @@ namespace Wakefire
             n.anim.Play(anim, facing, true);
             n.anim.time = UnityEngine.Random.value * 3f;   // sleepers breathe out of step
             n.shadow = MakeShadow(go.transform, layer);
+            if (layer == WorldLayer.Waking) n.snore = sheet == "dog" ? "snore_small" : "snore";
             if (solid) n.solid = Solids.Add(new Rect(at.x - 0.3f, at.y - 0.12f, 0.6f, 0.36f), layer, n);
             All.Add(n);
             n.Place();
@@ -147,6 +150,19 @@ namespace Wakefire
             if (route != null && route.Length > 1 && !talking) Walk(dt);
             anim.Tick(dt);
             Place();
+            if (snore != null && !talking) Snore(dt);
+        }
+
+        void Snore(float dt)
+        {
+            snoreClock -= dt;
+            if (snoreClock > 0) return;
+            snoreClock = UnityEngine.Random.Range(6.5f, 12f);
+            var p = Player.I;
+            if (!p || !Present || (Story.I && Story.I.Running)) return;
+            float d = Vector2.Distance(p.pos, pos);
+            if (d > 7f) return;
+            Sfx.Play(snore, Mathf.Lerp(0.5f, 0.06f, d / 7f), 0.1f);
         }
 
         void Walk(float dt)
