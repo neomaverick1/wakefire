@@ -109,21 +109,22 @@ def temple_yard():
 
 
 # ------------------------------------------------------------------ inside
-def room(m, W, H, wall_h=48, seed=80):
+def room(m, W, H, wall_h=48, seed=80, door=True):
     g = m.ground
     G.tile_floor(g, 0, 0, W, H, seed=seed)
     G.floor_inlays(g, 24, wall_h, W - 48, H - wall_h - 16)
     G.glazed_wall(g, 0, 0, W, wall_h, seed=seed)
     for x in range(0, W):
         g.px(x, wall_h, OUTLINE)
-    # side walls: thick, seen from above
-    for (x0, x1) in ((0, 24), (W - 24, W)):
-        for y in range(wall_h, H):
-            for x in range(x0, x1):
-                g.px(x, y, R['glaze'][1] if (x + y // 4) % 5 else R['glaze'][2])
-        g.vline(x1 - 1 if x0 == 0 else x0, wall_h, H - 1, OUTLINE)
-    g.rect(0, H - 16, W, 16, R['glaze'][1])
-    g.hline(0, W - 1, H - 16, OUTLINE)
+    # the north and west walls throw shade across the floor
+    G.floor_shadow(g, 24, wall_h + 1, W - 48, 6, 'y+')
+    G.floor_shadow(g, 24, wall_h + 1, 5, H - wall_h - 17, 'x+')
+    # thick walls seen from above: capstones, gold coping on the inner edge
+    G.wall_top(g, 0, wall_h, 24, H - wall_h, inner='right', seed=seed + 1)
+    G.wall_top(g, W - 24, wall_h, 24, H - wall_h, inner='left', seed=seed + 2)
+    G.wall_top(g, 24, H - 16, W - 48, 16, inner='up', seed=seed + 3)
+    if door:
+        G.doorway(g, W // 2, H, 40, 16)
     m.solid(0, 0, W, wall_h - 4); m.solid(0, 0, 24, H); m.solid(W - 24, 0, W, H); m.solid(0, H - 14, W // 2 - 20, H); m.solid(W // 2 + 20, H - 14, W, H)
 
 
@@ -216,21 +217,48 @@ def zig_2():
 
 
 def zig_3():
+    """The summit: an open platform at the top of the ziggurat, the sanctuary wall behind the
+    sleeping god, low parapets on three sides and beyond them a long drop into the night, the
+    city a scatter of embers far below."""
     TW, TH = 30, 24
     W, H = TW * 16, TH * 16
     m = MapBuilder("zig_3", TW, TH, R['brick'][2], music="summit")
-    room(m, W, H, wall_h=64, seed=101)
     g = m.ground
-    G.carpet(g, W // 2 - 12, 262, 24, H - 278)
-    # the summit floor, the altar, the god's bed beyond it
-    A.slabs(g, 24, 64, W - 48, 70, R['lime'], 16, 12, seed=102)
+    E, wall_h, P = 40, 64, 12          # drop beyond the edge, sanctuary wall height, parapet thickness
+    G.night_drop(g, 0, 0, W, H, seed=111)
+    # the platform
+    A.slabs(g, E, wall_h, W - 2 * E, H - wall_h - 24, R['lime'], 16, 12, seed=102)
+    G.glazed_wall(g, E, 0, W - 2 * E, wall_h, seed=101)
+    for x in range(E, W - E):
+        g.px(x, wall_h, OUTLINE)
+    G.floor_shadow(g, E + P, wall_h + 1, W - 2 * E - 2 * P, 6, 'y+')
+    G.floor_shadow(g, E + P, wall_h + 1, 4, H - wall_h - 24 - P - 1, 'x+')
+    G.carpet(g, W // 2 - 12, 262, 24, H - 262 - 24)
     A.sigil(g, W // 2, 230, 26)
+    # parapets, crenellated against the sky
+    G.wall_top(g, E, wall_h, P, H - wall_h - 24, inner='right', seed=103, merlons=True)
+    G.wall_top(g, W - E - P, wall_h, P, H - wall_h - 24, inner='left', seed=104, merlons=True)
+    G.wall_top(g, E + P, H - 24 - P, W // 2 - 20 - E - P, P, inner='up', seed=105, merlons=True)
+    G.wall_top(g, W // 2 + 20, H - 24 - P, W // 2 - 20 - E - P, P, inner='up', seed=106, merlons=True)
+    # the stair down through the gap, falling away into the dark
+    lime = R['lime']; gd = R['gold']
+    for k in range(H - 24 - P, H):
+        t = (k - (H - 24 - P)) / (24 + P)
+        c = lime[3] if (k - (H - 24 - P)) % 4 == 0 else lime[2] if t < 0.45 else lime[1] if t < 0.8 else (14, 10, 24, 255)
+        g.hline(W // 2 - 18, W // 2 + 17, k, c)
+    for sx in (W // 2 - 20, W // 2 + 18):
+        g.vline(sx, H - 24 - P, H - 1, gd[3]); g.vline(sx + 1, H - 24 - P, H - 1, gd[4] if sx < W // 2 else gd[2])
+    # nothing walks off the summit
+    m.solid(0, 0, W, wall_h - 4)
+    m.solid(0, 0, E + P - 2, H); m.solid(W - E - P + 2, 0, W, H)
+    m.solid(0, H - 24 - P + 2, W // 2 - 20, H); m.solid(W // 2 + 20, H - 24 - P + 2, W, H)
     m.marker("god", W // 2 - 10, 126)
     m.marker("altar", W // 2 + 64, 132)
     m.marker("boss", W // 2, 212)
-    for (x, y) in ((110, 190), (W - 110, 190), (110, 300), (W - 110, 300)):
+    for (x, y) in ((118, 190), (W - 118, 190), (118, 300), (W - 118, 300)):
         m.prop("pillar", lambda cv, ax, ay, fi: G.pillar(cv, ax, ay), x, y, box=(-7, -5, 7, 0), size=(24, 48), pad=4, kind="pillar")
-    torches(m, ((60, 150), (W - 60, 150), (60, 330), (W - 60, 330)))
+    torches(m, ((72, 150), (W - 72, 150), (72, 318), (W - 72, 318)))
+    m.light(W // 2, 120, 7.0, (0.62, 0.70, 1.0), 0.45, flicker=False)
     m.spawn("south", W // 2, H - 26, "up")
     m.exit(W // 2 - 20, H - 8, W // 2 + 20, H, "zig_2", "top")
     m.save()
