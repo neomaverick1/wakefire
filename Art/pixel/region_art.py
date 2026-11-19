@@ -601,3 +601,97 @@ def cobweb(cv, x, y, flip=False):
         cv.px(xx if not flip else xx, y, c) if k < 8 else None
     for k in range(8):
         cv.px(x - k // 2 if flip else x + k // 2, y + k, c)
+
+
+# ------------------------------------------------------------------ thick walls, doorways, the summit
+def floor_shadow(cv, x0, y0, w, h, fade='x+', strength=110):
+    """A soft shadow cast onto the floor by a wall: solid near the wall, dithered as it fades."""
+    for y in range(y0, y0 + h):
+        for x in range(x0, x0 + w):
+            if fade == 'x+':
+                k = (x - x0) / max(1, w)
+            elif fade == 'x-':
+                k = (x0 + w - 1 - x) / max(1, w)
+            else:
+                k = (y - y0) / max(1, h)
+            if k < 0.45 or (k < 0.85 and (x + y) % 2 == 0):
+                cv.px(x, y, (8, 6, 26, int(strength * (1 - k * 0.6))))
+
+
+def wall_top(cv, x0, y0, w, h, inner='right', seed=70, merlons=False):
+    """The top of a thick glazed-brick wall seen from above: capstones with a lit bevel, a gold
+    coping line along the edge that faces the room, a dark outer lip. merlons=True cuts
+    crenellations into the outer edge (for a parapet open to the sky)."""
+    gl = R['glaze']; gd = R['gold']
+    rng = np.random.default_rng(seed)
+    vertical = inner in ('right', 'left')
+    L = h if vertical else w            # length along the wall
+    T = w if vertical else h            # thickness across it
+    stone = 12
+    for a in range(L):
+        blk = a // stone
+        la = a % stone
+        shade = 3 if (blk * 7 + seed) % 5 else 2
+        for b in range(T):
+            # b = 0 at the outer edge, T-1 at the edge facing the room
+            if vertical:
+                x = x0 + (b if inner == 'right' else T - 1 - b); y = y0 + a
+            else:
+                x = x0 + a; y = y0 + (b if inner == 'down' else T - 1 - b)
+            c = gl[shade]
+            if la == 0:
+                c = gl[min(5, shade + 1)]
+            elif la == stone - 1:
+                c = gl[1]
+            if b <= 1:
+                c = gl[0] if b == 0 else gl[1]
+            elif b == T - 3:
+                c = gd[3]
+            elif b == T - 2:
+                c = gd[4] if la % 4 else gd[3]
+            elif b == T - 1:
+                c = OUTLINE
+            if merlons and b <= 3 and (a // 8) % 2 == 1:
+                c = None                    # gap between merlons: the void shows through
+            if c is not None:
+                cv.px(x, y, c)
+
+
+def doorway(cv, cx, by, w=40, h=16, down=True):
+    """An opening in the front wall with steps going down into the dark, framed in gold."""
+    gd = R['gold']; lime = R['lime']
+    x0 = cx - w // 2
+    for k in range(h):
+        y = by - h + k
+        t = k / max(1, h - 1)
+        c = lime[3] if k % 4 == 0 else lime[2] if t < 0.4 else lime[1] if t < 0.75 else (14, 10, 24, 255)
+        cv.hline(x0 + 2, x0 + w - 3, y, c)
+    for s in (x0, x0 + w - 2):
+        cv.vline(s, by - h, by - 1, gd[3]); cv.vline(s + 1, by - h, by - 1, gd[4] if s == x0 else gd[2])
+
+
+def night_drop(cv, x0, y0, w, h, seed=110):
+    """What you see over the parapet at the top of the ziggurat: a long fall into the night,
+    the sleeping city a scatter of embers far below, wisps of mist drifting between."""
+    rng = np.random.default_rng(seed)
+    top = np.array([12, 16, 40]); bot = np.array([5, 6, 16])
+    for y in range(y0, y0 + h):
+        t = (y - y0) / max(1, h - 1)
+        base = (top * (1 - t) + bot * t).astype(int)
+        for x in range(x0, x0 + w):
+            cv.px(x, y, (*base, 255))
+    # mist bands, dithered
+    for _ in range(int(w * h / 900)):
+        mx, my = int(rng.integers(x0, x0 + w)), int(rng.integers(y0, y0 + h))
+        L = int(rng.integers(10, 30))
+        for k in range(L):
+            if (mx + k + my) % 2 == 0:
+                cv.px(mx + k, my, (34, 40, 74, 255))
+    # the city's lamps and banked fires, far below
+    for _ in range(int(w * h / 260)):
+        lx, ly = int(rng.integers(x0, x0 + w)), int(rng.integers(y0, y0 + h))
+        warm = rng.random()
+        c = (255, 176, 84, 255) if warm > 0.35 else (190, 120, 70, 255)
+        cv.px(lx, ly, c)
+        if warm > 0.9:
+            cv.px(lx + 1, ly, (150, 90, 52, 255))

@@ -21,8 +21,12 @@ namespace Wakefire
             Story.I.ApplyItems();
             Fade.Set(0);
             var p = Player.I;
-            p.health.max = p.health.hp = 400;
             yield return new WaitForSeconds(0.6f);
+            PixelView.I.target = null;
+            PixelView.I.SnapTo(Map.ToWorld(240, 150));
+            yield return t.Shot("b0-summit", 0.8f);
+            PixelView.I.target = p.transform;
+            p.health.max = p.health.hp = 400;
             // walk in until the bull wakes
             float t0 = Time.time;
             while (!BrazenBull.I && Time.time - t0 < 30f)
