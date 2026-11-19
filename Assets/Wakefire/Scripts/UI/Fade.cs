@@ -19,7 +19,7 @@ namespace Wakefire
 
         static Fade Ensure()
         {
-            if (I && I.cv != null && I.cv.W == PixelView.I.width) return I;
+            if (I && I.cv != null && I.cv.W == PixelView.I.width && I.cv.H == PixelView.Height) return I;
             if (!I)
             {
                 var go = new GameObject("Fade", typeof(RectTransform));
