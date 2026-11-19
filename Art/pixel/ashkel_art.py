@@ -279,63 +279,110 @@ def torch_bracket(cv, x, y, frame=0):
 
 
 # ------------------------------------------------------------------ houses
+HOUSE = {
+    'roof': [rgb(h) for h in ('#4a3024', '#7a5438', '#a27650', '#c49a6c', '#dcb886', '#f0d4a2')],
+    'wall': [rgb(h) for h in ('#2c1a16', '#4c2e22', '#6e4630', '#8e6040', '#ac7c54', '#c49668')],
+}
+
+
 def mud_house(cv, x, y, w, roof_d, wall_h, door=True, window=True, seed=6, beams=True, ladder=False):
-    """Flat-roofed mudbrick house in 3/4 view: roof top, parapet lip, plastered front wall."""
-    mud = R['mud']; cd = R['cedar']; st = R['straw']; fr = R['fire']
+    """A flat-roofed mudbrick house in 3/4 view. The roof catches the moon and reads light; the
+    front wall stands in its own shade, coursed brick under a worn plaster coat; cedar beam ends
+    jut out under the parapet and drip stains down the wall; the door is a deep recess."""
+    rf, wl = HOUSE['roof'], HOUSE['wall']
+    cd = R['cedar']; st = R['straw']; fr = R['fire']
     rng = np.random.default_rng(seed)
-    # roof surface: packed earth with straw mats
-    cv.rect(x, y, w, roof_d, mud[3])
-    for k in range(int(w * roof_d / 40)):
-        px_, py_ = x + rng.integers(1, w - 1), y + rng.integers(2, roof_d - 1)
-        cv.px(px_, py_, mud[2]); cv.px(px_ + 1, py_, mud[4] if rng.random() < 0.3 else mud[2])
-    mx, my, mw, mh = x + 4, y + 4, min(18, w - 10), max(6, roof_d - 9)
-    cv.rect(mx, my, mw, mh, st[3])
-    for yy in range(my, my + mh, 2):
-        cv.hline(mx, mx + mw - 1, yy, st[2])
-    cv.hline(mx, mx + mw - 1, my, st[4])
-    # parapet: raised lip on all four sides of the roof
-    cv.rect(x, y, w, 2, mud[5]); cv.rect(x, y, 2, roof_d, mud[4]); cv.rect(x + w - 2, y, 2, roof_d, mud[2])
-    cv.rect(x, y + roof_d - 2, w, 2, mud[4])
-    # front wall
+    # ---- roof: packed earth, a straw mat, a raised parapet round the edge
+    for yy in range(y, y + roof_d):
+        for xx in range(x, x + w):
+            c = rf[3]
+            if (xx * 3 + yy * 7 + seed) % 11 == 0:
+                c = rf[2]
+            elif (xx * 5 + yy * 3 + seed) % 17 == 0:
+                c = rf[4]
+            cv.px(xx, yy, c)
+    mx, my, mw, mh = x + 5, y + 5, min(20, w - 14), max(5, roof_d - 11)
+    for yy in range(my, my + mh):
+        for xx in range(mx, mx + mw):
+            c = st[3] if (xx + (yy // 2)) % 3 else st[2]
+            if yy == my:
+                c = st[4]
+            elif yy == my + mh - 1:
+                c = st[1]
+            cv.px(xx, yy, c)
+    # a jar or two on the roof
+    for k in range(int(rng.integers(0, 3))):
+        jx, jy = x + w - 10 - k * 7, y + 5 + int(rng.integers(0, max(1, roof_d - 12)))
+        cv.rect(jx, jy, 4, 4, wl[3]); cv.px(jx, jy, wl[5]); cv.px(jx + 1, jy, wl[4]); cv.px(jx + 3, jy + 3, wl[1]); cv.hline(jx, jx + 3, jy + 4, rf[1])
+    # parapet: lit outer top edge, its inner face in shadow
+    for xx in range(x, x + w):
+        cv.px(xx, y, rf[5]); cv.px(xx, y + 1, rf[4]); cv.px(xx, y + 2, rf[1])
+        cv.px(xx, y + roof_d - 2, rf[4]); cv.px(xx, y + roof_d - 1, rf[5])
+    for yy in range(y, y + roof_d):
+        cv.px(x, yy, rf[5]); cv.px(x + 1, yy, rf[4]); cv.px(x + 2, yy, rf[2] if yy > y + 2 else rf[4])
+        cv.px(x + w - 1, yy, rf[2]); cv.px(x + w - 2, yy, rf[3])
+    # ---- front wall: brick courses under plaster, lit left corner, shaded right
     wy = y + roof_d
-    cv.rect(x, wy, w, wall_h, mud[3])
-    for k in range(int(w * wall_h / 26)):
-        px_, py_ = x + rng.integers(1, w - 2), wy + rng.integers(2, wall_h - 2)
-        cv.px(px_, py_, mud[2])
-    # plaster patches and bricks showing through
-    for k in range(3):
-        bx, by = x + rng.integers(2, w - 12), wy + rng.integers(4, max(5, wall_h - 8))
-        for r in range(2):
-            for c in range(3):
-                xx, yy = bx + c * 4 + (r % 2) * 2, by + r * 3
-                cv.rect(xx, yy, 3, 2, mud[2]); cv.px(xx, yy, mud[4])
-    cv.hline(x, x + w - 1, wy, mud[1])
-    cv.rect(x, wy + wall_h - 3, w, 3, mud[2])
-    cv.hline(x, x + w - 1, wy + wall_h - 1, mud[1])
+    for yy in range(wy, wy + wall_h):
+        course = (yy - wy) // 4
+        for xx in range(x, x + w):
+            c = wl[3]
+            lx = (xx - x + (course % 2) * 4) % 8
+            exposed = ((xx // 13 + course // 3 + seed) % 5 == 0)
+            if exposed:
+                c = wl[2] if lx == 7 or (yy - wy) % 4 == 3 else wl[3]
+                if lx == 0 and (yy - wy) % 4 == 0:
+                    c = wl[4]
+            elif (xx * 7 + yy * 5 + seed) % 23 == 0:
+                c = wl[2]
+            cv.px(xx, yy, c)
+    for yy in range(wy, wy + wall_h):
+        cv.px(x, yy, wl[5]); cv.px(x + 1, yy, wl[4]); cv.px(x + w - 1, yy, wl[1]); cv.px(x + w - 2, yy, wl[2])
+    # the shadow under the parapet lip, and the plinth
+    for xx in range(x, x + w):
+        cv.px(xx, wy, wl[1]); cv.px(xx, wy + 1, wl[2])
+        for k in range(3):
+            cv.px(xx, wy + wall_h - 1 - k, wl[1] if k == 0 else wl[2])
+    # ---- beam ends with drip stains
     if beams:
-        for bx in range(x + 4, x + w - 3, 9):
-            cv.rect(bx, wy + 2, 3, 3, cd[3]); cv.px(bx, wy + 2, cd[4]); cv.px(bx + 2, wy + 4, cd[1])
+        for bx in range(x + 5, x + w - 5, 9):
+            cv.rect(bx, wy + 2, 3, 3, cd[3]); cv.px(bx, wy + 2, cd[4]); cv.px(bx + 2, wy + 4, cd[1]); cv.px(bx + 1, wy + 3, cd[2])
+            cv.hline(bx, bx + 2, wy + 5, wl[1])
+            for k in range(int(rng.integers(2, 6))):
+                cv.px(bx + 1, wy + 6 + k, wl[2])
+    # ---- the door: a deep recess with a cedar lintel, a striped curtain
     if door:
-        dx = x + w // 2 - 5
-        cv.rect(dx - 1, wy + wall_h - 22, 12, 22, mud[1])
-        cv.rect(dx, wy + wall_h - 21, 10, 21, R['red'][2])
-        for yy in range(wy + wall_h - 21, wy + wall_h):
-            cv.px(dx + 3, yy, R['red'][1]); cv.px(dx + 7, yy, R['red'][1]); cv.px(dx + 1, yy, R['red'][3])
-        cv.hline(dx, dx + 9, wy + wall_h - 21, R['red'][3])
-        cv.rect(dx - 1, wy + wall_h - 23, 12, 2, cd[3])
+        dw, dh = 12, min(22, wall_h - 4)
+        dx = x + w // 2 - dw // 2
+        dy = wy + wall_h - dh
+        cv.rect(dx - 2, dy - 3, dw + 4, 3, cd[3]); cv.hline(dx - 2, dx + dw + 1, dy - 3, cd[4]); cv.hline(dx - 2, dx + dw + 1, dy - 1, cd[1])
+        for yy in range(dy, wy + wall_h):
+            cv.px(dx - 1, yy, wl[5]); cv.px(dx + dw, yy, wl[1])
+            for xx in range(dx, dx + dw):
+                band = (xx - dx) // 3
+                c = R['red'][2] if band % 2 == 0 else R['red'][3]
+                if (yy - dy) % 6 == 5:
+                    c = R['gold'][3] if (xx - dx) % 2 else R['red'][1]
+                if xx == dx or yy == dy:
+                    c = R['red'][0]                                  # the dark of the recess
+                cv.px(xx, yy, c)
+        cv.hline(dx - 1, dx + dw, wy + wall_h - 1, wl[5])           # a lit threshold
+    # ---- windows: small and high, warm inside
     if window:
-        wx = x + 6
-        cv.rect(wx - 1, wy + 9, 9, 8, mud[1])
-        cv.rect(wx, wy + 10, 7, 6, fr[3])
-        cv.rect(wx, wy + 13, 7, 3, fr[2])
-        cv.vline(wx + 3, wy + 10, wy + 15, cd[1]); cv.hline(wx, wx + 6, wy + 12, cd[1])
-        cv.px(wx, wy + 10, fr[4]); cv.px(wx + 1, wy + 10, fr[4])
+        for wx in ([x + 6] if w < 60 else [x + 6, x + w - 14]):
+            if door and abs(wx + 3 - (x + w // 2)) < 12:
+                continue
+            cv.rect(wx - 1, wy + 9, 9, 8, wl[0])
+            cv.rect(wx, wy + 10, 7, 6, fr[3]); cv.rect(wx, wy + 13, 7, 3, fr[2])
+            cv.px(wx, wy + 10, fr[4]); cv.px(wx + 1, wy + 10, fr[4])
+            cv.vline(wx + 3, wy + 10, wy + 15, cd[1]); cv.hline(wx, wx + 6, wy + 12, cd[1])
+            cv.hline(wx - 1, wx + 7, wy + 17, wl[5])                 # sill
     if ladder:
-        lx = x + w - 10
-        for yy in range(y + roof_d - 6, wy + wall_h):
-            cv.px(lx, yy, R['wood'][3]); cv.px(lx + 5, yy, R['wood'][2])
+        lx = x + w - 11
+        for yy in range(y + roof_d - 7, wy + wall_h):
+            cv.px(lx, yy, R['wood'][4]); cv.px(lx + 5, yy, R['wood'][2])
             if (yy - y) % 4 == 0:
-                cv.hline(lx, lx + 5, yy, R['wood'][4])
+                cv.hline(lx, lx + 5, yy, R['wood'][4]); cv.hline(lx + 1, lx + 4, yy + 1, R['wood'][1])
     # outline the whole block
     layer = Canvas(cv.w, cv.h)
     layer.rect(x, y, w, roof_d + wall_h, (1, 1, 1, 255))
