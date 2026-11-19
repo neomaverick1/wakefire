@@ -14,7 +14,8 @@ namespace Wakefire
         readonly List<Image> flames = new List<Image>();
         Image[] coinDigits, keyDigits;
         Sprite[] digits;
-        Sprite flameFull, flameEmpty;
+        Sprite flameFull, flameHalf, flameEmpty;
+        RectInt shownSafe = new RectInt(-1, -1, -1, -1);
         Image item;
         int shownLife = -1, shownMax = -1, shownCoins = -1, shownKeys = -1;
 
@@ -60,6 +61,7 @@ namespace Wakefire
             for (int i = 0; i < 10; i++) digits[i] = UISprite("digit_" + i);
             flameFull = UISprite("life_full");
             flameEmpty = UISprite("life_empty");
+            flameHalf = UISprite("life_half");
             Pixel(root, UISprite("meter"), 7, 5, "meter");
             var fillGo = new GameObject("fill", typeof(RectTransform));
             fillGo.layer = PixelView.PixelUILayer;
@@ -86,7 +88,7 @@ namespace Wakefire
             var label = transform.Find("life_label");
             if (label) Destroy(label.gameObject);
             int n = max / 2;
-            float W = PixelView.I.width;
+            float W = PixelView.I.width - PixelView.I.safe.x - PixelView.I.safe.width;
             float x0 = W - 10 - 12 * n;
             Pixel(root, UISprite("life_label"), x0 - 6, 3, "life_label");
             for (int i = 0; i < n; i++) flames.Add(Pixel(root, flameFull, x0 + i * 12, 13, "flame"));
@@ -97,15 +99,20 @@ namespace Wakefire
             var p = Player.I;
             if (!p) return;
             var h = p.health;
+            // keep clear of notches and rounded corners
+            var sa = PixelView.I.safe;
+            if (!sa.Equals(shownSafe))
+            {
+                shownSafe = sa;
+                root.offsetMin = new Vector2(sa.x, 0);
+                root.offsetMax = new Vector2(-sa.width, -sa.height);
+                shownMax = -1;
+            }
             if (h.max != shownMax) { Layout(h.max); shownMax = h.max; shownLife = -1; }
             if (h.hp != shownLife)
             {
                 for (int i = 0; i < flames.Count; i++)
-                {
-                    bool full = h.hp >= (i + 1) * 2 || h.hp == i * 2 + 1;
-                    flames[i].sprite = full ? flameFull : flameEmpty;
-                    flames[i].color = h.hp == i * 2 + 1 ? new Color(1, 1, 1, 1) : Color.white;
-                }
+                    flames[i].sprite = h.hp >= (i + 1) * 2 ? flameFull : h.hp == i * 2 + 1 ? flameHalf : flameEmpty;
                 shownLife = h.hp;
             }
             if (p.coins != shownCoins)
