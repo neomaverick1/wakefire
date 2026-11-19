@@ -3,42 +3,87 @@ wall and gate, mudbrick houses with cedar beam ends, olive and cypress trees, bu
 braziers, a well and a market stall. Light comes from the upper left; outlines are near-black."""
 import math
 import numpy as np
-from px import Canvas, R, OUTLINE, blob, pick, BAYER, rgb
+from px import Canvas, R, OUTLINE, blob, pick, BAYER, rgb, clusters
 
 SHADOW = (14, 24, 38, 120)
 
 
 # ------------------------------------------------------------------ ground
+def vnoise(w, h, scale, seed):
+    """Smooth value noise, 0..1, w x h."""
+    gw, gh = w // scale + 3, h // scale + 3
+    r = np.random.default_rng(seed).random((gh, gw))
+    ys, xs = np.arange(h) / scale, np.arange(w) / scale
+    yi, xi = ys.astype(int), xs.astype(int)
+    fy, fx = ys - yi, xs - xi
+    fy, fx = fy * fy * (3 - 2 * fy), fx * fx * (3 - 2 * fx)
+    a_, b_ = r[yi][:, xi], r[yi][:, xi + 1]
+    c_, d_ = r[yi + 1][:, xi], r[yi + 1][:, xi + 1]
+    return (a_ * (1 - fx) + b_ * fx) * (1 - fy)[:, None] + (c_ * (1 - fx) + d_ * fx) * fy[:, None]
+
+
+TUFTS = [
+    [".L..L", "Ld.Ld", "d.dd."],
+    ["..L..", ".LdL.", "dd.dd"],
+    ["L...L", "dL.Ld", ".d.d."],
+    [".L.", "LdL", "d.d"],
+]
+TALL = [
+    ["..L.L..", ".LdLdL.", "LddLddL", ".dd.dd.", "dd...dd"],
+    [".L..L.", "LdLLdL", "ddLddd", "dd.d.d"],
+]
+
+
 def grass(cv, x0, y0, w, h, seed=1, dense=1.0, flowers=0.0):
+    """Lush night grass: broad patches of three greens with a crisp dithered seam, a regular
+    scatter of blade tufts with lit tips, taller clumps, and flower patches here and there."""
     g = R['grass']
     rng = np.random.default_rng(seed)
-    cv.rect(x0, y0, w, h, g[3])
-    # soft darker patches so the field isn't flat
-    for _ in range(int(w * h / 2400)):
-        cx, cy = rng.uniform(x0, x0 + w), rng.uniform(y0, y0 + h)
-        rx, ry = rng.uniform(6, 14), rng.uniform(4, 8)
-        for y in range(int(cy - ry), int(cy + ry)):
-            for x in range(int(cx - rx), int(cx + rx)):
-                if x0 <= x < x0 + w and y0 <= y < y0 + h:
-                    d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
-                    if d < 1 and (d < 0.6 or BAYER[y & 3, x & 3] > d):
-                        cv.px(x, y, g[2])
-    # tufts: little dark "v"s with a lit tip, on a jittered grid
-    step = int(14 / max(0.3, dense))
-    for gy in range(y0, y0 + h, step):
-        for gx in range(x0, x0 + w, step):
-            if rng.random() < 0.55:
-                x = gx + rng.integers(0, step - 3)
-                y = gy + rng.integers(0, step - 3)
-                if x + 4 >= x0 + w or y + 3 >= y0 + h:
+    x0, y0, w, h = int(x0), int(y0), int(w), int(h)
+    n = vnoise(w, h, 36, seed) * 0.6 + vnoise(w, h, 11, seed + 7) * 0.4
+    YY, XX = np.mgrid[y0:y0 + h, x0:x0 + w]
+    v = n + (BAYER[YY & 3, XX & 3] - 0.5) * 0.07
+    tone = np.where(v < 0.37, 2, np.where(v > 0.69, 4, 3))
+    # the patches differ by half a step only: the field stays one green, the tufts carry it
+    mix = lambda p, q: tuple((np.array(p[:3]) * 0.5 + np.array(q[:3]) * 0.5).astype(int)) + (255,)
+    cols = np.array([g[0], g[1], mix(g[2], g[3]), g[3], mix(g[3], g[4]), g[5]], np.uint8)
+    cv.a[y0:y0 + h, x0:x0 + w] = cols[tone]
+
+    def stamp(rows, x, y, t):
+        for j, row in enumerate(rows):
+            for i, ch in enumerate(row):
+                if ch == '.':
                     continue
-                cv.px(x, y + 1, g[1]); cv.px(x + 1, y + 2, g[1]); cv.px(x + 2, y + 1, g[1])
-                cv.px(x + 3, y + 2, g[1]); cv.px(x + 4, y + 1, g[1])
-                cv.px(x, y, g[4]); cv.px(x + 4, y, g[4]); cv.px(x + 2, y, g[5])
-    for _ in range(int(w * h * flowers / 256)):
-        x = int(rng.integers(x0 + 1, x0 + w - 2)); y = int(rng.integers(y0 + 1, y0 + h - 2))
-        fr = R['flower_w'] if rng.random() < 0.6 else R['flower_y']
-        cv.px(x, y, fr[2]); cv.px(x + 1, y, fr[1]); cv.px(x, y + 1, fr[1]); cv.px(x + 1, y + 1, g[1])
+                xx, yy = x + i, y + j
+                if x0 <= xx < x0 + w and y0 <= yy < y0 + h:
+                    cv.px(xx, yy, g[max(0, t - 2)] if ch == 'd' else g[min(5, t + 1)])
+    # tufts on a jittered grid, so the field has the even rhythm of a hand-tiled lawn
+    step = max(6, int(9 / max(0.3, dense)))
+    for gy in range(y0, y0 + h - 4, step):
+        for gx in range(x0 + ((gy // step) % 2) * (step // 2), x0 + w - 6, step):
+            if rng.random() < 0.72:
+                x = gx + int(rng.integers(0, max(1, step - 5)))
+                y = gy + int(rng.integers(0, max(1, step - 3)))
+                t = int(tone[min(h - 1, y - y0), min(w - 1, x - x0)])
+                stamp(TUFTS[int(rng.integers(0, len(TUFTS)))], x, y, t)
+    # taller clumps, fewer of them
+    for _ in range(int(w * h / 1800 * dense)):
+        x = int(rng.integers(x0, x0 + w - 8)); y = int(rng.integers(y0, y0 + h - 6))
+        t = int(tone[y - y0, x - x0])
+        stamp(TALL[int(rng.integers(0, len(TALL)))], x, y, max(3, t))
+    # flower patches: little four-petal flowers in clusters
+    nf = int(w * h * flowers / 900) + int(w * h / 14000)
+    for _ in range(nf):
+        cx_, cy_ = int(rng.integers(x0 + 6, x0 + w - 6)), int(rng.integers(y0 + 6, y0 + h - 6))
+        kind = rng.random()
+        fr = R['flower_w'] if kind < 0.45 else R['flower_y'] if kind < 0.8 else R['flower_r']
+        for _k in range(int(rng.integers(4, 9))):
+            x = cx_ + int(rng.integers(-9, 10)); y = cy_ + int(rng.integers(-6, 7))
+            if not (x0 + 1 <= x < x0 + w - 2 and y0 + 1 <= y < y0 + h - 2):
+                continue
+            cv.px(x, y - 1, fr[2]); cv.px(x - 1, y, fr[2]); cv.px(x + 1, y, fr[1]); cv.px(x, y + 1, fr[1])
+            cv.px(x, y, R['flower_y'][2] if fr is not R['flower_y'] else R['flower_w'][2])
+            cv.px(x + 1, y + 1, g[1])
 
 
 def pavers(cv, x0, y0, w, h, seed=2):
@@ -318,7 +363,17 @@ def olive_tree(cv, cx, base_y, seed=7, size=1.0):
     layer.outline()
     cv.blit(layer, 0, 0)
     canopy_cy = base_y - int(24 * size)
-    blob(cv, cx, canopy_cy, 19 * size, 13 * size, R['olive'], lumps=int(18 * size), seed=seed, lump_r=(2.6, 4.6), bias=-0.12, dither=0.06)
+    rng = np.random.default_rng(seed)
+    balls = []
+    rx, ry = 18 * size, 12 * size
+    # a crown of clumps: the back row high, the front row low and near
+    for row, (fy, fz, count, rr) in enumerate(((-0.55, 0, 3, 6.5), (-0.05, 4, 4, 7.0), (0.5, 8, 3, 6.0))):
+        for k in range(count):
+            fx = (k - (count - 1) / 2) / max(1, (count - 1) / 2) * (0.75 - abs(fy) * 0.25) if count > 1 else 0
+            balls.append((cx + fx * rx + rng.uniform(-1.5, 1.5), canopy_cy + fy * ry + rng.uniform(-1, 1), fz + rng.uniform(0, 2),
+                          rr * size * rng.uniform(0.85, 1.12)))
+    balls.append((cx - 2 * size, canopy_cy - ry * 0.8, 1, 5.5 * size))
+    clusters(cv, balls, R['olive'], seed=seed)
 
 
 def cypress(cv, cx, base_y, h=46, seed=8):
@@ -340,7 +395,13 @@ def cypress(cv, cx, base_y, h=46, seed=8):
 
 def bush(cv, cx, cy, seed=9, r=7, flowers=False):
     soft_shadow(cv, cx + 3, cy + r * 0.6, r * 1.1, r * 0.45)
-    blob(cv, cx, cy, r, r * 0.8, R['leaf'], lumps=7, seed=seed, lump_r=(2.0, 3.2), bias=-0.06, dither=0.06)
+    rng = np.random.default_rng(seed)
+    balls = [(cx, cy - r * 0.35, 0, r * 0.62)]
+    for k in range(4):
+        a_ = math.pi * (0.9 + k * 0.4)
+        balls.append((cx + math.cos(a_) * r * 0.55 + rng.uniform(-0.8, 0.8), cy + r * 0.12 + math.sin(a_) * r * 0.15, 2 + k % 2,
+                      r * rng.uniform(0.48, 0.58)))
+    clusters(cv, balls, R['leaf'], seed=seed, occlude=0.3)
     if flowers:
         rng = np.random.default_rng(seed)
         for _ in range(4):

@@ -146,13 +146,13 @@ def zig_1():
     G.carpet(g, 244, 120, 24, 56)
     G.cobweb(g, 26, 50); G.cobweb(g, W - 27, 50, flip=True)
     # a dividing wall with the locked door, and stairs up beyond it
-    G.glazed_wall(g, 24, 176, W - 48, 32, seed=82, frieze=False)
+    G.inner_wall(g, 24, 176, W - 48, 32, seed=82)
     m.solid(24, 176, 236, 204); m.solid(276, 176, W - 24, 204)
     m.prop("lockdoor", lambda cv, ax, ay, fi: G.bronze_door(cv, ax, ay, 40, 30, 'lock'), 256, 206, box=(-20, -26, 20, 0), size=(48, 40), pad=4,
            kind="lockdoor", data={"id": "z1_door"})
     G.stairs_up(g, 256, 100, 40, 36)
     # the east alcove, closed off by a wall that only the waking world has
-    m.prop("dreamwall", lambda cv, ax, ay, fi: G.glazed_wall(cv, ax - 8, ay - 122, 8, 122, seed=84, frieze=False), 400, 330,
+    m.prop("dreamwall", lambda cv, ax, ay, fi: G.inner_wall(cv, ax - 8, ay - 122, 8, 122, seed=84), 400, 330,
            size=(16, 126), anchor=(8, 122), pad=0, layer=1)
     m.solid(392, 208, 400, 330, 1)
     chest(m, 450, 276, "z1_key", "key")
@@ -160,7 +160,7 @@ def zig_1():
     m.prop("block", lambda cv, ax, ay, fi: G.block(cv, ax, ay), 172, 296, box=(-8, -12, 8, 0), size=(24, 24), pad=4, kind="block", data={"id": "z1_block"})
     m.prop("plate", lambda cv, ax, ay, fi: G.plate(cv, ax, ay - 6), 140, 296, size=(20, 16), pad=2, kind="plate", data={"id": "z1_plate"})
     chest(m, 66, 236, "z1_coins", "shekels:30")
-    G.glazed_wall(g, 108, 204, 8, 54, seed=85, frieze=False)
+    G.inner_wall(g, 108, 204, 8, 54, seed=85)
     m.solid(108, 204, 116, 258)
     def bars(cv, ax, ay, fi):
         for k in range(-42, 43, 3):
@@ -194,7 +194,7 @@ def zig_2():
     A.slabs(g, 216, 236, 80, 52, R['lime'], 16, 12, seed=92)
     chest(m, 256, 268, "z2_shield", "shield")
     # the bull's head that breathes fire across the way north
-    G.glazed_wall(g, 24, 150, W - 48, 30, seed=93, frieze=False)
+    G.inner_wall(g, 24, 150, W - 48, 30, seed=93)
     m.solid(24, 150, 236, 176); m.solid(276, 150, W - 24, 176)
     m.prop("bullhead", lambda cv, ax, ay, fi: G.bull_statue(cv, ax, ay), 256, 178, box=(-20, -8, 20, 0), size=(44, 34), pad=4, kind="bullhead",
            data={"id": "z2_bull"})
@@ -233,6 +233,7 @@ def zig_3():
         g.px(x, wall_h, OUTLINE)
     G.floor_shadow(g, E + P, wall_h + 1, W - 2 * E - 2 * P, 6, 'y+')
     G.floor_shadow(g, E + P, wall_h + 1, 4, H - wall_h - 24 - P - 1, 'x+')
+    G.floor_inlays(g, E + P, wall_h + 2, W - 2 * E - 2 * P, H - wall_h - 24 - P - 2, inset=8, band=7)
     G.carpet(g, W // 2 - 12, 262, 24, H - 262 - 24)
     A.sigil(g, W // 2, 230, 26)
     # parapets, crenellated against the sky
