@@ -25,6 +25,7 @@ namespace Wakefire
         bool fired;
         int stunDamage;        // the blade gets one good combo per stagger, then the bull shakes it off
         float grace;           // a moment after a stagger when touching the bull doesn't hurt yet
+        float storm = 3f;      // once it loses its temper, the sky over the summit does too
         LightBlob glow;
         readonly Vector2 half = new Vector2(1.45f, 0.5f);
         public System.Action Defeated;
@@ -105,6 +106,11 @@ namespace Wakefire
             if (grace > 0) grace -= dt;
             mat.SetFloat("_Flash", flash > 0 ? 0.9f : 0);
             if (p && s != S.Wait && s != S.Dying && !(Story.I && Story.I.Running)) Think(dt, p);
+            if (Enraged && s != S.Wait && s != S.Dying && (storm -= dt) <= 0)
+            {
+                storm = Random.Range(5f, 9f);
+                StartCoroutine(Lightning());
+            }
             anim.Tick(dt);
             // touching the bull hurts, a charging bull hurts a lot
             if (p && s != S.Wait && s != S.Dying && s != S.Stun && grace <= 0 && Mathf.Abs(p.pos.x - pos.x) < half.x + 0.3f && Mathf.Abs(p.pos.y - pos.y) < half.y + 0.35f)
@@ -182,6 +188,34 @@ namespace Wakefire
                     if ((fired && anim.Done) || clock > 1.8f) { s = S.Idle; clock = 0; }
                     break;
             }
+        }
+
+        Color? skyBefore;
+
+        void OnDestroy()
+        {
+            // never leave the world lit by a flash that got cut short
+            if (skyBefore.HasValue && PixelView.I) PixelView.I.ambient = skyBefore.Value;
+            if (I == this) I = null;
+        }
+
+        IEnumerator Lightning()
+        {
+            var v = PixelView.I;
+            var before = v.ambient;
+            skyBefore = before;
+            foreach (var (k, t) in new[] { (1.25f, 0.06f), (0.7f, 0.05f), (1.05f, 0.07f) })
+            {
+                v.ambient = new Color(0.86f, 0.9f, 1.0f) * k;
+                yield return new WaitForSeconds(t);
+                v.ambient = before;
+                yield return new WaitForSeconds(0.04f);
+            }
+            v.ambient = before;
+            skyBefore = null;
+            yield return new WaitForSeconds(0.25f);
+            Sfx.Play("thunder", 0.9f, 0.08f);
+            v.Shake(1, 0.6f);
         }
 
         void ShakeOff()
