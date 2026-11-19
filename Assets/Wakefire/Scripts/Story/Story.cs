@@ -132,7 +132,7 @@ namespace Wakefire
             yield return AzarSays("...Almost nobody.");
             yield return Narrate("The temple gate is locked, and Captain Dur has the key.");
             if (TouchControls.Wanted)
-                yield return Narrate("Move with the {g}stick{/}. Talk and look with the {g}speech{/} button. Swing the khopesh with the {g}blade{/}.^Hold out the {g}Wakefire{/} with the {g}lamp{/}. And when you must, nod off with the {t}moon{/}.");
+                yield return Narrate("Put your thumb down anywhere on the left to {g}walk{/}. Talk and look with the {g}speech{/} button. Swing the khopesh with the {g}blade{/}, roll with the {g}circle{/}.^Hold out the {g}Wakefire{/} with the {g}lamp{/}. And when you must, nod off with the {t}moon{/}.");
             else
                 yield return Narrate("Move with {g}WASD{/} or the arrows. Talk and look with {g}E{/}. Swing the khopesh with {g}J{/} or {g}Space{/}, roll with {g}K{/}.^Hold out the {g}Wakefire{/} with {g}F{/}. And when you must, nod off with {t}Q{/}.");
         }
