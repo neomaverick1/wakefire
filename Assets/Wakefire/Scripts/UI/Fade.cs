@@ -38,7 +38,35 @@ namespace Wakefire
 
         void LateUpdate() => transform.SetAsLastSibling();
 
-        public static void Set(float a, string text = null)
+        RawImage backdrop;
+
+        /// <summary>A picture behind the curtain (the intro cards sit over the sleeping city).</summary>
+        public static void Backdrop(string uiTexture)
+        {
+            var f = Ensure();
+            if (!f.backdrop)
+            {
+                var go = new GameObject("Backdrop", typeof(RectTransform));
+                go.layer = PixelView.PixelUILayer;
+                go.transform.SetParent(f.transform.parent, false);
+                f.backdrop = go.AddComponent<RawImage>();
+                f.backdrop.raycastTarget = false;
+                var rt = (RectTransform)go.transform;
+                rt.anchorMin = rt.anchorMax = new Vector2(0, 1);
+                rt.pivot = new Vector2(0, 1);
+            }
+            if (string.IsNullOrEmpty(uiTexture)) { f.backdrop.enabled = false; return; }
+            var t = Resources.Load<Texture2D>("UI/" + uiTexture);
+            t.filterMode = FilterMode.Point;
+            f.backdrop.texture = t;
+            f.backdrop.enabled = true;
+            var r = (RectTransform)f.backdrop.transform;
+            r.sizeDelta = new Vector2(t.width, t.height);
+            r.anchoredPosition = new Vector2(Mathf.Round((PixelView.I.width - t.width) / 2f), -(PixelView.Height - t.height));
+            f.backdrop.transform.SetSiblingIndex(f.transform.GetSiblingIndex());
+        }
+
+        public static void Set(float a, string text = null, bool textAlways = false)
         {
             var f = Ensure();
             Amount = a;
@@ -49,10 +77,13 @@ namespace Wakefire
             f.img.enabled = lv > 0;
             if (lv == 0) return;
             var c = f.cv;
-            for (int y = 0; y < c.H; y++)
-                for (int x = 0; x < c.W; x++)
-                    c.Set(x, y, Bayer[(y & 3) * 4 + (x & 3)] < lv ? Night : Clear);
-            if (!string.IsNullOrEmpty(text) && lv >= 16)
+            if (textAlways && lv < 16)
+                c.Clear(new Color32(6, 4, 12, (byte)(lv * 12)));      // a smooth veil for captions over a picture
+            else
+                for (int y = 0; y < c.H; y++)
+                    for (int x = 0; x < c.W; x++)
+                        c.Set(x, y, Bayer[(y & 3) * 4 + (x & 3)] < lv ? Night : Clear);
+            if (!string.IsNullOrEmpty(text) && (lv >= 16 || textAlways))
             {
                 var font = PixelFont.Main;
                 var lines = text.Split('\n');
@@ -60,6 +91,9 @@ namespace Wakefire
                 foreach (var l in lines)
                 {
                     int w = font.Measure(l);
+                    for (int ox = -1; ox <= 1; ox++)
+                        for (int oy = -1; oy <= 1; oy++)
+                            if (ox != 0 || oy != 0) font.DrawString(c, (c.W - w) / 2 + ox, y + oy, l, Night);
                     font.DrawString(c, (c.W - w) / 2, y, l, new Color32(244, 234, 216, 255));
                     y += font.Line + 2;
                 }

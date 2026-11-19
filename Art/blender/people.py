@@ -119,6 +119,22 @@ def person(b: Builder, **kw):
         b.loft([((0, 0, 13.4), 5.4 * W + BEL, 3.8 * W + BEL), ((0, 0, 12.0), 5.8 * W + BEL, 4.1 * W + BEL), ((0, 0.1, 10.0), 6.4 * W, 4.6 * W),
                 ((0, 0.2, 8.4), 6.8 * W, 5.0 * W)], 14, TU, True, 'hips', False, False)
         b.loft([((0, 0.2, 8.9), 6.75 * W, 4.95 * W), ((0, 0.2, 8.4), 6.8 * W, 5.0 * W)], 14, TUD, False, 'hips', False, False)
+    if P.get('stars'):
+        # a robe of night sky: gold stars sewn all over it
+        import random
+        rnd = random.Random(7)
+        for i in range(70):
+            z = rnd.uniform(1.5, 20.0)
+            a = rnd.uniform(-120, 120) * D2R
+            t = min(1.0, max(0.0, (13.4 - z) / 12.6)) if z < 13.4 else 0.0
+            rx = (5.4 + t * 2.0) * W + BEL * (0.6 if z < 13.4 else 1.0)
+            ry = (3.8 + t * 1.8) * W + BEL * (0.6 if z < 13.4 else 1.0)
+            if z >= 13.4:
+                rx, ry = 6.0 * W + BEL, 4.0 * W + BEL
+            grp = 'hips' if z < 13.4 else ('spine' if z < 17 else 'chest')
+            big = rnd.random() < 0.18
+            b.box((math.sin(a) * (rx + 0.2), -math.cos(a) * (ry + 0.2), z), (0.9 if big else 0.6, 0.6, 0.9 if big else 0.6),
+                  wf.hexc('#fff0b0' if big else '#f6c85a', GLOW), grp)
     if P['apron']:
         b.box((0, -4.6 * W - BEL, 10.5), (7.0, 0.8, 8.0), hexc(P['apron']), 'hips', rot=(-6, 0, 0))
         b.box((0, -4.3 * W - BEL, 16.0), (5.0, 0.8, 4.0), hexc(P['apron']), 'spine')

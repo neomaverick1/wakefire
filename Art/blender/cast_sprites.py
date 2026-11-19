@@ -54,9 +54,9 @@ PLAN = {
     'moth': (1.0, {'fly': D}),
     'sentinel': (1.0, {'idle': DLU, 'walk': DLU, 'hurt': DLU}),
     'bull': (1.0, {'idle': DLU, 'walk': DLU, 'charge': DLU, 'stun': DLU, 'shoot': DLU, 'hurt': DLU, 'death': D}),
-    'god': (2.4, {'lie': D, 'sleep': D}),
+    'god': (2.9, {'lie': D}),
 }
-SIZE = {'bull': 112, 'god': 128}
+SIZE = {'bull': 112, 'god': 144}
 OVERRIDE = {
     'goat': {'idle': [0, 8, 16, 24, 32, 46], 'walk': [0, 3, 6, 9, 12, 15, 18, 21]},
     'crab': {'idle': [0, 10, 20, 30], 'walk': [0, 3, 6, 9], 'attack': [0, 3, 5, 8, 11], 'hurt': [2, 5]},

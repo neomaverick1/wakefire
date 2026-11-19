@@ -355,5 +355,6 @@ def build_bull():
 
 
 # ------------------------------------------------------------------ Ninhal, asleep (a giant)
-GOD = dict(width=1.2, belly=0.8, tunic='#ece6f6', tunic_d='#b8b0d0', robe=True, trim='#e8b848', skin='#d8a47c', hair='#e8e4f0',
-           beard='long', beard_col='#f0ecf6', headwear='horned', head_col='#f2d27a', eyes='closed', sash='#3250b4')
+GOD = dict(width=1.25, belly=1.0, tunic='#1c2464', tunic_d='#121848', robe=True, trim='#e8b848', skin='#e0ae84', hair='#f0ecf6',
+           beard='long', beard_col='#f4f0fa', headwear='horned', head_col='#f2d27a', eyes='closed', sash='#e8b848', stars=True,
+           hair_style='long')
