@@ -33,6 +33,7 @@ namespace Wakefire
         static readonly Dictionary<string, AudioClip[]> clips = new Dictionary<string, AudioClip[]>();
         static AudioSource src;
         static float last;
+        public static float Volume = 0.55f;
         const int Rate = 44100;
 
         static AudioSource Src
@@ -123,6 +124,8 @@ namespace Wakefire
             var arr = Get(voice, dream);
             int v = char.ToLowerInvariant(c) switch { 'a' => 0, 'e' => 1, 'i' => 2, 'y' => 2, 'o' => 3, 'u' => 4, 'w' => 4, _ => Mathf.Abs(c * 7) % 5 };
             var s = Src;
+            if (Volume <= 0) return;
+            s.volume = Volume;
             s.pitch = 1f + Random.Range(-0.06f, 0.06f);
             s.PlayOneShot(arr[v], 1f);
         }

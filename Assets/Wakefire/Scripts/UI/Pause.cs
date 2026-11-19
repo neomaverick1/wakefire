@@ -1,5 +1,6 @@
-// The pause menu: the world stops, a bronze-framed panel offers to carry on or to go back to
-// the title (the game saves every time Azar enters a new place, so nothing is lost).
+// The pause menu: the world stops, a bronze-framed panel offers to carry on, to switch the music
+// or the sounds off, or to go back to the title (the game saves every time Azar enters a new
+// place, so nothing is lost).
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -13,7 +14,8 @@ namespace Wakefire
         PixelCanvas cv;
         int sel;
         float clock;
-        static readonly string[] Options = { "Carry on", "Back to the title" };
+        static string[] Options => new[] { "Carry on", "Music: " + (Settings.MusicOn ? "on" : "off"), "Sounds: " + (Settings.SoundOn ? "on" : "off"), "Back to the title" };
+        const int N = 4;
 
         void Update()
         {
@@ -25,13 +27,13 @@ namespace Wakefire
             }
             clock += Time.unscaledDeltaTime;
             var mv = Controls.MoveVector;
-            if (Controls.Move.WasPerformedThisFrame() && Mathf.Abs(mv.y) > 0.5f) { sel = 1 - sel; Sfx.Play("menu_move", 0.5f, 0); }
+            if (Controls.Move.WasPerformedThisFrame() && Mathf.Abs(mv.y) > 0.5f) { sel = (sel + (mv.y < 0 ? 1 : N - 1)) % N; Sfx.Play("menu_move", 0.5f, 0); }
             var tp = Pointer.current;
             if (tp != null && tp.press.wasPressedThisFrame)
             {
                 var pos = tp.position.ReadValue();
                 float py = PixelView.Height - pos.y / PixelView.I.ScreenScale;
-                for (int i = 0; i < 2; i++) if (Mathf.Abs(py - (PixelView.Height / 2 - 4 + i * 14)) < 7) { sel = i; Choose(); return; }
+                for (int i = 0; i < N; i++) if (Mathf.Abs(py - (PixelView.Height / 2 - 18 + i * 14)) < 7) { sel = i; Choose(); return; }
             }
             Draw();
             if (Controls.Down(Controls.Pause) || Controls.Down(Controls.Back)) { Close(); return; }
@@ -75,6 +77,7 @@ namespace Wakefire
         {
             Sfx.Play("menu_ok", 0.7f, 0);
             if (sel == 0) { Close(); return; }
+            if (sel == 1 || sel == 2) { Settings.Toggle(sel == 1); return; }
             Close();
             if (Game.I.CurrentMap != null) Save.Write(Game.I.CurrentMap, Game.I.CurrentSpawn);
             Title.Show();
@@ -86,7 +89,7 @@ namespace Wakefire
             int W = cv.W, H = cv.H;
             var veil = new Color32(6, 4, 12, 150);
             cv.Clear(veil);
-            int bw = 150, bh = 62, bx = (W - bw) / 2, by = H / 2 - 30;
+            int bw = 150, bh = 90, bx = (W - bw) / 2, by = H / 2 - 44;
             cv.Rect(bx, by, bw, bh, new Color32(10, 6, 16, 255));
             cv.Rect(bx + 1, by + 1, bw - 2, bh - 2, new Color32(188, 122, 52, 255));
             cv.HLine(bx + 1, by + 1, bw - 2, new Color32(255, 216, 138, 255));
@@ -97,10 +100,11 @@ namespace Wakefire
             var sh = new Color32(6, 4, 12, 255);
             string t = "Rest a moment";
             f.DrawString(cv, (W - f.Measure(t)) / 2, by + 8, t, new Color32(150, 140, 170, 255), sh);
-            for (int i = 0; i < 2; i++)
+            var opts = Options;
+            for (int i = 0; i < N; i++)
             {
-                string s = Options[i];
-                int x = (W - f.Measure(s)) / 2, y = H / 2 - 8 + i * 14;
+                string s = opts[i];
+                int x = (W - f.Measure(s)) / 2, y = H / 2 - 22 + i * 14;
                 f.DrawString(cv, x, y, s, i == sel ? gold : ink, sh);
                 if (i == sel && ((int)(clock * 3f)) % 2 == 0) f.Draw(cv, x - 10, y, '>', gold, sh);
             }
