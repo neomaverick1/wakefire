@@ -346,7 +346,7 @@ namespace Wakefire
             PixelView.I.Shake(2, 1.2f);
             Sfx.Play("god_rumble");
             yield return Wait(0.8f);
-            yield return Say("Ninhal", "...five...| more...| minutes...", "priest");
+            yield return Say("Ninhal", "...five...| more...| minutes...", "god", true);
             yield return CamBack(1.0f);
             yield return Wait(0.4f);
             yield return AzarSays("Forty nights.| Maybe...| just five minutes.");

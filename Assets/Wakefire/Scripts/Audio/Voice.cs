@@ -25,6 +25,7 @@ namespace Wakefire
             { "woman", new Profile(225, 0.055f, 0.04f, 0.01f, 0.8f) },
             { "merchant", new Profile(175, 0.050f, 0.05f, 0, 0.85f) },
             { "dog", new Profile(165, 0.055f, 0.32f, 0.04f, 0.85f) },
+            { "god", new Profile(62, 0.150f, 0.30f, 0.015f, 1.0f) },
         };
 
         // formant pairs for a, e, i, o, u

@@ -146,6 +146,27 @@ def goat():
     return room(y, 0.15, 0.3)
 
 
+def snore(scale=1.0, seed=0):
+    """A sleeper's snore: the soft palate rattling on the in-breath, then a slow sigh out through
+    the nose. scale > 1 is a smaller animal (faster rattle, higher body)."""
+    r = np.random.default_rng(300 + seed)
+    d_in = 1.15 / scale ** 0.5
+    t = t_(d_in)
+    fl = 29 * scale * (1 + 0.06 * np.sin(2 * np.pi * 0.9 * t))
+    ph = np.cumsum(fl) / SR
+    pulse = np.clip(np.sin(2 * np.pi * ph), 0, 1) ** 4
+    src = r.normal(0, 1, len(t)) * (0.25 + pulse)
+    body = bp(src, 70 * scale, 380 * scale) * 1.6 + bp(src, 380 * scale, 1000 * scale) * 0.45
+    buzz = lp(np.sin(2 * np.pi * np.cumsum(fl * 3.0) / SR) * pulse, 400 * scale) * 0.3
+    e_in = np.sin(np.pi * np.clip(t / d_in, 0, 1)) ** 1.5
+    inhale = lp(body + buzz, 900 * scale, 4) * e_in
+    d_out = 0.95 / scale ** 0.5
+    t2 = t_(d_out)
+    e_out = np.minimum(1, t2 / 0.12) * np.exp(-t2 / (d_out * 0.38))
+    exhale = bp(r.normal(0, 1, len(t2)), 250 * scale, 1400 * scale) * e_out * 0.35
+    return room(mix(inhale, at(exhale, d_in + 0.18)), 0.12, 0.3)
+
+
 def build():
     os.makedirs(OUT, exist_ok=True)
     # --- the khopesh
@@ -224,6 +245,9 @@ def build():
     save('statue_break', room(mix(lp(noise(1.2), 600) * env(1.2, 0.002, 0.4) * 2, *[at(bp(noise(0.1), 500, 3000) * env(0.1, 0.001, 0.03), 0.05 * k + rng.uniform(0, 0.05)) * 0.6
                                                                                    for k in range(10)], bronze(300, 1.0) * 0.5), 0.3, 1.0))
     save('god_rumble', room(lp(noise(3.0), 120) * env(3.0, 0.6, 1.2) * 3 + sweep(55, 45, 3.0) * env(3.0, 0.5, 1.2), 0.4, 2.0))
+    # --- sleepers
+    save('snore', snore(1.0, 0), 0.8)
+    save('snore_small', snore(1.7, 1), 0.7)
     print('sfx done', len([f for f in os.listdir(OUT) if f.endswith('.wav')]))
 
 
