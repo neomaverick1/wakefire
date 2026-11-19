@@ -55,8 +55,9 @@ def load():
     return blocks
 
 
-G = load()
-SPLIT = {'front': (20, 29), 'back': (20, 29), 'side': (19, 28)}      # head ends, legs begin
+import azar4
+G = {'front': azar4.build(azar4.FRONT), 'side': azar4.build(azar4.SIDE), 'back': azar4.build(azar4.BACK)}
+SPLIT = {'front': (15, 27), 'back': (15, 28), 'side': (15, 27)}      # head ends, legs begin
 
 
 def blank(h):
@@ -85,28 +86,31 @@ def sub(rows, i, old, new):
 
 
 def eyes(rows, view, state):
+    """In the Corinthian helmet the eyes are two glints in the slit; closing them puts them out."""
     rows = [list(r) for r in rows]
     if view == 'front':
         if state == 'half':
-            sub(rows, 15, 'EP', 'KP'); sub(rows, 15, 'PE', 'PK')
+            sub(rows, 10, 'OBOEObnOEOnO', 'OBOKObnOKOnO')
         elif state == 'shut':
-            sub(rows, 15, 'EP', 'KK'); sub(rows, 15, 'PE', 'KK')
+            sub(rows, 10, 'OBOEObnOEOnO', 'OBOOObnOOOnO')
         elif state == 'wide':
-            sub(rows, 14, 'SKKKSSSSKKKS', 'SSKSSSSSSKSS')
+            sub(rows, 10, 'OBOEObnOEOnO', 'OBEEObnOEEnO')
     elif view == 'side':
         if state == 'half':
-            sub(rows, 13, 'PE', 'PK')
+            sub(rows, 9, 'OOEnO', 'OOKnO')
         elif state == 'shut':
-            sub(rows, 13, 'PE', 'KK')
+            sub(rows, 9, 'OOEnO', 'OOOnO')
+        elif state == 'wide':
+            sub(rows, 9, 'OOEnO', 'OEEnO')
     return rows
 
 
 def mouth_open(rows, view):
     rows = [list(r) for r in rows]
     if view == 'front':
-        sub(rows, 17, 'hhhKKhhh', 'hhOOOOhh'); sub(rows, 18, 'khhhhhhk', 'khOOOOhk')
+        sub(rows, 12, 'OhKKhO', 'OhOOhO')
     elif view == 'side':
-        sub(rows, 15, 'hhhhSk', 'hhOOSk')
+        sub(rows, 12, 'nOhO', 'nOOO')
     return rows
 
 
@@ -121,7 +125,7 @@ def legs_lift(legrows, view, lift_left=0, lift_right=0):
     """Front and back: a stepping foot rises (the kilt hides the top of the leg)."""
     h = len(legrows)
     out = blank(h)
-    mid = 12 if view == 'front' else 13
+    mid = 13
     for y in range(h):
         for x in range(W):
             ch = legrows[y][x]
@@ -138,29 +142,29 @@ def legs_lift(legrows, view, lift_left=0, lift_right=0):
 
 
 def side_legs(near_dx=0, far_dx=0, near_lift=0, far_lift=0):
-    """Side view: each leg a two-pixel column of thigh, greave and sandal, sheared by the stride."""
-    h = 9
+    """Side view: thigh, greave and sandal, three pixels wide for the near leg and two for the far
+    one, each sheared by the stride."""
+    h = 12
     out = blank(h)
 
     def leg(hip_x, dx, lift, far):
-        skin = ['s', 'k'] if far else ['S', 'k']
-        greave = [['b', 'n'], ['b', 'n'], ['n', 'N']] if far else [['B', 'b'], ['B', 'n'], ['b', 'n']]
-        rows = [skin, skin] + greave
-        for r, pair in enumerate(rows):
+        if far:
+            rows = [['s', 'k']] * 3 + [['b', 'n'], ['b', 'n'], ['n', 'N'], ['n', 'N'], ['n', 'N']]
+        else:
+            rows = [['S', 's', 'k']] * 3 + [['W', 'B', 'b'], ['B', 'B', 'n'], ['B', 'b', 'n'], ['b', 'b', 'n'], ['b', 'n', 'n']]
+        for r, cols in enumerate(rows):
             t = (r + 1) / (len(rows) + 1)
             x = hip_x + int(round(dx * t))
-            y = r - (lift if r >= 2 else 0)
-            for k, ch in enumerate(pair):
+            y = r - (lift if r >= 3 else 0)
+            for k, ch in enumerate(cols):
                 if 0 <= y < h and 0 <= x + k < W:
                     out[y][x + k] = ch
         fx, fy = hip_x + dx, len(rows) - lift
-        for k in range(4):
+        for k in range(5 if not far else 4):
             if 0 <= fy < h and 0 <= fx + k < W:
-                out[fy][fx + k] = ('m' if far else 'M') if k < 3 else 'M'
-            if 0 <= fy + 1 < h and 0 <= fx + k < W:
-                out[fy + 1][fx + k] = 'M'
-    leg(12, far_dx, far_lift, True)
-    leg(14, near_dx, near_lift, False)
+                out[fy][fx + k] = ('m' if far else 'M') if k not in (0,) else 'M'
+    leg(10, far_dx, far_lift, True)
+    leg(12, near_dx, near_lift, False)
     return out
 
 
@@ -223,8 +227,8 @@ def frame(view, k=0, bob=0, lift=(0, 0), stride=None, eye='open', mouth=False, h
     ox = FX - 13 + lean
     if view == 'side' and stride is not None:
         legs = outline_rows(side_legs(*stride))
-        ly = FY - 7
-        oy = FY - 7 - len(body) - len(head)
+        ly = FY - 10
+        oy = FY - 10 - len(body) - len(head)
     else:
         if view != 'side':
             legs = legs_lift(legs, view, *lift)
@@ -248,7 +252,7 @@ def frame(view, k=0, bob=0, lift=(0, 0), stride=None, eye='open', mouth=False, h
     if arms_up:
         # both hands raised over the crest, holding up whatever he has found
         top = hy - 4
-        arms = [((5, len(head) + 2), (9, 0)), ((20, len(head) + 2), (16, 0))] if view != 'side' else [((13, len(head) + 2), (15, 0))]
+        arms = [((6, len(head) + 3), (9, 1)), ((19, len(head) + 3), (16, 1))] if view != 'side' else [((12, len(head) + 3), (14, 1))]
         layer = Canvas(CELL, CELL)
         for (sx, sy), (ex, ey) in arms:
             n = max(abs(ex - sx), abs(ey - sy))
@@ -314,19 +318,20 @@ WALK_SIDE = [(4, -3, 0, 0), (2, -1, 1, 0), (0, 0, 2, 0), (-2, 2, 1, 0), (-3, 4, 
 
 
 def blade_for(view, phase):
+    """(sprite, dx, dy, flip) for the khopesh in each phase of a swing, from the body's top-left."""
     if view == 'side':
-        return {'wind': ('up', 4, -12, False), 'strike': ('right', 15, 1, False), 'follow': ('down', 16, 2, False)}[phase]
+        return {'wind': ('up', 2, -11, False), 'strike': ('right', 13, 3, False), 'follow': ('down', 14, 6, False)}[phase]
     if view == 'front':
-        return {'wind': ('up', 19, -12, False), 'strike': ('right', 13, 4, False), 'follow': ('down', 4, 3, True)}[phase]
-    return {'wind': ('up', 2, -12, True), 'strike': ('right', 1, -8, True), 'follow': ('down', 19, -4, False)}[phase]
+        return {'wind': ('up', 18, -9, False), 'strike': ('down', 10, 8, False), 'follow': ('down', 3, 6, True)}[phase]
+    return {'wind': ('up', 2, -9, True), 'strike': ('up', 11, -14, False), 'follow': ('down', 19, 4, False)}[phase]
 
 
 def swing_for(view, strength=1.0):
     if view == 'side':
-        return (14, 0, 9, 16, -110, 60, strength)
+        return (13, 2, 9, 17, -110, 60, strength)
     if view == 'front':
-        return (13, 4, 9, 16, -30, 200, strength)
-    return (13, -2, 9, 16, 200, 340, strength)
+        return (12, 4, 9, 17, -20, 200, strength)
+    return (12, -2, 9, 17, 200, 340, strength)
 
 
 def frames_for(anim, view, n):
