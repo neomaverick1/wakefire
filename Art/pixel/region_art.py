@@ -16,17 +16,31 @@ R['moon'] = ramp('#3a3a6a', '#5a62a0', '#8a96d0', '#b8c6ee', '#e4ecff')
 
 # ------------------------------------------------------------------ outdoors
 def sand(cv, x0, y0, w, h, seed=51):
+    """Warm beach sand: soft drifts of three tones, wind ripples with a lit crest, shells and
+    pebbles scattered thin."""
+    from ashkel_art import vnoise
     s = R['sand']
     rng = np.random.default_rng(seed)
-    cv.rect(x0, y0, w, h, s[4])
-    for _ in range(int(w * h / 60)):
-        x, y = int(rng.integers(x0, x0 + w)), int(rng.integers(y0, y0 + h))
-        cv.px(x, y, s[3] if rng.random() < 0.7 else s[5])
-    for _ in range(int(w * h / 900)):     # ripples left by the wind
-        x, y = int(rng.integers(x0, x0 + w - 8)), int(rng.integers(y0, y0 + h))
-        L = int(rng.integers(4, 9))
+    x0, y0, w, h = int(x0), int(y0), int(w), int(h)
+    n = vnoise(w, h, 30, seed) * 0.65 + vnoise(w, h, 9, seed + 3) * 0.35
+    YY, XX = np.mgrid[y0:y0 + h, x0:x0 + w]
+    v = n + (BAYER[YY & 3, XX & 3] - 0.5) * 0.08
+    tone = np.where(v < 0.36, 3, np.where(v > 0.7, 5, 4))
+    mix = lambda p, q: tuple((np.array(p[:3]) * 0.5 + np.array(q[:3]) * 0.5).astype(int)) + (255,)
+    cols = np.array([s[0], s[1], s[2], mix(s[3], s[4]), s[4], mix(s[4], s[5])], np.uint8)
+    cv.a[y0:y0 + h, x0:x0 + w] = cols[tone]
+    for _ in range(int(w * h / 520)):     # ripples: a shallow arc, dark under a lit crest
+        x, y = int(rng.integers(x0, x0 + w - 12)), int(rng.integers(y0 + 2, y0 + h - 2))
+        L = int(rng.integers(6, 13))
         for k in range(L):
-            cv.px(x + k, y + (1 if k in (0, L - 1) else 0), s[3])
+            dy = 0 if 1 < k < L - 2 else 1
+            cv.px(x + k, y + dy, s[2]); cv.px(x + k, y + dy - 1, s[5])
+    for _ in range(int(w * h / 1500)):     # shells and pebbles
+        x, y = int(rng.integers(x0 + 1, x0 + w - 2)), int(rng.integers(y0 + 1, y0 + h - 2))
+        if rng.random() < 0.5:
+            cv.px(x, y, (246, 226, 222, 255)); cv.px(x + 1, y, (214, 168, 160, 255)); cv.px(x, y + 1, s[2])
+        else:
+            cv.px(x, y, R['rock'][4]); cv.px(x + 1, y, R['rock'][3]); cv.px(x, y + 1, R['rock'][1]); cv.px(x + 1, y + 1, s[2])
 
 
 def water(cv, x0, y0, w, h, seed=52, deep_from=None):
@@ -86,32 +100,53 @@ def shore(cv, is_water, x0, y0, w, h):
 
 
 def cliff(cv, x0, y0, w, h, seed=53, grass_top=True):
-    """A rock face seen from the front: lit top lip (with grass), strata, cracks, dark foot."""
-    rk = R['rock']
+    """A limestone rock face seen from the front: the face broken into upright slabs, each lit on
+    its left edge and shaded on its right, split by dark crevices and stepped by ledges; a turf
+    lip hanging over the top and a dark, pebbly foot."""
+    rk = R['lime']
     rng = np.random.default_rng(seed)
-    for y in range(y0, y0 + h):
-        t = (y - y0) / max(1, h)
-        for x in range(x0, x0 + w):
-            band = int((y - y0 + int(math.sin(x * 0.21 + seed) * 2)) / 5) % 3
-            base = 3 if band == 0 else 2
-            if t > 0.8:
-                base = 1
-            col = rk[base]
-            cv.px(x, y, col)
-    for _ in range(int(w * h / 90)):
-        x, y = int(rng.integers(x0, x0 + w)), int(rng.integers(y0 + 2, y0 + h - 2))
-        for k in range(int(rng.integers(2, 6))):
-            cv.px(x, y + k, rk[1])
-            x += int(rng.integers(-1, 2))
-    for x in range(x0, x0 + w):
-        cv.px(x, y0, rk[5]); cv.px(x, y0 + 1, rk[4])
-        cv.px(x, y0 + h - 1, OUTLINE)
+    x0, y0, w, h = int(x0), int(y0), int(w), int(h)
+    x = x0
+    cols = []
+    while x < x0 + w:
+        cw = int(rng.integers(9, 17))
+        cols.append((x, min(cw, x0 + w - x), int(rng.integers(0, 3)), [int(rng.integers(4, max(5, h - 4))) for _ in range(int(rng.integers(0, 3)))]))
+        x += cw
+    for (cx0, cw, tone, ledges) in cols:
+        for xx in range(cx0, cx0 + cw):
+            lx = xx - cx0
+            for yy in range(y0, y0 + h):
+                t = (yy - y0) / max(1, h)
+                base = 4 if t < 0.25 else 3 if t < 0.7 else 2
+                base = max(1, base - (1 if tone == 2 else 0))
+                c = rk[base]
+                if lx == 0:
+                    c = rk[0]                                  # crevice
+                elif lx == 1:
+                    c = rk[min(5, base + 1)]                   # lit edge
+                elif lx >= cw - 2:
+                    c = rk[max(1, base - 1)]                   # shaded edge
+                for ly in ledges:
+                    if yy - y0 == ly:
+                        c = rk[0] if lx else c
+                    elif yy - y0 == ly + 1:
+                        c = rk[min(5, base + 1)]
+                if (xx * 7 + yy * 3 + seed) % 23 == 0 and 1 < lx < cw - 2:
+                    c = rk[max(1, base - 1)]                   # pits in the stone
+                cv.px(xx, yy, c)
+    # the foot: a dark line and a few fallen stones
+    for xx in range(x0, x0 + w):
+        cv.px(xx, y0 + h - 1, OUTLINE)
+        cv.px(xx, y0 + h - 2, rk[1])
     if grass_top:
         g = R['grass']
-        for x in range(x0, x0 + w):
-            k = int(rng.integers(1, 4))
+        for xx in range(x0, x0 + w):
+            k = 2 + int(rng.integers(0, 3)) + (2 if (xx // 5 + seed) % 7 == 0 else 0)
             for j in range(k):
-                cv.px(x, y0 + j, g[3] if j == 0 else g[2])
+                cv.px(xx, y0 + j, g[4] if j == 0 else g[3] if j < k - 1 else g[1])
+    else:
+        for xx in range(x0, x0 + w):
+            cv.px(xx, y0, rk[5]); cv.px(xx, y0 + 1, rk[4])
 
 
 def dock(cv, x0, y0, w, h):
@@ -189,15 +224,22 @@ def stone_steps(cv, x0, y0, w, h, n=3):
 
 
 def dirt(cv, x0, y0, w, h, seed=56):
+    """Packed earth: two tones in soft drifts, grit, the odd pebble."""
+    from ashkel_art import vnoise
     d = R['dirt']
     rng = np.random.default_rng(seed)
-    cv.rect(x0, y0, w, h, d[3])
-    for _ in range(int(w * h / 40)):
+    x0, y0, w, h = int(x0), int(y0), int(w), int(h)
+    n = vnoise(w, h, 14, seed)
+    YY, XX = np.mgrid[y0:y0 + h, x0:x0 + w]
+    v = n + (BAYER[YY & 3, XX & 3] - 0.5) * 0.1
+    cols = np.array([d[i] for i in range(6)], np.uint8)
+    cv.a[y0:y0 + h, x0:x0 + w] = cols[np.where(v > 0.55, 4, 3)]
+    for _ in range(int(w * h / 90)):
         x, y = int(rng.integers(x0, x0 + w)), int(rng.integers(y0, y0 + h))
-        cv.px(x, y, d[2] if rng.random() < 0.7 else d[4])
-    for _ in range(int(w * h / 300)):
+        cv.px(x, y, d[2])
+    for _ in range(int(w * h / 400)):
         x, y = int(rng.integers(x0, x0 + w - 2)), int(rng.integers(y0, y0 + h - 1))
-        cv.px(x, y, R['rock'][3]); cv.px(x + 1, y, R['rock'][4]); cv.px(x, y + 1, R['rock'][1])
+        cv.px(x, y, R['rock'][4]); cv.px(x + 1, y, R['rock'][3]); cv.px(x, y + 1, d[1]); cv.px(x + 1, y + 1, d[2])
 
 
 def oven(cv, cx, by, frame=0):
@@ -342,31 +384,77 @@ def glazed_wall(cv, x0, y0, w, h, seed=60, frieze=True):
     cv.hline(x0, x0 + w - 1, y0 + h - 1, OUTLINE)
 
 
+def inner_wall(cv, x0, y0, w, h, seed=0, face=12):
+    """A wall standing inside a room, seen from above and in front: capstones along its top with
+    a lit bevel and a gold coping where the top meets the face, then the glazed brick face, a
+    dark foot, and its shadow on the floor."""
+    gl = R['glaze']; gd = R['gold']
+    face = min(face, max(4, h // 3))
+    top_h = h - face
+    horiz = w >= h
+    for y in range(y0, y0 + top_h):
+        for x in range(x0, x0 + w):
+            lx, ly = x - x0, y - y0
+            a = lx if horiz else ly
+            blk, la = a // 12, a % 12
+            shade = 3 if (blk * 7 + seed) % 5 else 2
+            c = gl[shade]
+            if la == 0:
+                c = gl[min(5, shade + 1)]
+            elif la == 11:
+                c = gl[1]
+            if ly == 1 or lx == 1:
+                c = gl[4]
+            if ly == top_h - 2:
+                c = gd[3]
+            elif ly == top_h - 1:
+                c = gd[4] if lx % 4 else gd[3]
+            cv.px(x, y, c)
+    glazed_wall(cv, x0, y0 + top_h, w, face, seed=seed, frieze=False)
+    for x in range(x0, x0 + w):
+        cv.px(x, y0, OUTLINE)
+    for y in range(y0, y0 + h):
+        cv.px(x0, y, OUTLINE); cv.px(x0 + w - 1, y, OUTLINE)
+    floor_shadow(cv, x0 + 1, y0 + h, w - 2, 5, 'y+')
+
+
 def tile_floor(cv, x0, y0, w, h, seed=61):
-    """Big fired-clay floor tiles, one to a grid square: each a slightly different burn, a lit
-    top-left edge, a dark joint, here and there a chip or a crack, worn paler where feet go."""
+    """Fired-clay floor tiles, one to a grid square, laid like a palace floor: each tile bevelled
+    (lit top-left edge, shaded bottom-right), a sunk square in its middle, dark joints; one in a
+    while cracked or chipped. Every fourth tile carries a small lapis lozenge."""
     br = R['brick']
+    lp = R['lapis']
     rng = np.random.default_rng(seed)
     T = 16
-    tones = {}
+    info = {}
     for ty in range((h + T - 1) // T + 1):
         for tx in range((w + T - 1) // T + 1):
-            r = rng.random()
-            tones[(tx, ty)] = (3 if r < 0.55 else 2 if r < 0.9 else 4, rng.random() < 0.12, int(rng.integers(3, 12)), int(rng.integers(3, 12)))
+            r_ = rng.random()
+            info[(tx, ty)] = (3 if r_ < 0.8 else 4, rng.random() < 0.08, int(rng.integers(4, 10)), int(rng.integers(4, 10)))
     for y in range(y0, y0 + h):
         for x in range(x0, x0 + w):
             tx, ty = (x - x0) // T, (y - y0) // T
             lx, ly = (x - x0) % T, (y - y0) % T
-            base, cracked, cx, cy = tones[(tx, ty)]
+            base, cracked, ccx, ccy = info[(tx, ty)]
             c = br[base]
             if lx == T - 1 or ly == T - 1:
-                c = br[1]
+                c = br[0]                                   # the joint
             elif lx == 0 or ly == 0:
-                c = br[min(5, base + 1)]
-            elif cracked and (lx - cx) == (ly - cy) // 2 and 0 <= ly - cy < 6:
-                c = br[base - 1]
-            elif (x * 7 + y * 13) % 29 == 0:
-                c = br[base - 1]          # grit
+                c = br[min(5, base + 2)]                    # lit bevel
+            elif lx == T - 2 or ly == T - 2:
+                c = br[base - 1]                            # shaded bevel
+            elif 4 <= lx <= 10 and 4 <= ly <= 10:
+                # the sunk square: shaded on its top-left inner edge, lit on the bottom-right
+                if lx == 4 or ly == 4:
+                    c = br[base - 1]
+                elif lx == 10 or ly == 10:
+                    c = br[min(5, base + 1)]
+                else:
+                    c = br[base]
+                    if tx % 3 == 1 and ty % 3 == 1 and abs(lx - 7) + abs(ly - 7) <= 2:
+                        c = lp[4] if abs(lx - 7) + abs(ly - 7) <= 1 else lp[2]
+            if cracked and (lx - ccx) == (ly - ccy) // 2 and 0 <= ly - ccy < 6 and 0 < lx < T - 2:
+                c = br[1]
             cv.px(x, y, c)
 
 
@@ -474,22 +562,36 @@ def path(cv, pts, width=16, seed=58):
                         if dd <= r:
                             layer[yy, xx] = max(layer[yy, xx], 2 if dd < r * 0.45 else 1)
     ys, xs = np.nonzero(layer)
+    from ashkel_art import vnoise
+    nz = vnoise(cv.w, cv.h, 10, seed)
     for (y, x) in zip(ys, xs):
         mid = layer[y, x] == 2
-        c = d[2] if mid and (x * 7 + y * 3) % 5 == 0 else d[3]
-        if not mid and (x + y) % 7 == 0:
-            c = d[4]
+        v = nz[y, x] + (BAYER[y & 3, x & 3] - 0.5) * 0.12
+        c = d[4] if (mid and v > 0.42) or v > 0.72 else d[3]
         cv.px(x, y, c)
-    for _ in range(len(xs) // 90):
+    for _ in range(len(xs) // 40):                       # grit
+        k = int(rng.integers(0, len(xs)))
+        cv.px(xs[k], ys[k], d[2])
+    for _ in range(len(xs) // 160):                      # pebbles
         k = int(rng.integers(0, len(xs)))
         x, y = xs[k], ys[k]
-        cv.px(x, y, R['rock'][3]); cv.px(x + 1, y, R['rock'][4])
-    # a dark lip where grass gives way
+        cv.px(x, y, R['rock'][4]); cv.px(x + 1, y, R['rock'][3]); cv.px(x, y + 1, d[1]); cv.px(x + 1, y + 1, d[2])
+    # the edge: a darker rim of earth, a dark lip of grass, and blades leaning over it
+    g = R['grass']
     for (y, x) in zip(ys, xs):
         for (dx, dy) in ((0, 1), (1, 0), (-1, 0), (0, -1)):
             yy, xx = y + dy, x + dx
             if 0 <= xx < cv.w and 0 <= yy < cv.h and layer[yy, xx] == 0:
-                cv.px(xx, yy, R['grass'][1])
+                cv.px(x, y, d[2])
+                cv.px(xx, yy, g[1])
+    edge = [(y, x) for (y, x) in zip(ys, xs) if layer[y, x] == 1 and (
+        (y + 1 < cv.h and layer[y + 1, x] == 0) or (y > 0 and layer[y - 1, x] == 0))]
+    for _ in range(len(edge) // 9):
+        y, x = edge[int(rng.integers(0, len(edge)))]
+        up = y > 0 and layer[y - 1, x] == 0
+        for (ox, oy, c) in ((0, 0, g[2]), (1, -1 if up else 1, g[3]), (-1, -1 if up else 1, g[2]), (0, -2 if up else 2, g[4])):
+            if 0 <= x + ox < cv.w and 0 <= y + oy < cv.h:
+                cv.px(x + ox, y + oy, c)
 
 
 def palm(cv, cx, by, h=40, seed=59):

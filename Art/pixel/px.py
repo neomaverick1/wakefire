@@ -20,7 +20,7 @@ def ramp(*hexes):
 
 # moonlit Ashkel: bright and readable, shadows lean violet, lights lean warm
 R = {
-    'grass': ramp('#1c3a30', '#25523c', '#306a44', '#42844c', '#5ea05a', '#84bc6c'),
+    'grass': ramp('#163a26', '#1f5630', '#2b7236', '#3b8e3e', '#56aa4a', '#86ca62'),
     'grass_dark': ramp('#142a26', '#1c3a30', '#25523c', '#306a44'),
     'leaf': ramp('#122620', '#1a3a2c', '#245238', '#346c40', '#4e8a4a', '#76aa5e'),
     'olive': ramp('#16282e', '#22403c', '#33584a', '#4a7256', '#688e64', '#90ac7e'),
@@ -29,8 +29,8 @@ R = {
     'stone': ramp('#24222e', '#3c3a48', '#5a5664', '#7a7684', '#9c98a4', '#c0bcc6'),
     'lime': ramp('#342c34', '#54484c', '#786a66', '#9e8e82', '#c2b29e', '#e2d4bc'),
     'cobble': ramp('#2a2630', '#463e46', '#655a5c', '#857a76', '#a69a92', '#c6bcb0'),
-    'sand': ramp('#4a3a34', '#6e5646', '#94765a', '#b89874', '#d6b98e', '#eed8ac'),
-    'dirt': ramp('#2a1e28', '#433038', '#5e4446', '#7c5c56', '#9a7866'),
+    'sand': ramp('#6a4a30', '#94683e', '#bc8c52', '#d8a868', '#ecc485', '#fadca4'),
+    'dirt': ramp('#3a2620', '#5a3c2c', '#7a5638', '#9a7248', '#b88e5e', '#d2aa78'),
     'mud': ramp('#2e1c26', '#4a2c32', '#6c403e', '#8e5a4c', '#ae7a5e', '#cc9a72'),
     'wood': ramp('#1e1218', '#38222a', '#563630', '#784c3a', '#9c6846', '#bc8858'),
     'cedar': ramp('#2a1416', '#4a2420', '#6c3626', '#8e4c30', '#b0683c'),
@@ -225,3 +225,62 @@ def to_image(cv, scale=1):
     if scale != 1:
         im = im.resize((cv.w * scale, cv.h * scale), Image.NEAREST)
     return im
+
+
+def clusters(cv, balls, rp, light=(-0.55, -0.75), seed=0, leaf=True, seams=True, outline=True, occlude=0.25):
+    """Foliage built from round clumps, the way a pixel artist builds a tree: each clump is lit
+    on its own (bright top left, dark bottom right), nearer clumps cut a dark seam into the ones
+    behind, the mid tones get small leaf marks, and the whole mass gets the dark outline.
+    balls: (cx, cy, cz, r). rp: a ramp of 5-6 colours, darkest first."""
+    xs0 = int(min(b[0] - b[3] for b in balls)) - 2; xs1 = int(max(b[0] + b[3] for b in balls)) + 3
+    ys0 = int(min(b[1] - b[3] for b in balls)) - 2; ys1 = int(max(b[1] + b[3] for b in balls)) + 3
+    xs0, ys0 = max(0, xs0), max(0, ys0)
+    xs1, ys1 = min(cv.w, xs1), min(cv.h, ys1)
+    H, W = ys1 - ys0, xs1 - xs0
+    if H <= 0 or W <= 0:
+        return
+    YY, XX = np.mgrid[ys0:ys1, xs0:xs1].astype(np.float64) + 0.5
+    z = np.full((H, W), -1e9); idx = np.full((H, W), -1)
+    nx = np.zeros((H, W)); ny = np.zeros((H, W)); nz = np.zeros((H, W))
+    for i, (bx, by, bz, br) in enumerate(balls):
+        dx, dy = XX - bx, YY - by
+        d2 = dx * dx + dy * dy
+        m = d2 <= br * br
+        h = np.sqrt(np.clip(br * br - d2, 0, None))
+        zz = bz + h
+        w = m & (zz > z)
+        z[w] = zz[w]; idx[w] = i
+        nx[w] = (dx / br)[w]; ny[w] = (dy / br)[w]; nz[w] = (h / br)[w]
+    on = idx >= 0
+    L = np.array([light[0], light[1], 0.7]); L = L / np.linalg.norm(L)
+    v = nx * L[0] + ny * L[1] + nz * L[2]
+    top, bot = ys0, ys1
+    v = v - occlude * (YY - top) / max(1, bot - top)
+    v = v + (BAYER[(YY.astype(int)) & 3, (XX.astype(int)) & 3] - 0.5) * 0.10
+    n = len(rp)
+    lv = np.clip(np.round((v + 0.15) / 1.1 * (n - 2)) + 1, 1, n - 1).astype(int)   # tone 1..n-1
+    layer = Canvas(cv.w, cv.h)
+    rng = np.random.default_rng(seed)
+    for y in range(H):
+        for x in range(W):
+            if not on[y, x]:
+                continue
+            t = lv[y, x]
+            if seams:
+                for (yy, xx) in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+                    if 0 <= yy < H and 0 <= xx < W and on[yy, xx] and idx[yy, xx] != idx[y, x] and z[yy, xx] - z[y, x] > 1.2:
+                        t = 1 if t > 1 else 0
+                        break
+            layer.a[ys0 + y, xs0 + x] = rp[t]
+    if leaf:
+        # leaf marks: a short dark tick under a lit pixel, scattered over the mid tones
+        for y in range(1, H - 1):
+            for x in range(1, W - 1):
+                if on[y, x] and on[y + 1, x] and 2 <= lv[y, x] <= n - 2 and ((x * 5 + y * 3 + seed) % 9 == 0 or (x * 7 + y * 11 + seed) % 13 == 0):
+                    gx, gy = xs0 + x, ys0 + y
+                    if rng.random() < 0.8:
+                        layer.a[gy, gx] = rp[min(n - 1, lv[y, x] + 1)]
+                        layer.a[gy + 1, gx] = rp[max(1, lv[y, x] - 1)]
+    if outline:
+        layer.outline()
+    cv.blit(layer, 0, 0)
