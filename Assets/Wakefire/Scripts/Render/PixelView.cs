@@ -21,6 +21,8 @@ namespace Wakefire
 
         public Camera world, light, ui;
         public RenderTexture worldRT, lightRT, uiRT;
+        RenderTexture glowRT, glowTemp;          // what burns in the picture, blurred, for the glow
+        Material ember;
         public int width;
         /// <summary>Notch and corner insets in render pixels: x = left, y = bottom, width = right, height = top.</summary>
         public RectInt safe;
@@ -119,6 +121,23 @@ namespace Wakefire
             Resize();
         }
 
+        void OnEnable() => UnityEngine.Rendering.RenderPipelineManager.endCameraRendering += AfterCamera;
+        void OnDisable() => UnityEngine.Rendering.RenderPipelineManager.endCameraRendering -= AfterCamera;
+
+        /// <summary>Once the world is drawn: pick out what burns and blur it, for the composite to lay over the display.</summary>
+        void AfterCamera(UnityEngine.Rendering.ScriptableRenderContext context, Camera cam)
+        {
+            if (cam != world || !glowRT || !worldRT) return;
+            if (!ember)
+            {
+                var src = Resources.Load<Material>("Materials/Ember");
+                if (!src) return;
+                ember = new Material(src);
+            }
+            Graphics.Blit(worldRT, glowTemp, ember, 0);
+            Graphics.Blit(glowTemp, glowRT, ember, 1);
+        }
+
         static RawImage MakeImage(string name, Transform parent)
         {
             var go = new GameObject(name, typeof(RectTransform));
@@ -160,6 +179,10 @@ namespace Wakefire
             if (width % 2 == 1) width++;
             foreach (var (cam, rt) in new[] { (world, worldRT), (light, lightRT), (ui, uiRT) })
                 if (rt) { cam.targetTexture = null; rt.Release(); Destroy(rt); }
+            foreach (var rt in new[] { glowRT, glowTemp })
+                if (rt) { rt.Release(); Destroy(rt); }
+            glowRT = new RenderTexture(width + 2, Height + 2, 0, RenderTextureFormat.ARGB32) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp, name = "WF Glow" };
+            glowTemp = new RenderTexture(width + 2, Height + 2, 0, RenderTextureFormat.ARGB32) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp, name = "WF Glow pass" };
             worldRT = RT("WF World", width + 2, Height + 2);
             lightRT = RT("WF Light", width + 2, Height + 2, true);
             uiRT = RT("WF PixelUI", width, Height);
@@ -172,6 +195,7 @@ namespace Wakefire
             ui.orthographicSize = Height / 2f;
             worldImage.texture = worldRT;
             composite.SetTexture("_LightTex", lightRT);
+            composite.SetTexture("_GlowTex", glowRT);
             uiImage.texture = uiRT;
             uiImage.uvRect = new Rect(0, 0, 1, 1);
             Insets();

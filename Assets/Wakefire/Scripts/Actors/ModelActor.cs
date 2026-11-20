@@ -37,6 +37,8 @@ namespace Wakefire
         public readonly List<Renderer> parts = new List<Renderer>();
         public readonly Dictionary<string, Transform> props = new Dictionary<string, Transform>();   // things carried: "lantern"...
         public readonly Dictionary<string, (Transform bone, Vector3 at)> marks = new Dictionary<string, (Transform, Vector3)>();   // points on the body: "blade0", "blade1"
+        readonly List<Material> lit = new List<Material>();     // every material of every part, gathered once
+        int litParts = -1;
         Vector3 fireDir = Vector3.up;
         float fireAmount;
         Color fireColour = new Color(1f, 0.62f, 0.26f);
@@ -62,6 +64,9 @@ namespace Wakefire
         Vector2 lastLean;
 
         IPoser poser;
+        int worldLayer = -1;
+        static readonly int FireId = Shader.PropertyToID("_Fire"), FireColorId = Shader.PropertyToID("_FireColor");
+        static readonly int ModelId = Shader.PropertyToID("_Model"), CellId = Shader.PropertyToID("_Cell");
 
         public static ModelActor Attach(SpriteAnim a, ModelDef def)
         {
@@ -173,6 +178,7 @@ namespace Wakefire
         public void Play(string name, bool restart)
         {
             if (poser != null) { anim = name; return; }
+            height = 0;
             var m = def.Map(name);
             if (m == null || !m.asset) return;
             if (!restart && maps[cur] == m && anim == name) return;
@@ -270,6 +276,12 @@ namespace Wakefire
                 Vector2 c = view.world.transform.position, p = sr.transform.position;
                 float hw = view.width / (2f * PixelView.PPU) + 5f * def.span, hh = PixelView.Height / (2f * PixelView.PPU) + 6f * def.span;
                 want = Mathf.Abs(p.x - c.x) < hw && Mathf.Abs(p.y - c.y) < hh;
+                // someone who only exists in the other world isn't posed at all, unless the ring is passing
+                if (want && Dream.I && !Dream.I.Sweeping)
+                {
+                    if (worldLayer < 0) worldLayer = sr.sharedMaterial && sr.sharedMaterial.HasProperty("_Layer") ? Mathf.RoundToInt(sr.sharedMaterial.GetFloat("_Layer")) : 0;
+                    if (worldLayer != 0 && Dream.I.IsDreamAt(p) != (worldLayer == 2)) want = false;
+                }
             }
             if (want && square < 0)
             {
@@ -293,8 +305,8 @@ namespace Wakefire
             if (square >= 0) Firelight();
             var cell = square >= 0 ? ModelStage.I.Rect(square, def.span) : Vector4.zero;
             sr.GetPropertyBlock(mpb);
-            mpb.SetFloat("_Model", 1f);
-            mpb.SetVector("_Cell", cell);
+            mpb.SetFloat(ModelId, 1f);
+            mpb.SetVector(CellId, cell);
             sr.SetPropertyBlock(mpb);
 
             // the round blob under the actor becomes a real shadow of the figure
@@ -314,8 +326,8 @@ namespace Wakefire
             if (shadow)
             {
                 shadow.GetPropertyBlock(shadowBlock);
-                shadowBlock.SetFloat("_Model", 1f);
-                shadowBlock.SetVector("_Cell", cell);
+                shadowBlock.SetFloat(ModelId, 1f);
+                shadowBlock.SetVector(CellId, cell);
                 shadow.SetPropertyBlock(shadowBlock);
             }
         }
@@ -340,15 +352,17 @@ namespace Wakefire
             fireAmount = Mathf.Lerp(fireAmount, Mathf.Clamp01(best * 1.25f), 1f - Mathf.Exp(-6f * dt));
             fireColour = Color.Lerp(fireColour, colour, 1f - Mathf.Exp(-6f * dt));
             var v = new Vector4(fireDir.x, fireDir.y, -fireDir.z, Mathf.Round(fireAmount * 5f) / 5f);     // view space looks down -z
-            foreach (var r in parts)
+            if (litParts != parts.Count)
             {
-                if (!r) continue;
-                foreach (var m in r.sharedMaterials)
-                {
-                    if (!m) continue;
-                    m.SetVector("_Fire", v);
-                    m.SetColor("_FireColor", fireColour);
-                }
+                litParts = parts.Count;
+                lit.Clear();
+                foreach (var r in parts)
+                    if (r) foreach (var m in r.sharedMaterials) if (m && !lit.Contains(m)) lit.Add(m);
+            }
+            for (int i = 0; i < lit.Count; i++)
+            {
+                lit[i].SetVector(FireId, v);
+                lit[i].SetColor(FireColorId, fireColour);
             }
         }
 

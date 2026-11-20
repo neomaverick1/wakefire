@@ -56,13 +56,14 @@ namespace Wakefire
         public SpriteRenderer sr;
         SpriteSheet sheetValue;
         public ModelActor model;
+        public string modelAs;                 // set before the sheet to be played by another model (the big Azar of the title screen)
         public SpriteSheet sheet
         {
             get => sheetValue;
             set
             {
                 sheetValue = value;
-                var def = value != null ? ModelDefs.For(value.name) : null;
+                var def = value != null ? ModelDefs.For(modelAs ?? value.name) : null;
                 if (def != null && !model && sr) model = ModelActor.Attach(this, def);
             }
         }

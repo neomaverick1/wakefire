@@ -151,6 +151,24 @@ namespace Wakefire
             anim.Tick(dt);
             Place();
             if (snore != null && !talking) Snore(dt);
+            if (snore != null && !talking) Zeds(dt);
+        }
+
+        float zedClock = UnityEngine.Random.Range(0.3f, 1.6f);
+
+        /// <summary>Sleepers breathe out little letter Zs. Even the ones sleepwalking.</summary>
+        void Zeds(float dt)
+        {
+            zedClock -= dt;
+            if (zedClock > 0) return;
+            zedClock = UnityEngine.Random.Range(1.25f, 1.9f);
+            string a = anim.anim;
+            if (!Present || !(a == "sleep" || a == "lie" || a == "lean" || a == "knead" || a == "sleepwalk" || a == "cower")) return;
+            var v = PixelView.I;
+            if (!v || Mathf.Abs(pos.x - v.focus.x) > 14f || Mathf.Abs(pos.y - v.focus.y) > 9f) return;
+            float tall = anim.model ? anim.model.def.scale * 1.62f : 2.1f;
+            var at = a == "lie" ? pos + new Vector2(0.95f, 0.75f) : a == "cower" ? pos + new Vector2(0.25f, tall * 0.55f) : pos + new Vector2(0.3f, tall);
+            Zed.Spawn(at, layer);
         }
 
         void Snore(float dt)
@@ -203,6 +221,56 @@ namespace Wakefire
                 shadow.sortingOrder = o - 1;
                 shadow.enabled = anim.model || anim.anim != "lie";
             }
+        }
+    }
+
+    /// <summary>A small letter Z drifting up from a sleeper and fading.</summary>
+    public class Zed : MonoBehaviour
+    {
+        static Sprite glyph;
+        SpriteRenderer sr;
+        float life, sway;
+        Vector2 at;
+
+        public static void Spawn(Vector2 at, WorldLayer layer)
+        {
+            if (!glyph)
+            {
+                // a five-pixel Z with a one-pixel drop shadow, so it reads over grass, stone and sand alike
+                string[] rows = { "####", "..#.", ".#..", "####" };
+                var t = new Texture2D(5, 5) { filterMode = FilterMode.Point };
+                var clear = new Color[25];
+                t.SetPixels(clear);
+                for (int y = 0; y < 4; y++)
+                    for (int x = 0; x < 4; x++)
+                        if (rows[y][x] == '#') t.SetPixel(x + 1, 3 - y, new Color(0.07f, 0.07f, 0.16f, 1));
+                for (int y = 0; y < 4; y++)
+                    for (int x = 0; x < 4; x++)
+                        if (rows[y][x] == '#') t.SetPixel(x, 4 - y, new Color(0.92f, 0.95f, 1f, 1));
+                t.Apply();
+                glyph = Sprite.Create(t, new Rect(0, 0, 5, 5), new Vector2(0.5f, 0.5f), 16f);
+            }
+            var go = new GameObject("z");
+            go.transform.SetParent(Map.Current ? Map.Current.transform : null, false);
+            var z = go.AddComponent<Zed>();
+            z.at = at;
+            z.sway = UnityEngine.Random.value * 6f;
+            z.sr = go.AddComponent<SpriteRenderer>();
+            z.sr.sprite = glyph;
+            z.sr.sharedMaterial = Npc.Mat(layer);
+            z.sr.sortingOrder = 30000;
+            go.transform.position = at;
+        }
+
+        void Update()
+        {
+            if (Game.Paused) return;
+            life += Time.deltaTime;
+            float k = life / 1.5f;
+            var p = at + new Vector2(Mathf.Sin(life * 3.2f + sway) * 0.16f + life * 0.18f, life * 0.62f);
+            transform.position = new Vector3(Mathf.Round(p.x * 16f) / 16f, Mathf.Round(p.y * 16f) / 16f, 0);
+            sr.enabled = k < 0.72f || ((int)(life * 16f) % 2 == 0);
+            if (k >= 1f) Destroy(gameObject);
         }
     }
 }

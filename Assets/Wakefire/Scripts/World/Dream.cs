@@ -34,6 +34,9 @@ namespace Wakefire
             return I;
         }
 
+        /// <summary>The ring is on its way out across the map: both worlds are on screen at once.</summary>
+        public bool Sweeping => radius < 9999f;
+
         public bool IsDreamAt(Vector2 p)
         {
             bool inside = Vector2.Distance(p, center) <= radius;

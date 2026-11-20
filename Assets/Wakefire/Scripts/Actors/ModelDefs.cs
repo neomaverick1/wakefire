@@ -117,7 +117,10 @@ namespace Wakefire
             defs = new Dictionary<string, ModelDef>();
             Off = Boot.Flag("-sprites");
             if (Off) return;
-            Add("azar", Azar());
+            Add("azar", Azar(1.45f));
+            var portrait = Azar(2.5f);          // the same man, nearer the lens: the title screen and the cover
+            portrait.span = 2;
+            Add("azar_title", portrait);
             Add("captain", Human(1.50f, Cast.Dur));
             var sentinel = Human(1.52f, Cast.Sentinel);
             Run(sentinel, 1.52f, 6.5f).With(Gesture.Level);
@@ -197,14 +200,14 @@ namespace Wakefire
             return d;
         }
 
-        static ModelDef Azar()
+        static ModelDef Azar(float scale)
         {
-            var d = Human(1.45f, Cast.Azar);
-            Run(d, 1.45f);
+            var d = Human(scale, Cast.Azar);
+            Run(d, scale);
             // the three cuts: a chop down across the body, a thrust, and a long overhead cut that ends the combo
-            d.Fit("attack1", "Sword_Attack", 0.26f, 0.80f, warp: new[] { 0f, 0f, 0.333f, 0.30f, 1f, 1f }, fade: 0.04f);
+            d.Fit("attack1", "Sword_Attack", 0.26f, 0.80f, warp: new[] { 0f, 0f, 0.333f, 0.30f, 1f, 1f }, fade: 0.04f).With(Gesture.Across(34f));
             d.Fit("attack2", "Punch_Cross", 0.12f, 0.62f, warp: new[] { 0f, 0f, 0.333f, 0.36f, 1f, 1f }, fade: 0.05f);
-            d.Fit("attack3", "Sword_Attack", 0.05f, 0.95f, warp: new[] { 0f, 0f, 0.43f, 0.40f, 1f, 1f }, fade: 0.05f);
+            d.Fit("attack3", "Sword_Attack", 0.05f, 0.95f, warp: new[] { 0f, 0f, 0.43f, 0.40f, 1f, 1f }, fade: 0.05f).With(Gesture.Leap);
             d.Fit("roll", "Roll", 0.30f, 1.02f, fade: 0.05f);
             d.Own("push", "Push_Loop");
             d.Own("use", "Spell_Simple_Shoot", loop: false, fade: 0.06f);

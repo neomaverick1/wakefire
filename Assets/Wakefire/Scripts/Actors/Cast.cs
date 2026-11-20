@@ -616,6 +616,23 @@ namespace Wakefire
             Droop(m, 1.25f * k - (n > 0.84f ? Mathf.Sin((n - 0.84f) / 0.16f * Mathf.PI) * 0.3f : 0f));
         };
 
+        /// <summary>Tips the shoulders so an overhead chop comes down across the body instead.</summary>
+        public static Action<ModelActor, float> Across(float degrees) => (m, n) =>
+        {
+            float k = Mathf.Sin(Mathf.Clamp01(n * 1.15f) * Mathf.PI);
+            m.Bend("spine_02", 0, 0, degrees * k);
+            m.Bend("spine_03", 0, 0, degrees * 0.45f * k);
+            m.Bend("Head", 0, 0, -degrees * 0.6f * k);
+        };
+
+        /// <summary>The last cut of the combo leaves the ground: up with the blade, down with all his weight.</summary>
+        public static Action<ModelActor, float> Leap => (m, n) =>
+        {
+            float k = Mathf.Clamp01(n / 0.5f);
+            m.height = Mathf.Sin(k * Mathf.PI) * 0.34f;
+            m.Bend("spine_01", 10f * Mathf.Clamp01((n - 0.4f) / 0.2f) * (1f - Mathf.Clamp01((n - 0.8f) / 0.2f)));
+        };
+
         public static Action<ModelActor, float> Block => (m, n) =>
         {
             m.Bend("upperarm_l", -62f, 38f);

@@ -61,7 +61,7 @@ namespace Wakefire
             // Azar on a roof in the foreground, cape and crest moving in the night wind
             var ht = Resources.Load<Texture2D>("UI/title_hero");
             var hj = Resources.Load<TextAsset>("UI/title_hero");
-            if (hj && ModelDefs.For("azar") != null)
+            if (hj && ModelDefs.For("azar_title") != null)
             {
                 // the real Azar stands there, posed on the model stage, his cape in the night wind
                 var hi = JsonUtility.FromJson<HeroInfo>(hj.text);
@@ -73,6 +73,7 @@ namespace Wakefire
                 sr.enabled = false;
                 heroAnim = body.AddComponent<SpriteAnim>();
                 heroAnim.sr = sr;
+                heroAnim.modelAs = "azar_title";
                 heroAnim.sheet = SpriteSheet.Load("azar");
                 heroAnim.Play("idle", Facing.Right, true);
                 if (heroAnim.model)
@@ -81,9 +82,10 @@ namespace Wakefire
                     heroAnim.model.velocity = new Vector2(2.6f, 0.4f);
                     heroAnim.model.Aim(new Vector2(1f, 0.45f), true);
                 }
-                float feetX = Mathf.Max(34f, Mathf.Round((W - bgt.width) / 2f) + hi.x + hi.w * 0.5f), feetY = H - bgt.height + hi.y + hi.h;
-                hero = Img("hero", Texture2D.whiteTexture, feetX - ModelStage.Cell * 0.5f, feetY - (ModelStage.Cell - ModelStage.FeetPx));
-                ((RectTransform)hero.transform).sizeDelta = new Vector2(ModelStage.Cell, ModelStage.Cell);
+                float feetX = Mathf.Max(44f, Mathf.Round((W - bgt.width) / 2f) + hi.x + hi.w * 0.5f), feetY = H - bgt.height + hi.y + hi.h;
+                int cell = ModelStage.Cell * 2, feet = ModelStage.FeetPx * 2;
+                hero = Img("hero", Texture2D.whiteTexture, feetX - cell * 0.5f, feetY - (cell - feet));
+                ((RectTransform)hero.transform).sizeDelta = new Vector2(cell, cell);
                 heroMat = new Material(Map.SpriteMat);
                 heroMat.SetFloat("_Model", 1f);
                 hero.material = heroMat;

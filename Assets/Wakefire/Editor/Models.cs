@@ -64,6 +64,15 @@ namespace Wakefire.EditorTools
                 AssetDatabase.CreateAsset(shade, shadePath);
             }
             if (shade && shadeShader) shade.shader = shadeShader;
+            const string emberPath = "Assets/Wakefire/Resources/Materials/Ember.mat";
+            var emberShader = Shader.Find("Hidden/Wakefire/Ember");
+            var ember = AssetDatabase.LoadAssetAtPath<Material>(emberPath);
+            if (!ember && emberShader)
+            {
+                ember = new Material(emberShader) { name = "Ember" };
+                AssetDatabase.CreateAsset(ember, emberPath);
+            }
+            if (ember && emberShader) ember.shader = emberShader;
             EditorUtility.SetDirty(lib);
             AssetDatabase.SaveAssets();
             Debug.Log($"[import] models: {string.Join(", ", lib.models.Select(m => m.name))}; {lib.clips.Count} clips; {lib.meshes.Count} gear meshes; {lib.textures.Count} textures");
