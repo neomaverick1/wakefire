@@ -332,6 +332,9 @@ namespace Wakefire
             }
         }
 
+        /// <summary>A light this figure carries itself (Azar's lantern): it lights the ground, not the hand that holds it.</summary>
+        public LightBlob ownLight;
+
         /// <summary>The strongest fire near the actor lights the side of the model that faces it.</summary>
         void Firelight()
         {
@@ -341,7 +344,7 @@ namespace Wakefire
             Color colour = fireColour;
             foreach (var l in LightBlob.All)
             {
-                if (!l || l.radius <= 0.1f) continue;
+                if (!l || l.radius <= 0.1f || l == ownLight) continue;
                 Vector2 d = (Vector2)l.transform.position - here;
                 float k = l.intensity * Mathf.Clamp01(1f - d.magnitude / (l.radius * 0.95f));
                 if (k > best) { best = k; towards = d; colour = l.color; }

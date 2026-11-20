@@ -53,6 +53,7 @@ namespace Wakefire
             p.health.hp = 6;
             p.shadow = MakeShadow(go.transform);
             p.lantern = LightBlob.Create(go.transform, at, 3.6f, new Color(1f, 0.78f, 0.42f), 0.6f, true);
+            p.lantern.height = 0.7f;
             Dream.I.ForcedWake += p.OnForcedWake;
             p.Place();
             return p;
@@ -494,6 +495,7 @@ namespace Wakefire
             shadow.sortingOrder = Map.Order(pos.y) - 1;
             shadow.transform.localPosition = new Vector3(0, 0.02f, 0);
             Vector2 lo = facing == Facing.Left ? new Vector2(-0.35f, 0.5f) : facing == Facing.Right ? new Vector2(0.35f, 0.5f) : new Vector2(0.45f, 0.55f);
+            if (lantern && anim.model) anim.model.ownLight = lantern;
             if (lantern && anim.model && anim.model.props.TryGetValue("lantern", out var carried))
                 lantern.transform.position = (Vector3)(pos + anim.model.Offset(carried.TransformPoint(0, -0.19f * anim.model.def.scale, 0)));
             else if (lantern) lantern.transform.position = (Vector3)(pos + lo);

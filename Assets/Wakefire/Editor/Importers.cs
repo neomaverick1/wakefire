@@ -7,7 +7,7 @@ namespace Wakefire.EditorTools
 {
     public class Importers : AssetPostprocessor
     {
-        public override uint GetVersion() => 8;
+        public override uint GetVersion() => 9;
 
         void OnPreprocessAudio()
         {
@@ -44,7 +44,7 @@ namespace Wakefire.EditorTools
             t.mipmapEnabled = false;
             t.textureCompression = TextureImporterCompression.Uncompressed;
             t.npotScale = TextureImporterNPOTScale.None;
-            t.alphaIsTransparency = true;
+            t.alphaIsTransparency = !assetPath.Contains("_lin");      // normal maps keep the height in alpha: don't let the importer repaint them
             t.maxTextureSize = 8192;
             t.isReadable = assetPath.Contains("/Resources/Fonts/");
             if (assetPath.Contains("/Resources/UI/"))

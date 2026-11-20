@@ -29,6 +29,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _Flat: 0
     - _Layer: 0
     - _Model: 0
     - _Sway: 0

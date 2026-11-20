@@ -35,3 +35,5 @@ Art/audio/*.sf2
 
 __pycache__/
 *.pyc
+# left behind by the web build
+/Data/

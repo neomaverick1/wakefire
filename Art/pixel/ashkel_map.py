@@ -1,164 +1,162 @@
-"""Ashkel, first district: the Temple Gate square with houses to the west and the night market
-to the east. Builds the ground, the props, collision, lights and markers for Unity."""
+"""Ashkel, first district: the square before the Temple Gate. The precinct wall and its glazed
+gate close the north side; the processional way runs up to it between rows of houses on the
+west and the night market on the east. Builds the ground, the props, collision, lights and
+markers for Unity."""
+import sys
+sys.path.insert(0, '/srv/Wakefire/Art/pixel')
 import numpy as np
-from px import Canvas, R, OUTLINE
+from px import Canvas
 import ashkel_art as A
+import town
+import kit
+from forge import Model, M, m_ashlar, m_mottle
 from mapkit import MapBuilder
 
 TW, TH = 60, 30
 W, H = TW * 16, TH * 16
 
+HOUSES = [
+    # west of the square: two rows with a lane between
+    ('ak_w1a', 72, 176, 7.0, 3.0, 2.75, dict(seed=4, plaster=0, door_x=-1.4, upper=(0.0, 3.5, 1.75, 1.9))),
+    ('ak_w1b', 188, 176, 7.5, 3.0, 2.5, dict(seed=7, plaster=1, door_x=1.6)),
+    ('ak_w1c', 308, 176, 7.5, 3.0, 2.75, dict(seed=9, plaster=2, door_x=-1.8, stair='r')),
+    ('ak_w2a', 52, 340, 6.5, 3.0, 2.5, dict(seed=13, plaster=3, door_x=1.0)),
+    ('ak_w2b', 168, 340, 8.0, 3.0, 2.75, dict(seed=14, plaster=4, door_x=-2.0, upper=(0.5, 4.0, 1.75, 2.0))),
+    ('ak_w2c', 306, 340, 7.25, 3.0, 2.5, dict(seed=15, plaster=0, door_x=1.5)),
+    # east: one house against the wall, a row along the south of the market
+    ('ak_e1a', 884, 176, 8.0, 3.0, 2.75, dict(seed=16, plaster=1, door_x=-2.2, upper=(0.0, 4.0, 1.75, 2.0))),
+    ('ak_e2a', 668, 424, 8.0, 3.0, 2.75, dict(seed=17, plaster=2, door_x=1.8, upper=(-4.0, -0.5, 1.75, 1.9))),
+    ('ak_e2b', 804, 424, 8.5, 3.0, 2.5, dict(seed=18, plaster=0, door_x=-1.0)),
+    ('ak_e2c', 920, 424, 5.5, 3.0, 2.75, dict(seed=19, plaster=3, door_x=-0.6)),
+]
+
+
+def terrace():
+    """The low platform before the gate, with three steps down into the square."""
+    m = Model()
+    face = M('sandstone', 4.2, m_ashlar(16, 8)); top = M('sandstone', 4.5, m_ashlar(16, 12, 5))
+    d, h = 34 / 16.0, 0.5
+    m.part(); m.box(0, 0, 0, 4, d, h, face, top=top)
+    m.part(); m.box(7, 0, 0, 11, d, h, face, top=top)
+    for i in range(3):
+        m.part(); m.box(4, 0.19 * i, 0, 7, d, h * (i + 1) / 3, face, top=top)
+    return m
+
 
 def build():
-    m = MapBuilder("ashkel", TW, TH, R['grass'][3], music="town")
-    g = m.ground
-    A.grass(g, 0, 0, W, H, seed=3, dense=0.8)
-    # the square: a terrace before the gate, a kerbed plaza, a processional way of pale slabs
-    # running from the road to the steps, and Ninhal's sun-and-moon set into the paving
-    sq = (380, 92, 200, 216)
-    road = (452, 300, 56, 180)
-    walk = (448, 92, 64, 388)
-    A.pavers(g, *sq)
-    A.pavers(g, *road, seed=5)
-    A.kerb(g, *sq)
-    A.slabs(g, walk[0], walk[1], walk[2], walk[3], R['lime'], 16, 12, seed=41)
+    m = MapBuilder("ashkel", TW, TH, (60, 44, 40, 255), music="town")
+    T = m.lay(seed=3)
+    # ---------------------------------------------------------------- the ground
+    T.earth(T.all(), seed=1, grain='h', base=3.4)
+    market = T.ragged(T.rect(592, 60, 220, 272), 5, 12, seed=2)
+    T.earth(market, seed=3, base=3.9, ramp='dust', pebbles=0.006)
+    court = T.ragged(T.rect(0, 344, 440, 136), 5, 12, seed=4)
+    T.earth(court, seed=5, base=3.8, ramp='dust', pebbles=0.006)
+    green = T.ragged(T.rect(0, 440, 300, 40) | T.disc(40, 420, 50, 40) | T.disc(340, 440, 44, 30) | T.rect(560, 452, 400, 28) | T.disc(930, 290, 34, 40) | T.disc(596, 452, 30, 20), 5, 10, seed=6)
+    T.grass(green, seed=7, flowers=0.008)
+    T.grass(T.ragged(T.disc(700, 300, 60, 16) | T.disc(160, 400, 60, 14) | T.disc(780, 90, 40, 12), 4, 8, seed=8) & ~green, seed=9, ramp='dry', base=3.0, tufts=0.05)
+    # the square: cut stone, with flagstones running out into the market and the lanes
+    square = T.rect(380, 92, 200, 216)
+    T.slabs(square | T.rect(388, 58, 184, 40), seed=12, moss=0.06)
+    T.slabs(T.ragged(T.disc(640, 290, 46, 20) | T.disc(700, 150, 70, 26) | T.disc(720, 240, 50, 16) | T.disc(200, 196, 150, 12) | T.disc(160, 350, 120, 9), 3, 7, seed=10),
+            seed=14, rows=(9, 10), wmin=9, wmax=15, base=4.0)
+    # the processional way: pale slabs between two bands of glazed blue brick studded with gold
+    way = T.rect(448, 92, 64, 388)
+    T.slabs(way, seed=41, rows=(12,), wmin=16, wmax=16, ramp='pale', base=4.3, jitter=0.8, crack=0.05, whole=False, wear=0.4)
+    bands = T.rect(444, 92, 4, 388) | T.rect(512, 92, 4, 388)
+    T.bricks(bands, seed=42, bw=8, bh=4, ramp='lapis', base=3.3, jitter=0.7)
+    stud = bands & ((T.yy % 16) >= 7) & ((T.yy % 16) <= 8) & (((T.xx - 444) % 68) >= 1) & (((T.xx - 444) % 68) <= 2)
+    T.put(stud, 'gold', np.full((H, W), 4.0), 1.4)
+    # a garden behind the last house, in rows
+    for (x, y, w, h) in ((20, 372, 84, 40), (236, 380, 60, 36)):
+        bed = T.rect(x, y, w, h)
+        T.soil(bed, seed=x)
+        T.grass(bed & ((T.yy % 5) == 2) & (((T.xx + T.yy // 5 * 3) % 7) < 4), seed=x + 1, base=3.6, tufts=0.0, fringe=0)
+    for (key, cx, y, w, d, h, kw) in HOUSES:
+        T.contact(cx - w * 8, y - d * 16, cx + w * 8, y, reach=5, strength=1.5)
+    T.contact(0, 30, 392, 58, reach=6, strength=1.6); T.contact(568, 30, W, 58, reach=6, strength=1.6)
+    g = m.bake()
     A.sigil(g, 480, 186, 22)
-    A.terrace(g, 392, 58, 176, 26, 8, 456, 48)
-    inside = lambda x, y: (sq[0] <= x < sq[0] + sq[2] and sq[1] <= y < sq[1] + sq[3]) or \
-                          (road[0] <= x < road[0] + road[2] and road[1] <= y < road[1] + road[3]) or \
-                          (392 <= x < 568 and 58 <= y < 92)
-    A.edge_line(g, inside, 370, 50, 220, 440, R['grass'][1])
+    m.set_into_ground(terrace(), 392, 92)
     m.solid(392, 84, 456, 92); m.solid(504, 84, 568, 92)
     m.solid(386, 58, 392, 92); m.solid(568, 58, 574, 92)
 
-    # precinct wall with the Temple Gate (one big prop) and its solid band
-    def wall(cv, ax, ay, fi):
-        A.city_wall(cv, 0, ay - 46, W, face_h=34, top_h=10)
-        A.tower(cv, 436, ay - 58, 38, 60, seed=11)
-        A.tower(cv, 486, ay - 58, 38, 60, seed=12)
-        A.torch_bracket(cv, 454, ay - 30, 0)
-        A.torch_bracket(cv, 505, ay - 30, 2)
+    # ---------------------------------------------------------------- the wall and the gate
+    m.model("wall_temple", town.city_wall(60.0, h=2.2, d=1.2, gate_at=30.0, gate_w=2.9), 0, 58, box=None)
+    m.solid(0, 0, 457, 58); m.solid(503, 0, W, 58); m.solid(416, 58, 457, 66); m.solid(503, 58, 544, 66)
+    m.model("banner", town.banner, 305, 59, box=None, frames=4, kind="banner")
+    for bx in (184, 655, 776):
+        m.model("banner", town.banner, bx, 59, box=None, frames=4, kind="banner")
+    m.model("gate_temple", town.gate_doors(False), 480, 59, box=(-23, -14, 23, 0), kind="gate", data={"id": "temple_gate"})
+    m.model("gate_temple_open", town.gate_doors(True), -100, -100, box=None, lights=False)
+    for x in (437, 523):
+        m.model("wall_torch", town.wall_torch, x, 67, box=None, frames=4, kind="torch")
+        m.light(x, 67 - 49, 4.5, (1.0, 0.72, 0.38), 0.9, h=2.95)
 
-    m.prop("wall_temple", wall, 0, 58, size=(W, 120), anchor=(0, 100), pad=0)
-    def banner(cv, ax, ay, fi):
-        A.banner(cv, ax - 5, ay - 35, 10, 28, frame=fi)
-    for bx in (300, 404, 546, 650):
-        m.prop("banner", banner, bx + 5, 59, size=(24, 40), pad=2, frames=4, kind="banner")
-    m.solid(0, 0, 457, 58)
-    m.solid(503, 0, W, 58)
-    def gate_doors(open_):
-        return lambda cv, ax, ay, fi: A.gate(cv, ax, ay - 40, 46, 40, open_=open_)
-    m.prop("gate_temple", gate_doors(False), 480, 59, box=(-23, -14, 23, 0), size=(80, 80), kind="gate", data={"id": "temple_gate"})
-    m.prop("gate_temple_open", gate_doors(True), -100, -100, size=(80, 80))
-    for (x, y) in ((455, 28), (506, 28)):
-        m.light(x, y, 4.5, (1.0, 0.72, 0.38), 0.9)
+    # ---------------------------------------------------------------- houses
+    for (key, cx, y, w, d, h, kw) in HOUSES:
+        m.model(key, town.house(w, d, h, **kw), cx, y, box=(-w * 8, -(d + h) * 16, w * 8, 0))
+        if kw.get('stair') == 'r': m.solid(cx + w * 8 - 37, y, cx + w * 8, y + 9)
+        if kw.get('stair') == 'l': m.solid(cx - w * 8, y, cx - w * 8 + 37, y + 9)
+    for (x, y, big) in ((122, 180, True), (252, 180, False), (226, 344, True), (112, 344, False), (600, 428, True), (742, 428, False), (930, 180, True), (30, 180, False)):
+        kit.pot(m, x, y, big)
 
-    # west: houses, a garden, pots
-    def house(seed, w, ladder=False, door=True):
-        def f(cv, ax, ay, fi):
-            A.mud_house(cv, ax - w // 2, ay - 60, w, 26, 34, seed=seed, ladder=ladder, door=door)
-        return f
-    for (x, y, w, seed, lad) in ((120, 150, 80, 4, True), (250, 140, 72, 7, False), (70, 300, 76, 9, False), (220, 330, 84, 13, True)):
-        m.prop(f"house_{seed}", house(seed, w, lad), x, y, box=(-w // 2, -58, w // 2, 0), size=(w + 8, 70), pad=4)
-        A.soft_shadow(g, x + w // 2 + 3, y - 18, 6, 18)
-        m.light(x - w // 2 + 9, y - 22, 2.4, (1.0, 0.74, 0.4), 0.55, tag="window")
-    # garden in front of the first house
-    A.flower_bed(g, 90, 176, 48, 16, seed=3)
-    A.flower_bed(g, 230, 360, 40, 14, seed=4)
-
-    def pot(big, seed):
-        return lambda cv, ax, ay, fi: A.pot(cv, ax, ay, seed=seed, big=big)
-    for (x, y, big) in ((168, 152, True), (177, 154, False), (300, 142, False), (110, 302, True), (276, 334, True), (285, 336, False)):
-        m.prop("pot_big" if big else "pot", pot(big, x), x, y, box=(-4, -4, 4, 0), size=(24, 30), pad=6, kind="pot")
-        A.soft_shadow(g, x + 3, y, 6, 2)
-
-    # trees
-    def olive(seed):
-        return lambda cv, ax, ay, fi: A.olive_tree(cv, ax, ay, seed=seed)
-    for (x, y, seed) in ((330, 200, 5), (40, 420, 6), (340, 430, 7), (610, 400, 8), (900, 300, 9)):
-        m.prop(f"olive_{seed}", olive(seed), x, y, box=(-4, -4, 4, 0), size=(64, 64), pad=6)
-        A.soft_shadow(g, x + 7, y + 1, 16, 5)
-    def cyp(seed, h):
-        return lambda cv, ax, ay, fi: A.cypress(cv, ax, ay, h, seed=seed)
-    for (x, y, h, seed) in ((600, 140, 46, 3), (860, 120, 50, 4), (940, 190, 44, 5), (360, 120, 40, 6), (20, 160, 44, 7)):
-        m.prop(f"cypress_{seed}", cyp(seed, h), x, y, box=(-3, -3, 3, 0), size=(24, 64), pad=4)
-        A.soft_shadow(g, x + 5, y, 8, 3)
-
-    # bushes along the square, LttP-style rows that can be cut
-    def bush(seed, fl):
-        return lambda cv, ax, ay, fi: A.bush(cv, ax, ay - 6, seed=seed, flowers=fl)
+    # ---------------------------------------------------------------- trees and hedges
+    for (x, y, sd) in ((340, 436, 4), (40, 440, 5), (150, 452, 6), (590, 456, 7), (926, 300, 0)):
+        kit.olive(m, x, y, sd)
+    for (x, y, sd) in ((600, 150, 2), (806, 270, 3), (372, 472, 4)):
+        kit.palm(m, x, y, sd)
+    kit.cypress(m, 810, 110, 2)
     k = 0
     for x in range(392, 440, 16):
         for y in (330, 350):
-            m.prop(f"bush_{k % 4}", bush(k % 4, k % 3 == 0), x, y, box=(-6, -5, 6, 0), size=(24, 24), pad=4, kind="bush")
-            A.soft_shadow(g, x + 3, y, 8, 2.5)
-            k += 1
+            kit.bush(m, x, y, k); k += 1
     for x in range(536, 584, 16):
         for y in (330, 350):
-            m.prop(f"bush_{k % 4}", bush(k % 4, k % 3 == 0), x, y, box=(-6, -5, 6, 0), size=(24, 24), pad=4, kind="bush")
-            A.soft_shadow(g, x + 3, y, 8, 2.5)
-            k += 1
-    for (x, y) in ((40, 210), (56, 218), (30, 236), (700, 300), (716, 310), (930, 420), (912, 440)):
-        m.prop(f"bush_{k % 4}", bush(k % 4, k % 3 == 0), x, y, box=(-6, -5, 6, 0), size=(24, 24), pad=4, kind="bush")
-        A.soft_shadow(g, x + 3, y, 8, 2.5)
-        k += 1
+            kit.bush(m, x, y, k); k += 1
+    for (x, y) in ((20, 466), (70, 470), (300, 466), (716, 470), (760, 466), (930, 470), (912, 466), (700, 306)):
+        kit.bush(m, x, y, k); k += 1
+    for (x, y, sd) in ((398, 134, 1), (562, 134, 2), (398, 286, 3), (562, 286, 4)):
+        m.model(f"planter_{sd}", town.planter(sd), x, y, box=(-14, -10, 14, 0))
 
-    # east: the night market, a well
-    def stall(seed):
-        return lambda cv, ax, ay, fi: A.stall(cv, ax - 22, ay - 34, 44, seed=seed)
-    for (x, y, seed) in ((680, 120, 1), (760, 120, 2), (720, 220, 3)):
-        m.prop(f"stall_{seed}", stall(seed), x, y, box=(-22, -8, 22, 0), size=(60, 50), pad=4)
-        A.soft_shadow(g, x + 6, y, 24, 4)
-    m.prop("well", lambda cv, ax, ay, fi: A.well(cv, ax, ay - 9), 640, 280, box=(-13, -12, 13, 0), size=(40, 44), pad=4, kind="well")
-    A.soft_shadow(g, 645, 281, 15, 4)
-    m.prop("sign_gate", lambda cv, ax, ay, fi: A.sign(cv, ax, ay), 440, 300, box=(-2, -2, 2, 0), size=(24, 24), pad=2, kind="sign",
-           data={"text": "sign_temple"})
+    # ---------------------------------------------------------------- the night market, a well
+    for (x, y, sd) in ((680, 124, 1), (760, 124, 2), (720, 234, 3)):
+        m.stall(f"stall_{sd}", sd, x, y, town)
+    m.model("well", town.well(), 640, 284, box=(-14, -26, 14, 0), kind="well")
+    kit.sign(m, 440, 300, "sign_gate", "sign_temple")
+    m.model("amphorae", town.amphorae(31), 628, 128)
+    m.model("sacks", town.sacks(32), 764, 244)
+    m.model("amphorae_b", town.amphorae(33), 618, 250)
+    m.model("crates", town.crates(0), 808, 130)
+    m.model("cart", town.cart(3), 770, 316, box=(-16, -16, 30, 0))
 
     # braziers in the square, dark until the Wakefire touches them
-    def braz(lit):
-        return lambda cv, ax, ay, fi: A.brazier(cv, ax, ay, lit=lit, frame=fi)
     for i, (x, y) in enumerate(((412, 176), (548, 176), (480, 250))):
-        m.prop("brazier", braz(False), x, y, box=(-6, -4, 6, 0), size=(24, 34), pad=4, kind="brazier", data={"id": f"square_{i}"})
-        A.soft_shadow(g, x + 4, y, 8, 2.5)
-    m.prop("brazier_lit", braz(True), -100, -100, size=(24, 40), pad=4, frames=4)
+        kit.brazier(m, x, y, False, f"square_{i}")
+    kit.brazier_frames(m)
 
     # guardians of the gate: winged bulls with crowned men's heads
-    from px import Canvas as _C
     import json as _json
-    lam = _C.load("/srv/Wakefire/Art/sprites/props/lamassu.png")
+    lam = Canvas.load("/srv/Wakefire/Art/sprites/props/lamassu.png")
     lbx, lby = _json.load(open("/srv/Wakefire/Art/sprites/props/lamassu.json"))["base"]
     def lamassu(flip):
         return lambda cv, ax, ay, fi: cv.blit(lam, ax - (lam.w - lbx if flip else lbx), ay - lby, flip=flip)
-    m.prop("lamassu_l", lamassu(False), 420, 82, box=(-10, -8, 10, 0), size=(48, 56), pad=8)
-    m.prop("lamassu_r", lamassu(True), 540, 82, box=(-10, -8, 10, 0), size=(48, 56), pad=8)
-    # standing torches at the foot of the steps
-    def ptorch(cv, ax, ay, fi):
-        A.pole_torch(cv, ax, ay, frame=fi)
-    for x in (442, 518):
-        m.prop("pole_torch", ptorch, x, 104, box=(-2, -2, 3, 0), size=(24, 40), pad=4, frames=4, kind="torch")
-        A.soft_shadow(g, x + 3, 104, 5, 2)
-        m.light(x + 1, 80, 4.2, (1.0, 0.70, 0.36), 0.85)
-    # planters with clipped myrtle along the square
-    def plant(seed):
-        return lambda cv, ax, ay, fi: A.planter(cv, ax, ay, 28, 9, 12, seed=seed)
-    for (x, y, sd) in ((398, 134, 1), (562, 134, 2), (398, 286, 3), (562, 286, 4)):
-        m.prop(f"planter_{sd}", plant(sd), x, y, box=(-14, -10, 14, 0), size=(40, 36), pad=4)
-        A.soft_shadow(g, x + 5, y, 15, 3)
-    # market clutter
-    m.prop("amphorae", lambda cv, ax, ay, fi: A.amphorae(cv, ax, ay, 31), 700, 132, box=(-8, -4, 8, 0), size=(32, 28), pad=4)
-    m.prop("sacks", lambda cv, ax, ay, fi: A.sacks(cv, ax, ay, 32), 744, 236, box=(-8, -5, 8, 0), size=(28, 22), pad=4)
-    m.prop("amphorae_b", lambda cv, ax, ay, fi: A.amphorae(cv, ax, ay, 33), 618, 262, box=(-8, -4, 8, 0), size=(32, 28), pad=4)
+    m.prop("lamassu_l", lamassu(False), 420, 86, box=(-10, -8, 10, 0), size=(48, 56), pad=8)
+    m.prop("lamassu_r", lamassu(True), 540, 86, box=(-10, -8, 10, 0), size=(48, 56), pad=8)
+    # standing torches at the foot of the steps, and where the lanes meet the square
+    for (x, y) in ((442, 106), (518, 106), (600, 336), (366, 250), (604, 60)):
+        kit.torch(m, x, y)
 
     m.marker("spawn", 480, 220)
     m.spawn("south", 480, 456, "up")
     m.spawn("gate", 480, 72, "down")
     m.exit(448, 472, 512, 480, "lowtown", "north")
     m.exit(462, 30, 498, 46, "temple_yard", "south", need="gate_open")
-    m.marker("npc", 452, 80, who="captain")
+    m.marker("npc", 452, 86, who="captain")
     m.marker("npc", 398, 222, who="goat")
     m.marker("npc", 552, 226, who="dreamer")
     m.marker("npc", 604, 300, who="walker")
-    m.marker("npc", 680, 112, who="merchant")
+    m.marker("npc", 680, 110, who="merchant")
     m.solid(0, 0, 4, H); m.solid(W - 4, 0, W, H); m.solid(0, H - 4, 448, H); m.solid(512, H - 4, W, H)
     m.save()
 
