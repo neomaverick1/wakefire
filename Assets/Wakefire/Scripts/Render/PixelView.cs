@@ -1,4 +1,4 @@
-// The game is drawn at 216 lines (a clean 5x on 1080p phones) and blown up with nearest-
+// The game is drawn at 180 lines (a whole multiple on 720p, 1080p, 1440p and 4K) and blown up with nearest-
 // neighbour filtering. The camera snaps to whole pixels and the leftover sub-pixel offset
 // slides the final image so scrolling stays smooth. A light layer (moonlit ambient plus
 // torch and lantern rings) is rendered alongside and multiplied in on the display.
@@ -12,8 +12,9 @@ namespace Wakefire
     public class PixelView : MonoBehaviour
     {
         public static PixelView I;
-        /// <summary>Render lines: about 216, picked so the screen is a whole multiple of it (crisp pixels on every phone).</summary>
-        public static int Height { get; private set; } = 216;
+        /// <summary>Render lines: about 180, picked so the screen is a whole multiple of it (crisp pixels on every phone).</summary>
+        public static int Height { get; private set; } = 180;
+        public const int Lines = 180;
         public const float PPU = 16f;            // pixels per world unit (one tile)
         public const int PixelUILayer = 6;
         public const int LightLayer = 11;
@@ -139,7 +140,7 @@ namespace Wakefire
         static RenderTexture RT(string name, int w, int h, bool hdr = false)
         {
             var fmt = hdr && SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.ARGBHalf) ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32;
-            var r = new RenderTexture(w, h, 16, fmt) { filterMode = FilterMode.Point, name = name, antiAliasing = 1 };
+            var r = new RenderTexture(w, h, 24, fmt) { filterMode = FilterMode.Point, name = name, antiAliasing = 1 };     // 24: depth with a stencil, which the shadows use
             r.Create();
             return r;
         }
@@ -148,8 +149,8 @@ namespace Wakefire
         {
             lastW = Screen.width;
             lastH = Screen.height;
-            int scale = Mathf.Max(1, Mathf.RoundToInt(Screen.height / 216f));
-            Height = Mathf.Clamp(Screen.height / scale, 196, 248);
+            int scale = Mathf.Max(1, Mathf.RoundToInt(Screen.height / (float)Lines));
+            Height = Mathf.Clamp(Screen.height / scale, 164, 208);
             // pixels stay square on every shape of screen: on narrow ones (4:3 tablets, a phone
             // held upright in a browser) the view grows taller rather than the picture squashing
             float aspect = Screen.width / (float)Mathf.Max(1, Screen.height);

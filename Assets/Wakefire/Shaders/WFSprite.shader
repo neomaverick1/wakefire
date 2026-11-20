@@ -13,8 +13,9 @@ Shader "Wakefire/Sprite"
         _Dissolve ("Dissolve", Float) = 0
         _DreamGlow ("Dream glow", Float) = 0
         _DreamKeep ("Keep own colours in the dream", Float) = 0
-        _Model ("Drawn from the model stage (1 body, 2 cast shadow)", Float) = 0
+        _Model ("Drawn from the model stage", Float) = 0
         _Cell ("Square of the model stage (uv origin, uv size)", Vector) = (0,0,0,0)
+        _Sway ("Sway in the wind (trees, bushes)", Float) = 0
     }
     SubShader
     {
@@ -43,25 +44,10 @@ Shader "Wakefire/Sprite"
                 float _DreamKeep;
                 float _Model;
                 float4 _Cell;
+                float _Sway;
             CBUFFER_END
             TEXTURE2D(_WFModels);          // sampler_PointClamp comes with Core.hlsl
             float4 _WFModels_TexelSize;
-            float4 _WF_StagePivot;         // where a model's feet stand in its square (uv)
-
-            // The same figure laid over on the ground, away from the moon: for each pixel of ground,
-            // which part of the standing figure would be in the way of the light?
-            half ModelShadow(float2 uv)
-            {
-                float2 cellPx = _Cell.zw * _WFModels_TexelSize.zw;
-                float2 px = floor(uv * cellPx) + 0.5 - _WF_StagePivot.xy * cellPx;
-                float up = px.y / -0.40;
-                float along = px.x - 0.66 * up;
-                float2 suv = _WF_StagePivot.xy + float2(along, up) / cellPx;
-                if (up < 0.0 || suv.x < 0.01 || suv.x > 0.99 || suv.y > 0.99) return 0;
-                float2 p = (floor((_Cell.xy + suv * _Cell.zw) * _WFModels_TexelSize.zw) + 0.5) * _WFModels_TexelSize.xy;
-                return SAMPLE_TEXTURE2D(_WFModels, sampler_PointClamp, p).a;
-            }
-
             // A character posed on the model stage, read out of its square of the stage sheet and
             // inked: a dark line round the outside, and a line wherever one part of the body
             // passes in front of another (the sheet's alpha is depth).
@@ -94,6 +80,9 @@ Shader "Wakefire/Sprite"
             {
                 V o;
                 float3 ws = TransformObjectToWorld(i.positionOS.xyz);
+                // leaves move in the night wind: the top of a tree leans a pixel or so, its foot stays put
+                float3 foot = TransformObjectToWorld(float3(0, 0, 0));
+                ws.x += _Sway * max(i.positionOS.y, 0.0) * sin(_Time.y * 1.1 + foot.x * 0.35 + foot.y * 0.2);
                 o.positionCS = TransformWorldToHClip(ws);
                 o.uv = i.uv;
                 o.color = i.color * _Color;
@@ -108,11 +97,6 @@ Shader "Wakefire/Sprite"
                 float dream = WF_DreamAt(i.world);
                 float vis = _Layer < 0.5 ? 1 : (_Layer < 1.5 ? 1 - dream : dream);
                 clip(vis - 0.5);
-                if (_Model > 1.5)
-                {
-                    clip(ModelShadow(i.uv) - 0.25);
-                    return half4(0.012, 0.014, 0.05, 0.58);
-                }
                 half4 c;
                 if (_Model > 0.5) c = ModelPixel(i.uv) * i.color;
                 else c = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv) * i.color;

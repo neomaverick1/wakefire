@@ -308,7 +308,7 @@ namespace Wakefire
                     {
                         s = S.Charge; stateClock = 0;
                         chargeDir = facing == Facing.Down ? Vector2.down : facing == Facing.Up ? Vector2.up : facing == Facing.Left ? Vector2.left : Vector2.right;
-                        anim.Play("walk", facing, true);
+                        anim.Play(anim.model ? "run" : "walk", facing, true);
                     }
                     break;
                 case S.Charge:

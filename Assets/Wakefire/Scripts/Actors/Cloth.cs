@@ -78,6 +78,7 @@ namespace Wakefire
             mat.SetFloat("_Both", 1);
             mr.sharedMaterial = mat;
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            actor.parts.Add(mr);
             return c;
         }
 

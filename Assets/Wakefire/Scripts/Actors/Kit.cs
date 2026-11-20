@@ -106,6 +106,22 @@ namespace Wakefire
     public class Kit
     {
         public readonly Tailor tailor;
+        // a kit can also be built straight onto a skeleton made by code (the beasts): its bones, by name
+        readonly Transform rig;
+        readonly Transform[] ownBones;
+        readonly ModelActor owner;
+        readonly Dictionary<string, int> ownIndex;
+
+        public Kit(ModelActor actor, Transform rigRoot, Transform[] bones)
+        {
+            owner = actor;
+            rig = rigRoot;
+            ownBones = bones;
+            ownIndex = new Dictionary<string, int>();
+            for (int i = 0; i < bones.Length; i++) ownIndex[bones[i].name] = i;
+        }
+
+        int Index(string bone) => tailor != null ? tailor.Index(bone) : ownIndex.TryGetValue(bone, out int i) ? i : 0;
         readonly List<Vector3> pos = new List<Vector3>(), nrm = new List<Vector3>();
         readonly List<Color> col = new List<Color>();
         readonly List<Vector2> flag = new List<Vector2>();
@@ -129,7 +145,7 @@ namespace Wakefire
         /// <summary>What follows is carried rigidly by one bone.</summary>
         public Kit On(string bone)
         {
-            int i = tailor.Index(bone);
+            int i = Index(bone);
             bind = _ => new BoneWeight { boneIndex0 = i, weight0 = 1 };
             return this;
         }
@@ -137,7 +153,7 @@ namespace Wakefire
         /// <summary>What follows is shared between two bones.</summary>
         public Kit On(string a, string b, float share)
         {
-            int i = tailor.Index(a), j = tailor.Index(b);
+            int i = Index(a), j = Index(b);
             bind = _ => new BoneWeight { boneIndex0 = i, weight0 = 1 - share, boneIndex1 = j, weight1 = share };
             return this;
         }
@@ -150,7 +166,7 @@ namespace Wakefire
         /// <summary>Carried between two bones, more by the second the further along the line a-b the point is.</summary>
         public Kit Along(string first, string second, Vector3 a, Vector3 b)
         {
-            int i = tailor.Index(first), j = tailor.Index(second);
+            int i = Index(first), j = Index(second);
             var ab = b - a;
             float len2 = ab.sqrMagnitude;
             bind = p =>
@@ -289,6 +305,34 @@ namespace Wakefire
             return this;
         }
 
+        /// <summary>A round limb or horn following a path, as thick as the radius given at each point.</summary>
+        public Kit Tube(Vector3[] path, float[] radius, int seg = 6)
+        {
+            int n = path.Length;
+            var grid = new int[n, seg + 1];
+            var side = Vector3.zero;
+            for (int i = 0; i < n; i++)
+            {
+                var tan = (path[Mathf.Min(n - 1, i + 1)] - path[Mathf.Max(0, i - 1)]).normalized;
+                if (i == 0)
+                {
+                    side = Vector3.Cross(tan, Mathf.Abs(tan.y) < 0.9f ? Vector3.up : Vector3.right).normalized;
+                }
+                else side = (side - tan * Vector3.Dot(side, tan)).normalized;      // carried along the path so the tube doesn't twist
+                var other = Vector3.Cross(tan, side);
+                for (int j = 0; j <= seg; j++)
+                {
+                    float a = j / (float)seg * Mathf.PI * 2f;
+                    var d = side * Mathf.Cos(a) + other * Mathf.Sin(a);
+                    grid[i, j] = V(path[i] + d * radius[i], d);
+                }
+            }
+            for (int i = 0; i < n - 1; i++)
+                for (int j = 0; j < seg; j++)
+                    Quad(grid[i, j], grid[i + 1, j], grid[i + 1, j + 1], grid[i, j + 1]);
+            return this;
+        }
+
         public Kit Box(Vector3 c, Vector3 size)
         {
             var h = size * 0.5f;
@@ -306,28 +350,30 @@ namespace Wakefire
         public SkinnedMeshRenderer Wear(string name)
         {
             var t = tailor;
+            var root = t != null ? t.rig : rig;
+            var bones = t != null ? t.bones : ownBones;
             var mesh = new Mesh { name = name };
             var p = new Vector3[pos.Count];
             var n = new Vector3[pos.Count];
-            for (int i = 0; i < p.Length; i++) { p[i] = t.FromTailor(pos[i]); n[i] = t.FromTailor(nrm[i]); }
+            for (int i = 0; i < p.Length; i++) { p[i] = t != null ? t.FromTailor(pos[i]) : pos[i]; n[i] = t != null ? t.FromTailor(nrm[i]) : nrm[i]; }
             mesh.vertices = p;
             mesh.normals = n;
             mesh.colors = col.ToArray();
             mesh.uv2 = flag.ToArray();
             mesh.boneWeights = wt.ToArray();
-            var bp = new Matrix4x4[t.bones.Length];
-            for (int i = 0; i < bp.Length; i++) bp[i] = t.bones[i].worldToLocalMatrix * t.rig.localToWorldMatrix;
+            var bp = new Matrix4x4[bones.Length];
+            for (int i = 0; i < bp.Length; i++) bp[i] = bones[i].worldToLocalMatrix * root.localToWorldMatrix;
             mesh.bindposes = bp;
             mesh.triangles = tri.ToArray();
             mesh.RecalculateBounds();
 
             var go = new GameObject(name);
             go.layer = ModelStage.Layer;
-            go.transform.SetParent(t.rig, false);
+            go.transform.SetParent(root, false);
             var smr = go.AddComponent<SkinnedMeshRenderer>();
             smr.sharedMesh = mesh;
-            smr.bones = t.bones;
-            smr.rootBone = t.body.rootBone;
+            smr.bones = bones;
+            smr.rootBone = t != null ? t.body.rootBone : bones[0];
             smr.updateWhenOffscreen = true;
             smr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             smr.receiveShadows = false;
@@ -335,7 +381,7 @@ namespace Wakefire
             mat.SetFloat("_Cull", 0);
             mat.SetFloat("_Both", 1);
             smr.sharedMaterial = mat;
-            t.actor.parts.Add(smr);
+            (t != null ? t.actor : owner).parts.Add(smr);
             return smr;
         }
 

@@ -21,7 +21,14 @@ namespace Wakefire
         public Animator animator;
         public float yaw = 180f, yawTarget = 180f, turnRate = 1100f;
         public Vector2 lean;                // degrees the body tips, in world x and y
-        public Vector2 velocity;            // world units a second: cloth and loose gear trail behind it
+        public Vector2 velocity;            // world units a second: cloth and loose gear trail behind it, strides keep pace with it
+        public bool ownVelocity;            // the owner sets velocity itself (Azar); otherwise it is measured from how the actor moves
+        Vector2 lastSpot;
+        bool spotted;
+        /// <summary>This actor's square of the stage sheet (uv origin and size), or zero while it has none.</summary>
+        public Vector4 Cell => square >= 0 ? ModelStage.I.Rect(square, def.span) : Vector4.zero;
+        /// <summary>The clip stretch showing now.</summary>
+        public ClipMap Current => maps[cur];
         public float height;                // lifted off the ground (a jump, a hop), world units
         public string anim;
         public float norm;                  // how far through the sprite frames the actor is, 0..1
@@ -30,6 +37,9 @@ namespace Wakefire
         public readonly List<Renderer> parts = new List<Renderer>();
         public readonly Dictionary<string, Transform> props = new Dictionary<string, Transform>();   // things carried: "lantern"...
         public readonly Dictionary<string, (Transform bone, Vector3 at)> marks = new Dictionary<string, (Transform, Vector3)>();   // points on the body: "blade0", "blade1"
+        Vector3 fireDir = Vector3.up;
+        float fireAmount;
+        Color fireColour = new Color(1f, 0.62f, 0.26f);
         SpriteRenderer shadow;
         bool lookedForShadow;
         MaterialPropertyBlock shadowBlock;
@@ -51,11 +61,13 @@ namespace Wakefire
         float lastYaw = 999f;
         Vector2 lastLean;
 
+        IPoser poser;
+
         public static ModelActor Attach(SpriteAnim a, ModelDef def)
         {
             var lib = ModelLibrary.I;
-            var prefab = lib ? lib.Prefab(def.model) : null;
-            if (!prefab) return null;
+            var prefab = lib && def.build == null ? lib.Prefab(def.model) : null;
+            if (!prefab && def.build == null) return null;
             var stage = ModelStage.Ensure();
             var m = a.gameObject.AddComponent<ModelActor>();
             m.def = def;
@@ -71,6 +83,18 @@ namespace Wakefire
             var turnGo = new GameObject("Turn");
             turnGo.transform.SetParent(m.anchor, false);
             m.turn = turnGo.transform;
+            if (def.build != null)
+            {
+                var made = new GameObject("Rig");
+                made.layer = ModelStage.Layer;
+                made.transform.SetParent(m.turn, false);
+                m.rig = made.transform;
+                m.rig.localScale = Vector3.one * def.scale;
+                m.poser = def.build(m);
+                foreach (var t in made.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = ModelStage.Layer;
+                m.anchor.gameObject.SetActive(false);
+                return m;
+            }
             var inst = Instantiate(prefab, m.turn, false);
             inst.name = def.model;
             m.rig = inst.transform;
@@ -114,6 +138,22 @@ namespace Wakefire
 
         public Transform Bone(string name) => bones.TryGetValue(name, out var t) ? t : null;
 
+        /// <summary>The character's own frame on the stage: x to their right, y up, z the way they face.</summary>
+        public Quaternion Frame => rig.rotation * Quaternion.Euler(0, def.forward, 0);
+
+        /// <summary>Turns one bone on top of whatever the clip gave it, in the character's own terms:
+        /// pitch tips it forward (a nodding head, a bowing back; negative lifts an arm to the front),
+        /// yaw turns it left or right, roll tips it to the side.</summary>
+        public void Bend(string bone, float pitch, float yaw = 0, float roll = 0)
+        {
+            if (!bones.TryGetValue(bone, out var b)) return;
+            var f = Frame;
+            b.rotation = Quaternion.AngleAxis(pitch, f * Vector3.right) * Quaternion.AngleAxis(yaw, f * Vector3.up) * Quaternion.AngleAxis(roll, f * Vector3.forward) * b.rotation;
+        }
+
+        /// <summary>Seconds this actor has been alive: gestures that breathe or sway keep time by it.</summary>
+        public float life;
+
         /// <summary>How far something on the stage is from the model's feet as the screen shows it (world units).</summary>
         public Vector2 Offset(Vector3 stagePoint) => stagePoint - anchor.position;
 
@@ -132,6 +172,7 @@ namespace Wakefire
 
         public void Play(string name, bool restart)
         {
+            if (poser != null) { anim = name; return; }
             var m = def.Map(name);
             if (m == null || !m.asset) return;
             if (!restart && maps[cur] == m && anim == name) return;
@@ -159,6 +200,25 @@ namespace Wakefire
         public void Advance(float dt, float n)
         {
             norm = n;
+            life += dt;
+            if (!ownVelocity && sr)
+            {
+                Vector2 spot = sr.transform.parent ? sr.transform.parent.position : sr.transform.position;
+                if (spotted && dt > 0.0001f)
+                {
+                    var v = (spot - lastSpot) / dt;
+                    velocity = v.sqrMagnitude > 900f ? Vector2.zero : v;        // a jump across the map isn't a sprint
+                }
+                lastSpot = spot;
+                spotted = true;
+            }
+            if (poser != null)
+            {
+                if (square >= 0) poser.Pose(this, anim, n, dt);          // may turn the creature towards where it's going
+                yaw = Mathf.MoveTowardsAngle(yaw, yawTarget, turnRate * dt);
+                if (square >= 0) turn.localRotation = Quaternion.Euler(0, Mathf.Round(yaw / 7.5f) * 7.5f + def.forward, 0);
+                return;
+            }
             if (!has[cur]) return;
             var m = maps[cur];
             clock[cur] += dt * m.speed;
@@ -196,7 +256,9 @@ namespace Wakefire
                 tip = Quaternion.AngleAxis(l.magnitude, axis);
                 if (Vector3.Dot(tip * Vector3.up, dir) < 0) tip = Quaternion.AngleAxis(-l.magnitude, axis);
             }
-            turn.localRotation = tip * Quaternion.Euler(0, y + def.forward, 0);
+            var map = maps[cur];
+            turn.localRotation = tip * Quaternion.Euler(0, y + def.forward + (map != null ? map.yaw : 0), 0);
+            rig.localPosition = map != null ? map.nudge * def.scale : Vector3.zero;
         }
 
         void LateUpdate()
@@ -228,6 +290,7 @@ namespace Wakefire
             if (square >= 0)
                 anchor.localPosition = ModelStage.I.Feet(square, def.span) + new Vector3(0, Mathf.Round(height * PixelView.PPU) / PixelView.PPU, 0);
             if (!sr) return;
+            if (square >= 0) Firelight();
             var cell = square >= 0 ? ModelStage.I.Rect(square, def.span) : Vector4.zero;
             sr.GetPropertyBlock(mpb);
             mpb.SetFloat("_Model", 1f);
@@ -243,21 +306,55 @@ namespace Wakefire
                     lookedForShadow = true;
                     shadow = found.GetComponent<SpriteRenderer>();
                     shadow.sprite = ModelStage.Blank(def.span);
+                    var shadeMat = Map.ShadeMat(Mathf.RoundToInt(shadow.sharedMaterial ? shadow.sharedMaterial.GetFloat("_Layer") : 0));
+                    if (shadeMat) shadow.sharedMaterial = shadeMat;
                     shadowBlock = new MaterialPropertyBlock();
                 }
             }
             if (shadow)
             {
                 shadow.GetPropertyBlock(shadowBlock);
-                shadowBlock.SetFloat("_Model", 2f);
+                shadowBlock.SetFloat("_Model", 1f);
                 shadowBlock.SetVector("_Cell", cell);
                 shadow.SetPropertyBlock(shadowBlock);
             }
         }
 
+        /// <summary>The strongest fire near the actor lights the side of the model that faces it.</summary>
+        void Firelight()
+        {
+            Vector2 here = (Vector2)(sr.transform.parent ? sr.transform.parent.position : sr.transform.position) + new Vector2(0, 0.8f);
+            float best = 0;
+            Vector2 towards = Vector2.up;
+            Color colour = fireColour;
+            foreach (var l in LightBlob.All)
+            {
+                if (!l || l.radius <= 0.1f) continue;
+                Vector2 d = (Vector2)l.transform.position - here;
+                float k = l.intensity * Mathf.Clamp01(1f - d.magnitude / (l.radius * 0.95f));
+                if (k > best) { best = k; towards = d; colour = l.color; }
+            }
+            float dt = Time.deltaTime;
+            var want = anchor.TransformDirection(new Vector3(towards.x, 0.5f, towards.y).normalized);
+            fireDir = Vector3.Slerp(fireDir, want, 1f - Mathf.Exp(-8f * dt));
+            fireAmount = Mathf.Lerp(fireAmount, Mathf.Clamp01(best * 1.25f), 1f - Mathf.Exp(-6f * dt));
+            fireColour = Color.Lerp(fireColour, colour, 1f - Mathf.Exp(-6f * dt));
+            var v = new Vector4(fireDir.x, fireDir.y, -fireDir.z, Mathf.Round(fireAmount * 5f) / 5f);     // view space looks down -z
+            foreach (var r in parts)
+            {
+                if (!r) continue;
+                foreach (var m in r.sharedMaterials)
+                {
+                    if (!m) continue;
+                    m.SetVector("_Fire", v);
+                    m.SetColor("_FireColor", fireColour);
+                }
+            }
+        }
+
         void OnDestroy()
         {
-            if (graph.IsValid()) graph.Destroy();
+            if (poser == null && graph.IsValid()) graph.Destroy();
             if (ModelStage.I) ModelStage.I.Give(this);
             if (anchor) Destroy(anchor.gameObject);
         }

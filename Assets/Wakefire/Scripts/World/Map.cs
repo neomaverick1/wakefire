@@ -46,6 +46,22 @@ namespace Wakefire
             }
         }
 
+        static readonly Material[] shadeMats = new Material[3];
+
+        /// <summary>The material moon shadows are drawn with, for things in both worlds, the waking one or the dream.</summary>
+        public static Material ShadeMat(int layer)
+        {
+            layer = Mathf.Clamp(layer, 0, 2);
+            if (!shadeMats[layer])
+            {
+                var src = Resources.Load<Material>("Materials/Shade");
+                if (!src) return null;
+                shadeMats[layer] = new Material(src);
+                shadeMats[layer].SetFloat("_Layer", layer);
+            }
+            return shadeMats[layer];
+        }
+
         public static Sprite GetSprite(string name, float px, float py)
         {
             string key = $"{name}@{px},{py}";
@@ -194,7 +210,42 @@ namespace Wakefire
                 p.solid = Solids.Add(new Rect(a.x, a.y, (pj.bx1 - pj.bx0) / 16f, (pj.by1 - pj.by0) / 16f), (WorldLayer)pj.layer, p);
             }
             if (pj.frames != null && pj.frames.Length > 1) p.SetFrames(pj.frames);
+            p.Stand();
             return p;
+        }
+
+        SpriteRenderer shade;
+        static MaterialPropertyBlock swayBlock;
+
+        /// <summary>Things that stand up throw a moon shadow; trees and bushes also move in the wind.</summary>
+        void Stand()
+        {
+            string n = data.s ?? "";
+            bool leafy = n.StartsWith("olive") || n.StartsWith("cypress") || n.StartsWith("palm") || n.StartsWith("bush");
+            string k = Kind;
+            bool casts = (data.solid && k != "bars" && k != "bigdoor" && k != "lockdoor" && k != "gate" && k != "bullhead" && data.h >= 10) || n == "wall_temple" || k == "banner";
+            float sway = n.StartsWith("bush") ? 0.045f : n.StartsWith("palm") ? 0.035f : leafy ? 0.026f : 0f;
+            if (sway > 0)
+            {
+                if (swayBlock == null) swayBlock = new MaterialPropertyBlock();
+                sr.GetPropertyBlock(swayBlock);
+                swayBlock.SetFloat("_Sway", sway);
+                sr.SetPropertyBlock(swayBlock);
+            }
+            var mat = Map.ShadeMat(data.layer);
+            if (!casts || !mat || !sr.sprite) return;
+            var go = new GameObject("Shade");
+            go.transform.SetParent(transform, false);
+            shade = go.AddComponent<SpriteRenderer>();
+            shade.sprite = sr.sprite;
+            shade.sharedMaterial = mat;
+            shade.sortingOrder = sr.sortingOrder - 1;
+            if (sway > 0)
+            {
+                shade.GetPropertyBlock(swayBlock);
+                swayBlock.SetFloat("_Sway", sway);
+                shade.SetPropertyBlock(swayBlock);
+            }
         }
 
         public void SetFrames(string[] names)
@@ -289,6 +340,12 @@ namespace Wakefire
 
         void Update()
         {
+            if (shade)
+            {
+                shade.enabled = sr.enabled;
+                shade.sortingOrder = sr.sortingOrder - 1;
+                if (shade.sprite != sr.sprite) shade.sprite = sr.sprite;
+            }
             if (frames != null)
             {
                 float fps = Kind == "banner" ? 2.2f : Kind == "crest" ? 3.0f : 9f;
@@ -315,6 +372,9 @@ namespace Wakefire
     /// <summary>A pool of warm light in the light layer: stepped rings that flicker like fire.</summary>
     public class LightBlob : MonoBehaviour
     {
+        public static readonly List<LightBlob> All = new List<LightBlob>();
+        void OnEnable() => All.Add(this);
+        void OnDisable() => All.Remove(this);
         public float radius, intensity;
         public bool flicker;
         public Color color;

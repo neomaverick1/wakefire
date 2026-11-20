@@ -2,7 +2,7 @@
 
 ![WAKEFIRE](docs/showcase.jpg)
 
-**Chapter One: The Sleeping God.** A top-down action-adventure in 32-bit pixel art, built in Unity 6 for Android, iPhone and the web.
+**Chapter One: The Sleeping God.** A top-down action-adventure in the 32-bit style: 3D characters rendered into pixel art, in a hand-built pixel world. Built in Unity 6 for Android, iPhone and the web.
 
 Forty nights ago Ninhal, god of the sky, lay down on top of his ziggurat for a nap. The whole bronze-age city of Ashkel fell asleep with him: bakers, priests, soldiers, babies and dogs. The only one still awake is Azar, the night watchman. He carries a bronze khopesh and the Wakefire, an old lantern that never goes out.
 
@@ -52,8 +52,12 @@ The game saves every time you walk into a new place and every time you find some
 
 - **Unity 6 (URP)**, with everything in the game built from code at startup. The scene file is empty.
 - **The pixel look** comes from a 216-line render target at 16 pixels per tile. The camera snaps to whole pixels and slides the finished image by sub-pixel amounts, so scrolling stays smooth. A separate light layer (moonlight plus torchlight) is multiplied over the picture, and the dream is repainted per pixel by the same shader that draws the gold ring.
-- **Azar** is drawn the way 16-bit sprites were: every pixel of his front, side and back placed by hand on a grid (`Art/pixel/azar_v3.txt`), then animated from those key poses, a foot lifted, a body bob, lids lowered, the crest flickering, the khopesh and its swing drawn over the top (`Art/pixel/azar.py`). **The townsfolk** share one body drawn the same way in three views, dressed per person with hand-drawn headwear, beards and colours (`Art/pixel/folk5.py`); Captain Dur and the bronze sentinels are Azar's own frame in other metals, with spears and shields (`Art/pixel/folk4.py`); the animals are drawn part by part (`Art/pixel/beasts.py`). The Brazen Bull and the sleeping god are modelled as lit solids in a tiny depth buffer, so masses that meet blend into one bronze casting, then cut down to a short palette with no anti-aliasing (`Art/pixel/bull.py`, `god.py`). The gate guardians were modelled in Blender in pixel units (`Art/blender`).
-- **Places and props** are drawn by small Python programs pixel by pixel: lawns with tufts and flower patches, trodden earth, beach sand, limestone cliffs, olive trees and bushes built from lit clumps, glazed brick and bevelled clay floors, all from hue-shifted ramps with hand-placed details (`Art/pixel`).
+- **The characters are 3D figures, photographed into pixels.** Everyone in the game stands on a hidden stage where one camera shoots them all, every frame, into a small sheet at the game's own pixel size: flat bands of colour, no smoothing, an inked outline. The sprite shader then draws each one from its square of that sheet, so the dream ring, hit flashes and sorting treat a posed model exactly like a drawn sprite (`Scripts/Render/ModelStage.cs`, `Scripts/Actors/ModelActor.cs`, `Shaders/WFModel.shader`).
+- **People** share one skeleton and a set of motion clips (the Universal Animation Library by Quaternius, public domain). Everything they wear is built by code onto the body's own measurements: Azar's crested bronze helm, linen breastplate and kilt, khopesh and lantern; Captain Dur's spear and shield; the townsfolk's robes, hats, hair and beards (`Scripts/Actors/Cast.cs`, `Kit.cs`). Gestures no stock clip has, like a guard asleep on his feet or a watchman's head sinking and jerking back up, are layered on by hand (`Gesture`).
+- **Movement has weight.** Azar builds speed and slides to a stop, leans into his own acceleration, and turns to face where he is actually going. The planted part of each stride is slowed to the true ground speed so a foot stays where it lands. His cape and the lantern in his fist are simulated and swing with him; the blade leaves a streak swept out by its real path (`Scripts/Actors/Cloth.cs`).
+- **The animals** have no stock rig: the goat, the dog, the jackals, the crabs, the moths and the Brazen Bull are skeletons built and walked by code. Every foot is planted and stays put while the body passes over it, legs fold at knee and hock to reach, and the goat's head follows Azar wherever he goes (`Scripts/Actors/Beast.cs`).
+- **Light and shadow.** Everything that stands up throws a moon shadow of its own shape, people included. Whatever burns nearby (a brazier, the Wakefire itself) lights the side of a figure that faces it. Trees and bushes move in the night wind.
+- **Places and props** are pixel art drawn by small Python programs: lawns with tufts and flower patches, trodden earth, beach sand, limestone cliffs, olive trees and bushes built from lit clumps, glazed brick and bevelled clay floors, all from hue-shifted ramps with hand-placed details (`Art/pixel`).
 - **The text face** is hand-set in a 7-pixel grid (`Art/pixel/font.py`). Every character speaks in their own synthesized voice.
 - **The score** is written note by note in the Hijaz mode and played on a General MIDI soundfont (`Art/audio/music.py`). Every place has a waking arrangement and a dream arrangement of the same notes at the same length, so nodding off crossfades the music in the middle of a phrase. The sound effects and night ambience are synthesized from scratch (`Art/audio/sfx.py`, `Art/audio/ambience.py`).
 
@@ -74,6 +78,6 @@ The asset generators need Python 3 with numpy, scipy, Pillow, `bpy` (Blender as 
 
 Made by **Randy Kundinger**.
 
-The logo uses Cinzel by Natanael Gama (SIL Open Font License). The music is played on GeneralUser GS by S. Christian Collins.
+The logo uses Cinzel by Natanael Gama (SIL Open Font License). The music is played on GeneralUser GS by S. Christian Collins. The human skeleton and its motion clips are from the Universal Animation Library by Quaternius (CC0).
 
 © 2026 Randy Kundinger. All rights reserved.

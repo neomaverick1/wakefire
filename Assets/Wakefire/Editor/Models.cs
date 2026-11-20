@@ -55,6 +55,15 @@ namespace Wakefire.EditorTools
             }
             if (mat && shader) mat.shader = shader;
             lib.material = mat;
+            const string shadePath = "Assets/Wakefire/Resources/Materials/Shade.mat";
+            var shadeShader = Shader.Find("Wakefire/Shade");
+            var shade = AssetDatabase.LoadAssetAtPath<Material>(shadePath);
+            if (!shade && shadeShader)
+            {
+                shade = new Material(shadeShader) { name = "Shade" };
+                AssetDatabase.CreateAsset(shade, shadePath);
+            }
+            if (shade && shadeShader) shade.shader = shadeShader;
             EditorUtility.SetDirty(lib);
             AssetDatabase.SaveAssets();
             Debug.Log($"[import] models: {string.Join(", ", lib.models.Select(m => m.name))}; {lib.clips.Count} clips; {lib.meshes.Count} gear meshes; {lib.textures.Count} textures");

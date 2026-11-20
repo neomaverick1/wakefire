@@ -146,7 +146,10 @@ namespace Wakefire
         {
             if (model)
             {
-                time += dt;
+                // a walk or run keeps pace with the ground actually covered, so feet don't slide
+                var stride = model.Current;
+                float step = stride != null && stride.stride > 0 ? dt * Mathf.Clamp(model.velocity.magnitude / stride.stride, stride.paceMin, stride.paceMax) : dt;
+                time += step;
                 int n = Mathf.Max(1, FrameCount);
                 int g = (int)(time * fps);
                 g = loop ? g % n : Mathf.Min(g, n - 1);
