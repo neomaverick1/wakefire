@@ -1,5 +1,6 @@
-// Sprite sheets rendered from the Blender rigs: rows are (animation, direction), columns are
-// frames. Right-facing frames are the left ones mirrored, the way 32-bit games did it.
+// Sprite sheets: rows are (animation, direction), columns are frames. Right-facing frames are
+// the left ones mirrored. A character with a rigged model (ModelDefs) is drawn from the model
+// stage instead; its sheet then only supplies the frame counts the game logic keeps time by.
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -53,7 +54,18 @@ namespace Wakefire
     public class SpriteAnim : MonoBehaviour
     {
         public SpriteRenderer sr;
-        public SpriteSheet sheet;
+        SpriteSheet sheetValue;
+        public ModelActor model;
+        public SpriteSheet sheet
+        {
+            get => sheetValue;
+            set
+            {
+                sheetValue = value;
+                var def = value != null ? ModelDefs.For(value.name) : null;
+                if (def != null && !model && sr) model = ModelActor.Attach(this, def);
+            }
+        }
         public string anim = "idle";
         public Facing facing = Facing.Down;
         public float fps = 8f;
@@ -85,21 +97,41 @@ namespace Wakefire
         public void Play(string name, Facing f, bool restart = false)
         {
             if (name == anim && f == facing && !restart && frames != null) return;
+            if (model && name == anim && !restart && played)
+            {
+                facing = f;                     // turning in mid-stride keeps the stride
+                model.Face(f);
+                return;
+            }
+            played = true;
             anim = name;
             facing = f;
             var t = Timing.TryGetValue(sheet.name + ":" + name, out var tm) ? tm : Timing.TryGetValue(name, out tm) ? tm : (8f, true);
             fps = t.Item1;
             loop = t.Item2;
             frames = sheet.Get(name, f, out bool flip);
-            sr.flipX = flip;
             FrameCount = frames != null ? frames.Length : 1;
-            if (restart || true) { time = 0; Frame = -1; }
+            time = 0;
+            Frame = -1;
+            if (model)
+            {
+                var map = model.def.Map(name);
+                if (map != null && map.fps > 0) fps = map.fps;
+                if (map != null && map.frames > 0) FrameCount = map.frames;
+                model.Face(f, !shown);
+                model.Play(name, restart);
+                shown = true;
+            }
+            else sr.flipX = flip;
             Tick(0);
         }
+
+        bool played, shown;
 
         public void SetFacing(Facing f)
         {
             if (f == facing) return;
+            if (model) { facing = f; model.Face(f); return; }
             float keep = time;
             int keepFrame = Frame;
             frames = sheet.Get(anim, f, out bool flip);
@@ -112,6 +144,21 @@ namespace Wakefire
 
         public void Tick(float dt)
         {
+            if (model)
+            {
+                time += dt;
+                int n = Mathf.Max(1, FrameCount);
+                int g = (int)(time * fps);
+                g = loop ? g % n : Mathf.Min(g, n - 1);
+                if (g != Frame)
+                {
+                    Frame = g;
+                    FrameChanged?.Invoke(anim, g);
+                }
+                float through = time * fps / n;
+                model.Advance(dt, loop ? Mathf.Repeat(through, 1f) : Mathf.Clamp01(through));
+                return;
+            }
             if (frames == null || frames.Length == 0) return;
             time += dt;
             int f = (int)(time * fps);
