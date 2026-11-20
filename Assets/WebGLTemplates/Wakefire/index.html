@@ -100,6 +100,15 @@
         height: 64px;
         image-rendering: pixelated;
       }
+      .app {
+        color: #f6c85a;
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(246, 200, 90, 0.5);
+        padding-bottom: 2px;
+        touch-action: manipulation;
+      }
       @media (orientation: portrait) and (pointer: coarse) {
         #turn {
           display: grid;
@@ -119,6 +128,7 @@
         <rect x="14" y="5" width="1" height="2" fill="#bc7a34" />
       </svg>
       <div>Turn your phone sideways to play</div>
+      <a class="app" href="https://github.com/neomaverick1/wakefire/releases/latest/download/WAKEFIRE.apk">or get the Android app</a>
     </div>
     <div id="loading">
       <svg viewBox="0 0 14 18" shape-rendering="crispEdges" aria-hidden="true">
@@ -134,6 +144,7 @@
       <div id="title">WAKEFIRE</div>
       <div id="bar"><div id="fill"></div></div>
       <div id="note">lighting the lamps</div>
+      <a class="app" href="https://github.com/neomaverick1/wakefire/releases/latest/download/WAKEFIRE.apk">Get the Android app</a>
     </div>
     <script>
       var canvas = document.querySelector('#unity-canvas');
