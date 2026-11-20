@@ -28,7 +28,7 @@ PAL = {
     'O': '#1c1024',
     'y': '#fff6c4', 'Y': '#ffd447', 'F': '#ff9a2a', 'R': '#e85a1e', 'r': '#b8301a', 'Q': '#6e1612',
     'W': '#fff6cc', 'B': '#f6c656', 'b': '#d9952f', 'n': '#a8621f', 'N': '#6a3a16',
-    'S': '#ffdcb8', 's': '#f0aa7c', 'k': '#c0754e', 'K': '#7e4430', 'E': '#ffffff', 'P': '#241a34',
+    'S': '#eeb088', 's': '#c8845a', 'k': '#98583a', 'K': '#6a3826', 'E': '#ffffff', 'P': '#241a34',
     'w': '#b89ac8', 'h': '#8a5a44',
     'L': '#9ccaff', 'U': '#5a8ae8', 'u': '#3456b8', 'V': '#1e2c78',
     'C': '#ff7058', 'c': '#d8342e', 'x': '#96182a', 'X': '#560e1e',
@@ -86,31 +86,26 @@ def sub(rows, i, old, new):
 
 
 def eyes(rows, view, state):
-    """In the Corinthian helmet the eyes are two glints in the slit; closing them puts them out."""
     rows = [list(r) for r in rows]
     if view == 'front':
         if state == 'half':
-            sub(rows, 10, 'OBOEObnOEOnO', 'OBOKObnOKOnO')
+            sub(rows, 11, 'PESSEP', 'KPSSPK')
         elif state == 'shut':
-            sub(rows, 10, 'OBOEObnOEOnO', 'OBOOObnOOOnO')
-        elif state == 'wide':
-            sub(rows, 10, 'OBOEObnOEOnO', 'OBEEObnOEEnO')
+            sub(rows, 11, 'PESSEP', 'KKSSKK')
     elif view == 'side':
         if state == 'half':
-            sub(rows, 9, 'OOEnO', 'OOKnO')
+            sub(rows, 10, 'SPES', 'SPKS')
         elif state == 'shut':
-            sub(rows, 9, 'OOEnO', 'OOOnO')
-        elif state == 'wide':
-            sub(rows, 9, 'OOEnO', 'OEEnO')
+            sub(rows, 10, 'SPES', 'SKKS')
     return rows
 
 
 def mouth_open(rows, view):
     rows = [list(r) for r in rows]
     if view == 'front':
-        sub(rows, 12, 'OhKKhO', 'OhOOhO')
+        sub(rows, 13, 'shhhhs', 'shOOhs')
     elif view == 'side':
-        sub(rows, 12, 'nOhO', 'nOOO')
+        sub(rows, 12, 'shhhO', 'sOOhO')
     return rows
 
 

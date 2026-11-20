@@ -108,8 +108,6 @@ def pavers(cv, x0, y0, w, h, seed=2):
                         col = c[base + 1]
                     elif ly == bh - 2 or lx == bw - 2:
                         col = c[max(0, base - 1)]
-                    elif (xx * 7 + yy * 13 + seed) % 31 == 0:
-                        col = c[max(0, base - 1)]
                     cv.px(xx, yy, col)
             if rng.random() < 0.14:
                 sx, sy = x + int(rng.integers(3, bw - 5)), y + 2
@@ -138,8 +136,6 @@ def marble(cv, x0, y0, w, h, T=24, seed=3):
                 col = mb[base + 1]
             elif lx == T - 2 or ly == T - 2:
                 col = mb[base - 1]
-            elif ((lx + ly * 2 + tx * 5 + ty * 3) % 19 == 0 and (lx * 3 + ly) % 5 < 3):
-                col = mb[base - 1]          # veins
             cv.px(x, y, col)
     for ty in range(1, h // T + 1):
         for tx in range(1, w // T + 1):
