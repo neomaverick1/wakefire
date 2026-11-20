@@ -402,8 +402,12 @@ namespace Wakefire
             return l;
         }
 
+        /// <summary>How bright the light is this instant (it flickers).</summary>
+        public float Now { get; private set; } = 1f;
+
         void Apply(float k)
         {
+            Now = k;
             transform.localScale = new Vector3(radius * 2 * k, radius * 2 * k, 1);
             mpb.SetColor("_Color", color * intensity * (0.85f + 0.15f * k));
             mr.SetPropertyBlock(mpb);
