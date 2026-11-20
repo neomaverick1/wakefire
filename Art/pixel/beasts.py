@@ -395,52 +395,48 @@ def hound_frames(sheet, name, view, n):
 SHELL = [rgb('#ff9a6a'), rgb('#e0582e'), rgb('#a8341c'), rgb('#6a1c10')]
 
 
+CP = {'O': O, 'R': rgb('#f06a3a'), 'r': rgb('#b83a1e'), 'S': rgb('#ffb088'), 'D': rgb('#6a1c10'), 'E': rgb('#ffffff'), 'K': rgb('#1a0f14')}
+C_ROWS = [
+    ".OO..............OO.",
+    "OSROO..O....O..OORSO",
+    "ORRrO.OEO..OEO.OrRRO",
+    ".OrrO.OKO..OKO.OrrO.",
+    "..OrOOOrOOOOrOOOrO..",
+    "...OSSRRRRRRRRRRO...",
+    "..OSRRRRRRRRRRRRrO..",
+    "..ORRRRRRRRRRRRrrO..",
+    ".OOrrRRRRRRRRRrrDOO.",
+    "OrOOODrrrrrrrrDOOOrO",
+    ".O.OrOOOOOOOOOOrO.O.",
+    "....O..........O....",
+]
+
+
 def crab(t=0.0, claws=0.0, step=0.0, hurt=False):
-    """Seen from above and in front: a broad shell, eyes on stalks, two big claws."""
+    """The brine crab, pixel by pixel: claws that rise and snap, legs that scuttle."""
     cv = Canvas(CELL, CELL)
-    cx, base = FX, FY
-    by = base - 6
-    legs = layer()
-    for s_ in (-1, 1):
-        for k in range(3):
-            ph = math.sin((t + k * 0.33 + (0.5 if s_ > 0 else 0)) * 2 * math.pi) * step
-            x0 = cx + s_ * 6
-            y0 = by - 1 + k * 2
-            x1 = cx + s_ * (10 + k)
-            y1 = by + 2 + k * 2 + int(round(ph))
-            line(legs, x0, y0, x1, y1, SHELL[2])
-            legs.px(x1, y1 + 1, SHELL[3])
-    put(cv, legs)
-    shell = layer()
-    ellipse(shell, cx, by - 1, 8, 5, SHELL)
-    # a ridge of bumps
-    for x in range(cx - 5, cx + 6, 3):
-        shell.px(x, by - 4, SHELL[0])
-    put(cv, shell)
-    # eyes on stalks
-    for ex in (cx - 3, cx + 3):
-        st = layer()
-        line(st, ex, by - 5, ex, by - 8, SHELL[2])
-        st.px(ex, by - 9, rgb('#1a0f14')); st.px(ex - 1 if ex < cx else ex + 1, by - 9, rgb('#1a0f14'))
-        put(cv, st)
-        cv.px(ex, by - 9, rgb('#f4ecdc'))
-    # claws: raised and open when it attacks
-    for s_ in (-1, 1):
-        cl = layer()
-        ax, ay = cx + s_ * 8, by - 2
-        lift = int(round(claws * 6))
-        px_, py_ = ax + s_ * 3, ay - 2 - lift
-        line(cl, ax, ay, px_, py_, SHELL[1], 2)
-        ellipse(cl, px_ + s_ * 1, py_ - 1, 2.8, 2.2, SHELL)
-        # the pincer gap
-        gap = 1 + int(round(claws * 2))
-        for g in range(gap):
-            gx, gy = px_ + s_ * 2, py_ - 2 - g
-            if 0 <= gx < CELL and 0 <= gy < CELL:
-                cl.a[gy, gx] = (0, 0, 0, 0)
-        put(cv, cl)
+    x0, y0 = FX - 10, FY - 12
+    lift = int(round(claws * 4))
+    wig = int(round(math.sin(t * 2 * math.pi) * step))
+    body = [r for r in C_ROWS]
+    # legs (the last three rows) scuttle sideways
+    stamp(cv, [body[9], body[10], body[11]], x0 + wig, y0 + 9, CP)
+    stamp(cv, body[4:9], x0, y0 + 4, CP)
+    # eye stalks
+    stamp(cv, [r[5:15] for r in body[1:4]], x0 + 5, y0 + 1, CP)
+    # the claws, raised when it strikes
+    for side in (0, 1):
+        rows = [r[0:5] if side == 0 else r[15:20] for r in body[0:4]]
+        if claws > 0.6:
+            rows[0] = "O.O.." if side == 0 else "..O.O"          # the pincer open
+        stamp(cv, rows, x0 + (0 if side == 0 else 15) + (-1 if side == 0 else 1) * (1 if lift > 1 else 0), y0 - lift, CP)
+        if lift:
+            for k in range(lift):
+                xx = x0 + (2 if side == 0 else 17)
+                cv.a[y0 + 4 - k, xx] = CP['r']; cv.a[y0 + 4 - k, xx - 1] = O; cv.a[y0 + 4 - k, xx + 1] = O
     if hurt:
-        cv.a[:, :, :3] = (cv.a[:, :, :3] * 0.5 + 127).astype('uint8')
+        m = cv.a[:, :, 3] > 0
+        cv.a[m, :3] = (cv.a[m, :3] * 0.4 + 255 * 0.6).astype('uint8')
     return cv
 
 
