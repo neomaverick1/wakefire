@@ -12,6 +12,7 @@ Shader "Wakefire/Shade"
         _Model ("Cast by a figure on the model stage", Float) = 0
         _Cell ("Square of the model stage (uv origin, uv size)", Vector) = (0,0,0,0)
         _Sway ("Sway in the wind", Float) = 0
+        _Flat ("The sprite is already the shadow's shape on the ground", Float) = 0
     }
     SubShader
     {
@@ -39,6 +40,7 @@ Shader "Wakefire/Shade"
                 float _Model;
                 float4 _Cell;
                 float _Sway;
+                float _Flat;
             CBUFFER_END
 
             // how far a shadow runs for each unit of height: along the ground to the right, and down the screen
@@ -51,7 +53,7 @@ Shader "Wakefire/Shade"
             {
                 V o;
                 float3 p = i.positionOS.xyz;
-                if (_Model < 0.5)
+                if (_Model < 0.5 && _Flat < 0.5)
                 {
                     float h = max(p.y, 0.0);
                     float3 base = TransformObjectToWorld(float3(0, 0, 0));

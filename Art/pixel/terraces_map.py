@@ -1,11 +1,12 @@
 """The olive terraces west of town: hillside steps held up by dry-stone walls, olive trees in
-rows, stairs that zigzag up, jackals that hunt in pairs, and at the top an old shrine whose
-offering only shows itself in the dream."""
+rows, stairs that climb through the walls, jackals that hunt in pairs, and at the top an old
+shrine whose offering only shows itself in the dream."""
 import sys
 sys.path.insert(0, '/srv/Wakefire/Art/pixel')
-from px import Canvas, R, OUTLINE
-import ashkel_art as A
-import region_art as G
+import numpy as np
+from px import Canvas
+import town
+import kit
 from mapkit import MapBuilder
 
 TW, TH = 52, 40
@@ -15,34 +16,43 @@ CHEST = '/srv/Wakefire/Assets/Wakefire/Resources/Objects/chest.png'
 
 
 def build():
-    m = MapBuilder("terraces", TW, TH, R['grass'][3], music="hills")
-    g = m.ground
-    A.grass(g, 0, 0, W, H, seed=31, dense=1.0, flowers=0.03)
-    # a worn path along each terrace
+    m = MapBuilder("terraces", TW, TH, (30, 60, 40, 255), music="hills")
+    T = m.lay(seed=31)
+    T.grass(T.all(), seed=1, flowers=0.008, tufts=0.03, fringe=0)
+    # a worn path along each terrace, and up to each stair
+    paths = T.none()
     for (y0, y1) in ((540, 600), (420, 500), (300, 380), (180, 260), (40, 140)):
-        G.dirt(g, 0, y0 + (y1 - y0) // 2 - 10, W, 20, seed=y0)
+        mid = y0 + (y1 - y0) // 2
+        paths |= T.stroke([(0, mid + 4), (200, mid - 3), (420, mid + 5), (640, mid - 2), (W, mid + 3)], 15)
     for (y, s0, s1) in WALLS:
-        G.drystone_wall(g, 0, y, s0, 20, seed=y)
-        G.drystone_wall(g, s1, y, W - s1, 20, seed=y + 1)
-        G.stone_steps(g, s0, y, s1 - s0, 20, n=4)
+        cx = (s0 + s1) / 2
+        paths |= T.stroke([(cx, y - 44), (cx, y + 64)], 22)
+    paths = T.ragged(paths, 4, 9, seed=2)
+    T.earth(paths, seed=3, base=4.1, ramp='dust', pebbles=0.01)
+    # the shrine's old paving, grass thin and dry round it
+    T.grass(T.ragged(T.disc(420, 70, 100, 30), 3, 8, seed=4) & ~paths, seed=5, ramp='dry', base=3.0, tufts=0.05)
+    T.slabs(T.ragged(T.disc(410, 82, 74, 22), 3, 7, seed=6), seed=7, rows=(10, 11), wmin=10, wmax=17, base=3.8, moss=0.25, crack=0.15)
+    for (y, s0, s1) in WALLS:
+        T.contact(0, y, s0, y + 20, reach=6, strength=1.4); T.contact(s1, y, W, y + 20, reach=6, strength=1.4)
+    m.bake()
+    # the walls and the stairs through them, set into the ground
+    for (y, s0, s1) in WALLS:
+        m.set_into_ground(town.drystone(s0 / 16.0, seed=y), 0, y + 20, seed=y)
+        m.set_into_ground(town.drystone((W - s1) / 16.0, seed=y + 1), s1, y + 20, seed=y + 1)
+        m.set_into_ground(town.steps((s1 - s0) / 16.0, n=4, rise=0.6, run=0.65), s0, y + 20)
         m.solid(0, y, s0, y + 18); m.solid(s1, y, W, y + 18)
     # olive trees in their rows
-    def olive(seed):
-        return lambda cv, ax, ay, fi: A.olive_tree(cv, ax, ay, seed=seed)
-    sd = 50
+    sd = 0
     for (row_y, xs) in ((120, (60, 180, 520, 640, 760)), (250, (40, 200, 330, 460, 600)), (370, (240, 380, 520, 760)),
                         (490, (200, 340, 470, 610, 740)), (620, (160, 300, 440, 580, 720))):
         for x in xs:
-            m.prop(f"olive_{sd}", olive(sd), x, row_y, box=(-4, -4, 4, 0), size=(64, 64), pad=6)
-            A.soft_shadow(g, x + 7, row_y + 1, 16, 5)
-            sd += 1
-    def bush(seed, fl):
-        return lambda cv, ax, ay, fi: A.bush(cv, ax, ay - 6, seed=seed, flowers=fl)
+            kit.olive(m, x, row_y, sd); sd += 3
     for k, (x, y) in enumerate(((120, 330), (136, 340), (560, 210), (576, 220), (700, 470), (300, 600), (316, 610), (780, 90))):
-        m.prop(f"bush_{k % 4}", bush(k % 4, k % 3 == 0), x, y, box=(-6, -5, 6, 0), size=(24, 24), pad=4, kind="bush")
+        kit.bush(m, x, y, k)
+    for (x, y, k) in ((20, 150, 0), (800, 250, 1), (90, 450, 2), (660, 560, 3), (500, 24, 4)):
+        kit.rock(m, x, y, k)
     # the shrine at the top: an altar, and in the dream, what was offered on it
-    m.prop("altar", lambda cv, ax, ay, fi: G.block(cv, ax, ay), 420, 70, box=(-8, -6, 8, 0), size=(24, 24), pad=2, kind="look",
-           data={"id": "shrine_altar"})
+    m.model("altar", town.altar(), 420, 70, box=(-9, -12, 9, 0), kind="look", data={"id": "shrine_altar"})
     m.prop("lamassu_t", lambda cv, ax, ay, fi: cv.blit(Canvas.load('/srv/Wakefire/Art/sprites/props/lamassu.png'), ax - 13, ay - 36),
            360, 70, box=(-10, -8, 10, 0), size=(48, 56), pad=8)
     m.prop("chest_dream", lambda cv, ax, ay, fi: cv.blit(Canvas.load(CHEST), ax - 8, ay - 15), 452, 76, box=(-7, -6, 7, 0), size=(24, 24), pad=4,

@@ -7,6 +7,8 @@ import numpy as np
 from px import Canvas, R, OUTLINE
 import ashkel_art as A
 import region_art as G
+import town
+import kit
 from mapkit import MapBuilder
 
 CHEST = '/srv/Wakefire/Assets/Wakefire/Resources/Objects/chest.png'
@@ -39,16 +41,28 @@ YARD_BRIDGE = [(440, 340), (440, 306), (180, 306), (180, 262), (440, 262), (440,
 def temple_yard():
     TW, TH = 40, 36
     W, H = TW * 16, TH * 16
-    m = MapBuilder("temple_yard", TW, TH, R['grass'][2], music="temple")
-    g = m.ground
-    A.grass(g, 0, 0, W, H, seed=71, dense=0.6)
-    A.slabs(g, 32, 340, W - 64, H - 340, R['lime'], 16, 12, seed=72)
-    A.slabs(g, 32, 60, W - 64, 140, R['lime'], 16, 12, seed=73)
+    m = MapBuilder("temple_yard", TW, TH, (60, 44, 40, 255), music="temple")
+    T = m.lay(seed=71)
+    T.earth(T.all(), seed=1, base=3.6, ramp='dust')
+    # two courts of pale stone, and between them the chasm
+    courts = T.rect(32, 340, W - 64, H - 340) | T.rect(32, 58, W - 64, 142)
+    T.slabs(courts, seed=72, rows=(12,), wmin=16, wmax=16, ramp='pale', base=4.0, jitter=0.9, crack=0.06, whole=False, wear=0.5, moss=0.05)
+    # the way to the door: paler still, between two bands of glazed brick studded with gold
+    way = T.rect(300, 58, 40, 142) | T.rect(300, 340, 40, H - 340)
+    T.slabs(way, seed=73, rows=(12,), wmin=20, wmax=20, ramp='pale', base=4.8, jitter=0.5, crack=0.03, whole=False, wear=0.3)
+    bands = (T.rect(296, 58, 4, 142) | T.rect(340, 58, 4, 142) | T.rect(296, 340, 4, H - 340) | T.rect(340, 340, 4, H - 340))
+    T.bricks(bands, seed=74, bw=8, bh=4, ramp='lapis', base=3.3, jitter=0.7)
+    stud = bands & ((T.yy % 16) >= 7) & ((T.yy % 16) <= 8) & (((T.xx - 296) % 44) >= 1) & (((T.xx - 296) % 44) <= 2)
+    T.put(stud, 'gold', np.full((H, W), 4.0), 1.4)
+    T.contact(0, 30, W, 58, reach=7, strength=1.6)
+    g = m.bake()
     G.chasm(g, 0, 200, W, 140)
-    # the ziggurat's lowest tier rises along the top
-    A.city_wall(g, 0, 8, W, face_h=40, top_h=8, seed=74)
+    m.ground_n[200:340, :] = (128, 128, 255, 1)
+    # the precinct walls close the sides; the ziggurat's lowest tier rises along the top
+    m.set_into_ground(town.precinct_side(H / 16.0), 0, H, seed=3)
+    m.set_into_ground(town.precinct_side(H / 16.0), W - 32, H, seed=4)
+    m.model("zig_tier", town.ziggurat_tier(W / 16.0, h=2.6, d=1.2, door_at=20.0), 0, 58, box=None)
     m.solid(0, 0, W, 58)
-    G.bronze_door(g, 320, 58, 34, 34, kind='lock')
     m.solid(0, 0, 32, H); m.solid(W - 32, 0, W, H)
     # the chasm: never walkable, except the road of moonlight, which only the dream has
     cols, rows = W // C, H // C
@@ -90,15 +104,15 @@ def temple_yard():
     lam = Canvas.load('/srv/Wakefire/Art/sprites/props/lamassu.png')
     m.prop("lamassu_yl", lambda cv, ax, ay, fi: cv.blit(lam, ax - 13, ay - 36), 250, 100, box=(-10, -8, 10, 0), size=(48, 56), pad=8)
     m.prop("lamassu_yr", lambda cv, ax, ay, fi: cv.blit(lam, ax - (lam.w - 13), ay - 36, flip=True), 390, 100, box=(-10, -8, 10, 0), size=(48, 56), pad=8)
-    def braz(lit):
-        return lambda cv, ax, ay, fi: A.brazier(cv, ax, ay, lit=lit, frame=fi)
     for i, (x, y) in enumerate(((120, 380), (520, 380), (120, 150), (520, 150))):
-        m.prop("brazier_lit", braz(True), x, y, box=(-6, -4, 6, 0), size=(24, 40), pad=4, frames=4, kind="torch")
-        m.light(x, y - 18, 5.0, (1.0, 0.70, 0.36), 0.85)
-    m.prop("brazier_lit", braz(True), -100, -100, size=(24, 40), pad=4, frames=4)
-    m.prop("sign_yard", lambda cv, ax, ay, fi: A.sign(cv, ax, ay), 360, 470, box=(-2, -2, 2, 0), size=(24, 24), pad=2, kind="sign",
-           data={"text": "sign_yard"})
-    m.light(320, 260, 7.0, (0.55, 0.62, 1.0), 0.45, flicker=False)
+        kit.brazier(m, x, y, lit=True)
+    kit.brazier_frames(m)
+    kit.sign(m, 360, 470, "sign_yard", "sign_yard")
+    for (x, y, sd) in ((60, 560, 0), (580, 560, 1), (70, 420, 2), (570, 430, 3)):
+        kit.palm(m, x, y, sd)
+    for (x, y, sd) in ((180, 520, 1), (470, 540, 2), (200, 120, 3), (440, 126, 4)):
+        m.model(f"planter_{sd}", town.planter(sd), x, y, box=(-14, -10, 14, 0))
+    m.light(320, 260, 7.0, (0.55, 0.62, 1.0), 0.45, flicker=False, h=0.4)
     m.marker("npc", 140, 500, who="goat_yard")
     m.spawn("south", 320, 552, "up")
     m.spawn("door", 320, 80, "down")
@@ -129,11 +143,12 @@ def room(m, W, H, wall_h=48, seed=80, door=True):
 
 
 def torches(m, pts):
-    def ptorch(cv, ax, ay, fi):
-        A.pole_torch(cv, ax, ay, frame=fi)
     for (x, y) in pts:
-        m.prop("pole_torch", ptorch, x, y, box=(-2, -2, 3, 0), size=(24, 40), pad=4, frames=4, kind="torch")
-        m.light(x + 1, y - 24, 4.6, (1.0, 0.68, 0.34), 0.85)
+        kit.torch(m, x, y, light=4.6)
+
+
+def pillar(m, x, y, kind=None):
+    m.model("pillar", town.pillar(2.2), x, y, box=(-7, -11, 7, 0), kind=kind)
 
 
 def zig_1():
@@ -148,8 +163,7 @@ def zig_1():
     # a dividing wall with the locked door, and stairs up beyond it
     G.inner_wall(g, 24, 176, W - 48, 32, seed=82)
     m.solid(24, 176, 236, 204); m.solid(276, 176, W - 24, 204)
-    m.prop("lockdoor", lambda cv, ax, ay, fi: G.bronze_door(cv, ax, ay, 40, 30, 'lock'), 256, 206, box=(-20, -26, 20, 0), size=(48, 40), pad=4,
-           kind="lockdoor", data={"id": "z1_door"})
+    m.model("lockdoor", town.bronze_door(2.5, 1.9, 'lock'), 256, 206, box=(-20, -26, 20, 0), kind="lockdoor", data={"id": "z1_door"})
     G.stairs_up(g, 256, 100, 40, 36)
     # the east alcove, closed off by a wall that only the waking world has
     m.prop("dreamwall", lambda cv, ax, ay, fi: G.inner_wall(cv, ax - 8, ay - 122, 8, 122, seed=84), 400, 330,
@@ -157,7 +171,7 @@ def zig_1():
     m.solid(392, 208, 400, 330, 1)
     chest(m, 450, 276, "z1_key", "key")
     # the west: a block, a plate, bars that lift
-    m.prop("block", lambda cv, ax, ay, fi: G.block(cv, ax, ay), 172, 296, box=(-8, -12, 8, 0), size=(24, 24), pad=4, kind="block", data={"id": "z1_block"})
+    m.model("block", town.stone_block(), 172, 296, box=(-8, -12, 8, 0), kind="block", data={"id": "z1_block"})
     m.prop("plate", lambda cv, ax, ay, fi: G.plate(cv, ax, ay - 6), 140, 296, size=(20, 16), pad=2, kind="plate", data={"id": "z1_plate"})
     chest(m, 66, 236, "z1_coins", "shekels:30")
     G.inner_wall(g, 108, 204, 8, 54, seed=85)
@@ -168,7 +182,7 @@ def zig_1():
         cv.hline(ax - 42, ax + 42, ay - 22, R['bronze'][4])
     m.prop("bars", bars, 66, 258, box=(-42, -6, 42, 0), size=(96, 30), pad=4, kind="bars", data={"id": "z1_bars"})
     for (x, y) in ((150, 120), (362, 120), (150, 330), (362, 330)):
-        m.prop("pillar", lambda cv, ax, ay, fi: G.pillar(cv, ax, ay), x, y, box=(-7, -5, 7, 0), size=(24, 48), pad=4)
+        pillar(m, x, y)
     torches(m, ((80, 160), (432, 160)))
     m.enemy("sentinel", 300, 280, "z1_s1", once=True)
     m.enemy("sentinel", 200, 120, "z1_s2", once=True)
@@ -200,11 +214,10 @@ def zig_2():
            data={"id": "z2_bull"})
     # beyond it: the bull key, and the great door up
     chest(m, 120, 110, "z2_bigkey", "bigkey")
-    m.prop("bigdoor", lambda cv, ax, ay, fi: G.bronze_door(cv, ax, ay, 40, 32, 'bull'), 256, 76, box=(-20, -26, 20, 0), size=(48, 42), pad=4,
-           kind="bigdoor", data={"id": "z2_bigdoor"})
+    m.model("bigdoor", town.bronze_door(2.5, 2.0, 'bull'), 256, 76, box=(-20, -26, 20, 0), kind="bigdoor", data={"id": "z2_bigdoor"})
     G.stairs_up(g, 256, 52, 40, 20)
     for (x, y) in ((120, 330), (392, 330)):
-        m.prop("pillar", lambda cv, ax, ay, fi: G.pillar(cv, ax, ay), x, y, box=(-7, -5, 7, 0), size=(24, 48), pad=4)
+        pillar(m, x, y)
     torches(m, ((80, 220), (432, 220), (80, 120), (432, 120)))
     m.enemy("sentinel", 150, 300, "z2_s1", once=True)
     m.enemy("sentinel", 360, 300, "z2_s2", once=True)
@@ -257,7 +270,7 @@ def zig_3():
     m.marker("altar", W // 2 + 64, 132)
     m.marker("boss", W // 2, 212)
     for (x, y) in ((118, 190), (W - 118, 190), (118, 300), (W - 118, 300)):
-        m.prop("pillar", lambda cv, ax, ay, fi: G.pillar(cv, ax, ay), x, y, box=(-7, -5, 7, 0), size=(24, 48), pad=4, kind="pillar")
+        pillar(m, x, y, kind="pillar")
     torches(m, ((72, 150), (W - 72, 150), (72, 318), (W - 72, 318)))
     m.light(W // 2, 120, 7.0, (0.62, 0.70, 1.0), 0.45, flicker=False)
     m.spawn("south", W // 2, H - 26, "up")

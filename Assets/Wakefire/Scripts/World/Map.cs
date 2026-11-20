@@ -7,10 +7,10 @@ using UnityEngine;
 
 namespace Wakefire
 {
-    [Serializable] public class MapJson { public string name, music; public int w, h; public string ground; public PropJson[] objects; public BoxJson[] boxes; public LightJson[] lights; public MarkerJson[] markers; public string[] surface; public int cell; }
-    [Serializable] public class PropJson { public string s; public int x, y, px, py, w, h, layer; public string[] frames; public bool solid; public int bx0, by0, bx1, by1; public string kind, id, text, who; }
+    [Serializable] public class MapJson { public string name, music; public int w, h; public string ground, normal; public PropJson[] objects; public BoxJson[] boxes; public LightJson[] lights; public MarkerJson[] markers; public string[] surface; public int cell; }
+    [Serializable] public class PropJson { public string s; public int x, y, px, py, w, h, layer; public string[] frames; public bool solid; public int bx0, by0, bx1, by1; public string kind, id, text, who; public int n; public string sh; public int shx, shy; }
     [Serializable] public class BoxJson { public int x0, y0, x1, y1, layer; public string kind; }
-    [Serializable] public class LightJson { public int x, y; public float r; public float[] c; public float i; public bool f; public string tag; }
+    [Serializable] public class LightJson { public int x, y; public float r; public float[] c; public float i; public bool f; public string tag; public float h; }
     [Serializable] public class MarkerJson { public string kind; public int x, y, w, h; public string who, id, text; }
 
     public class Map : MonoBehaviour
@@ -96,6 +96,7 @@ namespace Wakefire
             gsr.sprite = GetSprite(data.ground, 0, 0);
             gsr.sharedMaterial = SpriteMat;
             gsr.sortingOrder = -32000;
+            Normals(gsr, data.normal);
             // props
             foreach (var pj in data.objects)
             {
@@ -112,8 +113,27 @@ namespace Wakefire
             foreach (var l in data.lights)
             {
                 var c = l.c != null && l.c.Length >= 3 ? new Color(l.c[0], l.c[1], l.c[2]) : new Color(1, 0.6f, 0.3f);
-                LightBlob.Create(transform, ToWorld(l.x, l.y), l.r, c, l.i, l.f);
+                var blob = LightBlob.Create(transform, ToWorld(l.x, l.y), l.r, c, l.i, l.f);
+                if (l.h > 0) blob.height = l.h;
             }
+        }
+
+        static MaterialPropertyBlock normalBlock;
+
+        /// <summary>Gives a sprite its normal map (same size as its picture), so fires light the faces turned towards them.</summary>
+        public static void Normals(SpriteRenderer sr, string name)
+        {
+            if (!sr) return;
+            var tex = string.IsNullOrEmpty(name) ? null : Resources.Load<Texture2D>(name.Contains("/") ? name : "Objects/" + name);
+            if (normalBlock == null) normalBlock = new MaterialPropertyBlock();
+            sr.GetPropertyBlock(normalBlock);
+            if (tex)
+            {
+                tex.filterMode = FilterMode.Point;
+                normalBlock.SetTexture("_NormalTex", tex);
+            }
+            normalBlock.SetFloat("_HasNormal", tex ? 1f : 0f);
+            sr.SetPropertyBlock(normalBlock);
         }
 
         public event Action<string> PlatePressed;
@@ -210,11 +230,13 @@ namespace Wakefire
                 p.solid = Solids.Add(new Rect(a.x, a.y, (pj.bx1 - pj.bx0) / 16f, (pj.by1 - pj.by0) / 16f), (WorldLayer)pj.layer, p);
             }
             if (pj.frames != null && pj.frames.Length > 1) p.SetFrames(pj.frames);
+            if (pj.n != 0) Map.Normals(p.sr, (pj.frames != null && pj.frames.Length > 0 ? pj.frames[0] : pj.s) + "_lin");
             p.Stand();
             return p;
         }
 
         SpriteRenderer shade;
+        bool shadeDrawn;           // the shadow is its own picture (worked out from the model), not this sprite laid over
         static MaterialPropertyBlock swayBlock;
 
         /// <summary>Things that stand up throw a moon shadow; trees and bushes also move in the wind.</summary>
@@ -233,6 +255,22 @@ namespace Wakefire
                 sr.SetPropertyBlock(swayBlock);
             }
             var mat = Map.ShadeMat(data.layer);
+            if (mat && !string.IsNullOrEmpty(data.sh))
+            {
+                var sgo = new GameObject("Shade");
+                sgo.transform.SetParent(transform, false);
+                shade = sgo.AddComponent<SpriteRenderer>();
+                shade.sprite = Map.GetSprite(data.sh, data.shx, data.shy);
+                shade.sharedMaterial = mat;
+                shade.sortingOrder = -31990;
+                if (swayBlock == null) swayBlock = new MaterialPropertyBlock();
+                shade.GetPropertyBlock(swayBlock);
+                swayBlock.SetFloat("_Flat", 1f);
+                swayBlock.SetFloat("_Sway", 0f);
+                shade.SetPropertyBlock(swayBlock);
+                shadeDrawn = true;
+                return;
+            }
             if (!casts || !mat || !sr.sprite) return;
             var go = new GameObject("Shade");
             go.transform.SetParent(transform, false);
@@ -259,6 +297,7 @@ namespace Wakefire
         {
             frames = null;
             sr.sprite = Map.GetSprite(name, px, py);
+            Map.Normals(sr, name + "_lin");
         }
 
         public Rect Bounds => solid != null ? solid.r : new Rect(basePos - new Vector2(0.4f, 0), new Vector2(0.8f, 0.5f));
@@ -275,8 +314,10 @@ namespace Wakefire
             {
                 data.px = litJson.px; data.py = litJson.py;
                 SetFrames(litJson.frames);
+                Map.Normals(sr, litJson.frames[0] + "_lin");
             }
             glow = LightBlob.Create(transform, basePos + new Vector2(0, 1.1f), 5.5f, new Color(1f, 0.72f, 0.36f), 0.85f, true);
+            glow.height = 1.1f;
             return true;
         }
 
@@ -340,7 +381,8 @@ namespace Wakefire
 
         void Update()
         {
-            if (shade)
+            if (shade && shadeDrawn) shade.enabled = sr.enabled;
+            else if (shade)
             {
                 shade.enabled = sr.enabled;
                 shade.sortingOrder = sr.sortingOrder - 1;
@@ -376,6 +418,8 @@ namespace Wakefire
         void OnEnable() => All.Add(this);
         void OnDisable() => All.Remove(this);
         public float radius, intensity;
+        /// <summary>How high above the ground the flame burns (its position on the map is where it shows, which is that much further up the screen).</summary>
+        public float height = 0.9f;
         public bool flicker;
         public Color color;
         MeshRenderer mr;

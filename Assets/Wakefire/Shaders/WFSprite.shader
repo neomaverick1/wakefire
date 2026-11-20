@@ -16,6 +16,8 @@ Shader "Wakefire/Sprite"
         _Model ("Drawn from the model stage", Float) = 0
         _Cell ("Square of the model stage (uv origin, uv size)", Vector) = (0,0,0,0)
         _Sway ("Sway in the wind (trees, bushes)", Float) = 0
+        [PerRendererData] _NormalTex ("Normals (rgb) and height (a)", 2D) = "bump" {}
+        _HasNormal ("Has a normal map", Float) = 0
     }
     SubShader
     {
@@ -45,37 +47,58 @@ Shader "Wakefire/Sprite"
                 float _Model;
                 float4 _Cell;
                 float _Sway;
+                float _HasNormal;
             CBUFFER_END
             float4 _MainTex_TexelSize;
+            TEXTURE2D(_NormalTex);
+            float4 _WF_Ambient;
             // the fires nearest the camera: xy = where, z = how far the light reaches, w = strength
-            float4 _WF_Lights[8];
-            float4 _WF_LightColors[8];
+            float4 _WF_Lights[12];
+            float4 _WF_LightColors[12];
             float _WF_LightCount;
 
-            float Height(float2 uv)
+            // The light layer treats the world as flat ground: a fire brightens everything inside its
+            // rings alike. This puts that right for one pixel whose true shape is known: a wall
+            // turned to the fire takes more of it, a wall turned away or a roof above it takes none.
+            // Returned as the factor to multiply the pixel by before the light layer does its part.
+            float3 FireShape(float3 n, float h, float2 world, float2 pix)
             {
-                half4 t = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);
-                return dot(t.rgb, float3(0.299, 0.587, 0.114)) * t.a;
-            }
-
-            // How much brighter or darker firelight makes this pixel than flat ground would be:
-            // faces tilted towards a fire catch it, faces tilted away fall into shade.
-            float3 Relief(float2 uv, float2 world)
-            {
-                float2 t = _MainTex_TexelSize.xy;
-                float2 slope = float2(Height(uv - float2(t.x, 0)) - Height(uv + float2(t.x, 0)), Height(uv - float2(0, t.y)) - Height(uv + float2(0, t.y)));
-                float3 n = normalize(float3(slope * 2.6, 1.0));
-                float3 sum = 0;
-                for (int k = 0; k < 8; k++)
+                float bay = (WF_Bayer(pix) - 0.5) * 0.5;
+                float3 assumed = _WF_Ambient.rgb, shaped = _WF_Ambient.rgb;
+                float3 P = float3(world.x, world.y - h, h);
+                for (int k = 0; k < 12; k++)
                 {
                     if (k >= _WF_LightCount) break;
                     float4 L = _WF_Lights[k];
-                    float2 d = L.xy - world;
-                    float fall = saturate(1.0 - length(d) / L.z);
-                    float3 dir = normalize(float3(d, L.z * 0.30));
-                    sum += _WF_LightColors[k].rgb * (fall * fall * L.w * (dot(n, dir) - dir.z));
+                    float f = saturate(1.0 - length(world - L.xy) / L.z);
+                    f = f * f * (3.0 - 2.0 * f);
+                    float q = max(floor(f * 5.0 + 0.5 + bay), 0.0) / 5.0;
+                    float3 b = _WF_LightColors[k].rgb * q;
+                    float3 at = float3(L.x, L.y - L.w, L.w);
+                    float3 dir = normalize(at - P);
+                    float flatZ = normalize(at - float3(world, 0.0)).z;
+                    float g = min(saturate(dot(n, dir)) / max(flatZ, 0.05), 1.9);
+                    assumed += b;
+                    shaped += b * g;
                 }
-                return sum;
+                return shaped / assumed;
+            }
+
+            // A figure keeps its own colours beside a fire: the flat wash of the light layer is turned
+            // down on it (the model is lit from the fire's side instead, in its own shader).
+            float3 FireOnFigure(float2 world, float2 pix)
+            {
+                float bay = (WF_Bayer(pix) - 0.5) * 0.5;
+                float3 sum = 0;
+                for (int k = 0; k < 12; k++)
+                {
+                    if (k >= _WF_LightCount) break;
+                    float4 L = _WF_Lights[k];
+                    float f = saturate(1.0 - length(world - L.xy) / L.z);
+                    f = f * f * (3.0 - 2.0 * f);
+                    sum += _WF_LightColors[k].rgb * (max(floor(f * 5.0 + 0.5 + bay), 0.0) / 5.0);
+                }
+                return (_WF_Ambient.rgb + sum * 0.38) / (_WF_Ambient.rgb + sum);
             }
 
             TEXTURE2D(_WFModels);          // sampler_PointClamp comes with Core.hlsl
@@ -134,7 +157,24 @@ Shader "Wakefire/Sprite"
                 else c = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv) * i.color;
                 clip(c.a - 0.5);
                 float3 col = c.rgb;
-                if (_Model < 0.5 && _WF_LightCount > 0.5) col *= max(1.0 + Relief(i.uv, i.world) * 2.2, 0.35);
+                if (_Model > 0.5 && _WF_LightCount > 0.5) col *= FireOnFigure(i.world, i.positionCS.xy);
+                if (_HasNormal > 0.5)
+                {
+                    half4 nt = SAMPLE_TEXTURE2D(_NormalTex, sampler_PointClamp, i.uv);
+                    float3 n = nt.xyz * 2.0 - 1.0;
+                    if (nt.a < 0.002)
+                    {
+                        // the sea (marked by a zero in the height): moonlight breaking on the swell
+                        float2 p = floor(i.world * 16.0) / 16.0;
+                        float t = _Time.y;
+                        float a = sin(p.x * 2.3 + sin(p.y * 1.7 + t * 0.6) * 1.4 + t * 0.9);
+                        float b = sin(p.y * 5.1 - t * 1.1 + sin(p.x * 0.9 + t * 0.4) * 2.0);
+                        col += step(1.55, a + b) * float3(0.10, 0.16, 0.26);
+                        col *= 1.0 - step(a + b, -1.7) * 0.2;
+                    }
+                    // flames and lit windows carry no normal: they are light, they don't take it
+                    else if (_WF_LightCount > 0.5 && dot(n, n) > 0.25) col *= FireShape(normalize(n), max(nt.a * 255.0 - 1.0, 0.0) / 24.0, i.world, i.positionCS.xy);
+                }
                 float3 dcol = lerp(WF_DreamPalette(col) + col * _DreamGlow, col * 1.08, _DreamKeep);
                 col = lerp(col, dcol, dream);
                 col = lerp(col, float3(1.0, 0.55, 0.14), saturate(WF_RingAt(i.world)));

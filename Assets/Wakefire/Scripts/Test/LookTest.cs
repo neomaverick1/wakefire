@@ -1,0 +1,50 @@
+// A look round for the build machine: -wfScene look -wfLook "lowtown:480,330;lowtown:600,250;ashkel:480,200:dream"
+// stands Azar at each spot in turn (map pixels) and photographs it, awake or in the dream.
+using System.Collections;
+using UnityEngine;
+
+namespace Wakefire
+{
+    public static class LookTest
+    {
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void Register() => AutoTest.Scenes["look"] = Run;
+
+        static IEnumerator Run(AutoTest t)
+        {
+            var g = Game.I;
+            string spec = Boot.Arg("-wfLook") ?? "lowtown:480,330";
+            string last = null;
+            int n = 0;
+            foreach (var item in spec.Split(';'))
+            {
+                var parts = item.Split(':');
+                if (parts.Length < 2) continue;
+                var xy = parts[1].Split(',');
+                float x = float.Parse(xy[0], System.Globalization.CultureInfo.InvariantCulture), y = float.Parse(xy[1], System.Globalization.CultureInfo.InvariantCulture);
+                if (parts[0] != last)
+                {
+                    g.EnterMap(parts[0], null);
+                    Fade.Set(0);
+                    last = parts[0];
+                    yield return new WaitForSeconds(0.4f);
+                }
+                var p = Player.I;
+                Dream.I.SetInstant(false);
+                p.pos = Map.ToWorld(x, y);
+                p.Face(Facing.Down);
+                g.View.SnapTo(p.pos);
+                yield return new WaitForSeconds(0.5f);
+                g.View.SnapTo(p.pos);
+                if (parts.Length > 2 && parts[2] == "dream")
+                {
+                    Dream.I.Drowsiness = 1;
+                    Dream.I.Flip(p.pos, true);
+                    yield return new WaitForSeconds(1.6f);
+                }
+                yield return t.Shot($"{n:00}-{parts[0]}-{(int)x}-{(int)y}", 0.4f);
+                n++;
+            }
+        }
+    }
+}

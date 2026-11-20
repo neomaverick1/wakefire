@@ -209,10 +209,11 @@ namespace Wakefire
                                Mathf.CeilToInt((Screen.width - sa.xMax) * kx), Mathf.CeilToInt((Screen.height - sa.yMax) * ky));
         }
 
-        static readonly Vector4[] lightAt = new Vector4[8], lightColour = new Vector4[8];
-        static readonly float[] lightScore = new float[8];
+        const int Fires12 = 12;
+        static readonly Vector4[] lightAt = new Vector4[Fires12], lightColour = new Vector4[Fires12];
+        static readonly float[] lightScore = new float[Fires12];
 
-        /// <summary>Tells the sprite shader about the eight fires that matter most to what's on screen,
+        /// <summary>Tells the sprite shader about the twelve fires that matter most to what's on screen,
         /// so stone and brick can catch their light on the faces turned towards them.</summary>
         void Fires()
         {
@@ -226,20 +227,23 @@ namespace Wakefire
                 float dx = Mathf.Max(0, Mathf.Abs(p.x - c.x) - halfW), dy = Mathf.Max(0, Mathf.Abs(p.y - c.y) - halfH);
                 if (dx > l.radius || dy > l.radius) continue;                       // can't reach the picture
                 float score = l.intensity * l.radius / (1f + dx + dy);
-                int slot = n < 8 ? n++ : -1;
+                int slot = n < Fires12 ? n++ : -1;
                 if (slot < 0)
                 {
                     int worst = 0;
-                    for (int i = 1; i < 8; i++) if (lightScore[i] < lightScore[worst]) worst = i;
+                    for (int i = 1; i < Fires12; i++) if (lightScore[i] < lightScore[worst]) worst = i;
                     if (lightScore[worst] >= score) continue;
                     slot = worst;
                 }
                 lightScore[slot] = score;
-                lightAt[slot] = new Vector4(p.x, p.y, l.radius * 1.15f, l.intensity * l.Now);
-                lightColour[slot] = l.color;
+                // exactly what the light layer draws for it: where it shows, how wide its rings are this instant, how high it burns
+                lightAt[slot] = new Vector4(p.x, p.y, Mathf.Max(0.01f, l.radius * l.Now), l.height);
+                var lc = (l.color * (l.intensity * (0.85f + 0.15f * l.Now))).linear;
+                lightColour[slot] = new Vector4(lc.r, lc.g, lc.b, 1);
             }
             Shader.SetGlobalVectorArray("_WF_Lights", lightAt);
             Shader.SetGlobalVectorArray("_WF_LightColors", lightColour);
+            Shader.SetGlobalVector("_WF_Ambient", (Vector4)ambient.linear);
             Shader.SetGlobalFloat("_WF_LightCount", n);
         }
 

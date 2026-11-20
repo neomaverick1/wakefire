@@ -73,6 +73,10 @@ namespace Wakefire.EditorTools
                 AssetDatabase.CreateAsset(ember, emberPath);
             }
             if (ember && emberShader) ember.shader = emberShader;
+            // always in the same order, so the asset doesn't change from one build to the next
+            lib.clips.Sort((a, b) => string.CompareOrdinal(a.name, b.name));
+            lib.meshes.Sort((a, b) => string.CompareOrdinal(a.name, b.name));
+            lib.textures.Sort((a, b) => string.CompareOrdinal(a.name, b.name));
             EditorUtility.SetDirty(lib);
             AssetDatabase.SaveAssets();
             Debug.Log($"[import] models: {string.Join(", ", lib.models.Select(m => m.name))}; {lib.clips.Count} clips; {lib.meshes.Count} gear meshes; {lib.textures.Count} textures");
