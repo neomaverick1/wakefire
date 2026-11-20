@@ -209,6 +209,40 @@ namespace Wakefire
                                Mathf.CeilToInt((Screen.width - sa.xMax) * kx), Mathf.CeilToInt((Screen.height - sa.yMax) * ky));
         }
 
+        static readonly Vector4[] lightAt = new Vector4[8], lightColour = new Vector4[8];
+        static readonly float[] lightScore = new float[8];
+
+        /// <summary>Tells the sprite shader about the eight fires that matter most to what's on screen,
+        /// so stone and brick can catch their light on the faces turned towards them.</summary>
+        void Fires()
+        {
+            int n = 0;
+            Vector2 c = focus;
+            float halfW = width / (2f * PPU), halfH = Height / (2f * PPU);
+            foreach (var l in LightBlob.All)
+            {
+                if (!l || l.radius < 0.5f) continue;
+                Vector2 p = l.transform.position;
+                float dx = Mathf.Max(0, Mathf.Abs(p.x - c.x) - halfW), dy = Mathf.Max(0, Mathf.Abs(p.y - c.y) - halfH);
+                if (dx > l.radius || dy > l.radius) continue;                       // can't reach the picture
+                float score = l.intensity * l.radius / (1f + dx + dy);
+                int slot = n < 8 ? n++ : -1;
+                if (slot < 0)
+                {
+                    int worst = 0;
+                    for (int i = 1; i < 8; i++) if (lightScore[i] < lightScore[worst]) worst = i;
+                    if (lightScore[worst] >= score) continue;
+                    slot = worst;
+                }
+                lightScore[slot] = score;
+                lightAt[slot] = new Vector4(p.x, p.y, l.radius * 1.15f, l.intensity * l.Now);
+                lightColour[slot] = l.color;
+            }
+            Shader.SetGlobalVectorArray("_WF_Lights", lightAt);
+            Shader.SetGlobalVectorArray("_WF_LightColors", lightColour);
+            Shader.SetGlobalFloat("_WF_LightCount", n);
+        }
+
         public void Shake(float pixels, float seconds)
         {
             if (pixels * seconds < shakeAmp * shakeTime) return;
@@ -224,6 +258,7 @@ namespace Wakefire
             else if (Screen.safeArea != lastSafe) Insets();
             light.backgroundColor = ambient;
             composite.SetFloat("_Strength", nightStrength);
+            Fires();
             if (target)
             {
                 var goal = (Vector2)target.position + lookAhead;

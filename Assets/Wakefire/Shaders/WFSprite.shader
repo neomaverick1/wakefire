@@ -46,6 +46,38 @@ Shader "Wakefire/Sprite"
                 float4 _Cell;
                 float _Sway;
             CBUFFER_END
+            float4 _MainTex_TexelSize;
+            // the fires nearest the camera: xy = where, z = how far the light reaches, w = strength
+            float4 _WF_Lights[8];
+            float4 _WF_LightColors[8];
+            float _WF_LightCount;
+
+            float Height(float2 uv)
+            {
+                half4 t = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv);
+                return dot(t.rgb, float3(0.299, 0.587, 0.114)) * t.a;
+            }
+
+            // How much brighter or darker firelight makes this pixel than flat ground would be:
+            // faces tilted towards a fire catch it, faces tilted away fall into shade.
+            float3 Relief(float2 uv, float2 world)
+            {
+                float2 t = _MainTex_TexelSize.xy;
+                float2 slope = float2(Height(uv - float2(t.x, 0)) - Height(uv + float2(t.x, 0)), Height(uv - float2(0, t.y)) - Height(uv + float2(0, t.y)));
+                float3 n = normalize(float3(slope * 2.6, 1.0));
+                float3 sum = 0;
+                for (int k = 0; k < 8; k++)
+                {
+                    if (k >= _WF_LightCount) break;
+                    float4 L = _WF_Lights[k];
+                    float2 d = L.xy - world;
+                    float fall = saturate(1.0 - length(d) / L.z);
+                    float3 dir = normalize(float3(d, L.z * 0.30));
+                    sum += _WF_LightColors[k].rgb * (fall * fall * L.w * (dot(n, dir) - dir.z));
+                }
+                return sum;
+            }
+
             TEXTURE2D(_WFModels);          // sampler_PointClamp comes with Core.hlsl
             float4 _WFModels_TexelSize;
             // A character posed on the model stage, read out of its square of the stage sheet and
@@ -102,6 +134,7 @@ Shader "Wakefire/Sprite"
                 else c = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv) * i.color;
                 clip(c.a - 0.5);
                 float3 col = c.rgb;
+                if (_Model < 0.5 && _WF_LightCount > 0.5) col *= max(1.0 + Relief(i.uv, i.world) * 2.2, 0.35);
                 float3 dcol = lerp(WF_DreamPalette(col) + col * _DreamGlow, col * 1.08, _DreamKeep);
                 col = lerp(col, dcol, dream);
                 col = lerp(col, float3(1.0, 0.55, 0.14), saturate(WF_RingAt(i.world)));
