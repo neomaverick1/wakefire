@@ -6,9 +6,6 @@ The body is modelled from solids (ellipsoids and tapered limbs) into a small dep
 masses that meet blend into one casting, and only real overlaps (a near leg over the barrel, the
 head over the neck) get a dark seam. Light comes from the top left; the belly picks up the fire
 from underneath. Tones are quantised to a short bronze ramp with no dithering, then the whole
-import os
-PREVIEWS = os.environ.get('WF_PREVIEWS', '/tmp/wakefire-previews')
-os.makedirs(PREVIEWS, exist_ok=True)
 silhouette gets the game's dark outline.
 
     python3 bull.py            export Resources/Sprites/bull.png/.json
@@ -18,6 +15,9 @@ import sys, math, json
 import numpy as np
 sys.path.insert(0, '/srv/Wakefire/Art/pixel')
 from px import Canvas
+import os
+PREVIEWS = os.environ.get('WF_PREVIEWS', '/tmp/wakefire-previews')
+os.makedirs(PREVIEWS, exist_ok=True)
 
 OUT = '/srv/Wakefire/Assets/Wakefire/Resources/Sprites'
 SCRATCH = PREVIEWS
@@ -283,7 +283,7 @@ def front(t=0.0, step=0.0, bob=0, head=0, jaw=0, low=0, lit=1.0, puff=0, splay=0
         S.ell(x + s_ * splay, base - 4 - lift, -13, 3.8, 2.3, 2, 'hoof')
     S.ell(cx, y0 - 35, -8, 23, 14, 12)                 # the barrel, at the sides
     S.ell(cx, y0 - 50, -4, 18, 10, 10)                 # the hump behind the head
-    S.ell(cx, y0 - 37, 0, 21, 17, 12, power=2.2)       # chest and shoulders
+    S.ell(cx, y0 - 37, 0, 21, 17, 12, 'far', power=2.2)       # chest and shoulders, darker so the head stands out
     for s_, ph in ((-1, 0.0), (1, 0.5)):
         lift = max(0, int(round(math.sin((t + ph) * 2 * math.pi) * step * 3)))
         x = cx + s_ * 11
@@ -308,11 +308,28 @@ def front(t=0.0, step=0.0, bob=0, head=0, jaw=0, low=0, lit=1.0, puff=0, splay=0
                 [2.6, 2.1, 1.5, 0.7], ['horn', 'horn', 'horn_tip'])
     cv = S.render(lit)
     grille(cv, cx - 6, y0 - 30, 13, 8, t, lit)                            # the furnace door in the chest
+    dark = rgb('#2a1208')
     for s_ in (-1, 1):
-        coal(cv, cx + s_ * 5 - (1 if s_ > 0 else 0), int(hy) - 2, lit)
-    if lit > 0.2:
-        for s_ in (-1, 1):
-            cv.px(cx + s_ * 3 - (1 if s_ > 0 else 0), int(hy) + 14 - (2 if jaw else 0), FIRE[1])
+        ex = cx + s_ * 5 - (1 if s_ > 0 else 0)
+        # a deep socket under a heavy brow, the coal burning inside it
+        for yy in range(int(hy) - 3, int(hy) + 1):
+            for xx in range(ex - 1, ex + 3):
+                cv.px(xx, yy, dark)
+        coal(cv, ex, int(hy) - 2, lit)
+        for xx in range(ex - 2, ex + 4):
+            cv.px(xx, int(hy) - 4, rgb('#ffeeb0') if s_ < 0 else rgb('#f0bc58'))
+    # the muzzle: a dark band with two burning nostrils
+    my = int(hy) + 13 - (2 if jaw else 0)
+    for xx in range(cx - 5, cx + 5):
+        cv.px(xx, my, dark); cv.px(xx, my + 1, dark)
+    for s_ in (-1, 1):
+        nx_ = cx + s_ * 3 - (1 if s_ > 0 else 0)
+        cv.px(nx_, my, FIRE[1] if lit > 0.2 else COOL[4]); cv.px(nx_, my + 1, FIRE[3] if lit > 0.2 else COOL[5])
+    # a seam down the brow and a row of rivets across the chest
+    for yy in range(int(hy) - 1, int(hy) + 10):
+        cv.px(cx, yy, rgb('#985622')) if yy % 3 else cv.px(cx, yy, rgb('#ffeeb0'))
+    for k in range(-3, 4):
+        cv.px(cx + k * 5, y0 - 33, rgb('#ffeeb0')); cv.px(cx + k * 5, y0 - 32, dark)
     ring(cv, cx - 0.5, hy + 18 - (2 if jaw else 0), 2.5)
     if jaw:
         for k in range(jaw):
