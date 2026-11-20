@@ -79,7 +79,7 @@ namespace Wakefire
         void Build()
         {
             I = this;
-            world = MakeCamera("WorldCamera", ~((1 << PixelUILayer) | (1 << LightLayer)), new Color(0.03f, 0.03f, 0.06f, 1), 0);
+            world = MakeCamera("WorldCamera", ~((1 << PixelUILayer) | (1 << LightLayer) | (1 << ModelStage.Layer)), new Color(0.03f, 0.03f, 0.06f, 1), 0);
             light = MakeCamera("LightCamera", 1 << LightLayer, ambient, 1);
             light.allowHDR = true;
             light.transform.SetParent(world.transform, false);

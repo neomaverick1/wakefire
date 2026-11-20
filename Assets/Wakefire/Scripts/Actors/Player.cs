@@ -24,8 +24,9 @@ namespace Wakefire
 
         int combo;
         bool queued;
-        float stateClock, rollCd, idleClock, hurtFlash;
-        Vector2 vel, knock;
+        float stateClock, rollCd, idleClock, hurtFlash, skidClock;
+        Vector2 vel, knock, rollDir, lastVel;
+        const float RollTime = 0.42f;
         SpriteRenderer shadow;
         public event Action<Prop> Interacted;
         public event Action Fell;
@@ -119,11 +120,15 @@ namespace Wakefire
                     else if (Controls.Down(Controls.Roll) && anim.Frame >= 3 && rollCd <= 0) StartRoll(input);
                     break;
                 case State.Roll:
-                    vel = Dir * Mathf.Lerp(10f, 3f, stateClock / 0.42f);
+                {
+                    // thrown forward hard, carried over the shoulder, slowing as he comes back to his feet
+                    float k = Mathf.Clamp01(stateClock / RollTime);
+                    vel = rollDir * Mathf.Lerp(10.4f, 3.4f, k);
                     if (stateClock > 0.08f && stateClock < 0.36f) health.invulnerable = Mathf.Max(health.invulnerable, 0.05f);
                     if (anim.Frame % 3 == 0) Fx.Dust(pos, 1);
                     if (anim.Done) { rollCd = 0.12f; ToFree(); }
                     break;
+                }
                 case State.Nod:
                 case State.Use:
                     vel = Vector2.zero;
@@ -142,9 +147,23 @@ namespace Wakefire
                     break;
             }
 
+            var before = pos;
             pos = Solids.Move(pos, vel * dt, half, this);
             CheckGround();
-            anim.Tick(dt);
+            if (anim.model)
+            {
+                var m = anim.model;
+                m.velocity = dt > 0.0001f ? (pos - before) / dt : Vector2.zero;
+                // the body points where it's going, not just four ways, and tips into its own acceleration
+                if (state == State.Free && vel.sqrMagnitude > 0.5f) m.Aim(vel);
+                else if (state == State.Roll) m.Aim(rollDir);
+                var push = state == State.Free && dt > 0.0001f ? Vector2.ClampMagnitude((vel - lastVel) / dt * 0.17f, 10f) : Vector2.zero;
+                m.lean = Vector2.Lerp(m.lean, push, 1f - Mathf.Exp(-12f * dt));
+            }
+            lastVel = vel;
+            // a stride covers the same ground whatever the pace: the legs slow as he does
+            float pace = anim.anim == "run" ? Mathf.Clamp(vel.magnitude / speed, 0.4f, 1.25f) : 1f;
+            anim.Tick(dt * pace);
             Place();
 
             if (hurtFlash > 0)
@@ -157,14 +176,26 @@ namespace Wakefire
 
         void FreeUpdate(Vector2 input, float dt)
         {
-            if (input.sqrMagnitude > 0.01f)
+            bool moving = input.sqrMagnitude > 0.01f;
+            // weight: a short run-up, a short slide to a stop, a skid when he doubles back
+            var want = input * speed;
+            var was = vel;
+            float grip = !moving ? 44f : Vector2.Dot(vel, want) < 0 ? 78f : 54f;
+            vel = Vector2.MoveTowards(vel, want, grip * dt);
+            skidClock -= dt;
+            if (moving && was.sqrMagnitude > 14f && Vector2.Dot(was.normalized, input.normalized) < -0.5f && skidClock <= 0)
+            {
+                Fx.Dust(pos, 3);
+                skidClock = 0.3f;
+            }
+            if (moving)
             {
                 facing = FacingOf(input, facing);
-                vel = input * speed;
                 var block = PropInFront(0.45f, p => p.Kind == "block");
                 bool leaning = block != null && Vector2.Dot(input.normalized, Dir) > 0.8f && Solids.Overlaps(new Rect(pos - half + Dir * 0.12f, half * 2), pos, this);
                 if (leaning)
                 {
+                    vel = want;
                     pushClock += dt;
                     anim.Play("push", facing);
                     anim.SetFacing(facing);
@@ -178,9 +209,12 @@ namespace Wakefire
                 if (anim.Frame == 2 || anim.Frame == 6) { if (stepPuff) { Fx.Dust(pos, 1); Sfx.Play(StepSound(anim.Frame == 2 ? 0 : 1), 0.32f, 0.08f); stepPuff = false; } }
                 else stepPuff = true;
             }
+            else if (vel.sqrMagnitude > 1.2f && anim.anim == "run")
+            {
+                idleClock = 0;                    // still carrying speed: the last strides shorten
+            }
             else
             {
-                vel = Vector2.zero;
                 idleClock += dt;
                 if (anim.anim == "yawn" || anim.anim == "idle_nod")
                 {
@@ -281,7 +315,8 @@ namespace Wakefire
 
         void StartRoll(Vector2 input)
         {
-            facing = FacingOf(input, facing);
+            rollDir = input.sqrMagnitude > 0.04f ? input.normalized : Dir;      // any of the ways the stick points, not just four
+            facing = FacingOf(rollDir, facing);
             state = State.Roll;
             stateClock = 0;
             anim.Play("roll", facing, true);
@@ -455,7 +490,9 @@ namespace Wakefire
             shadow.sortingOrder = Map.Order(pos.y) - 1;
             shadow.transform.localPosition = new Vector3(0, 0.02f, 0);
             Vector2 lo = facing == Facing.Left ? new Vector2(-0.35f, 0.5f) : facing == Facing.Right ? new Vector2(0.35f, 0.5f) : new Vector2(0.45f, 0.55f);
-            if (lantern) lantern.transform.position = (Vector3)(pos + lo);
+            if (lantern && anim.model && anim.model.props.TryGetValue("lantern", out var carried))
+                lantern.transform.position = (Vector3)(pos + anim.model.Offset(carried.TransformPoint(0, -0.19f * anim.model.def.scale, 0)));
+            else if (lantern) lantern.transform.position = (Vector3)(pos + lo);
         }
 
         public void SetState(State s, string animName = null)

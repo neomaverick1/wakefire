@@ -7,7 +7,7 @@ namespace Wakefire.EditorTools
 {
     public class Importers : AssetPostprocessor
     {
-        public override uint GetVersion() => 7;
+        public override uint GetVersion() => 8;
 
         void OnPreprocessAudio()
         {
@@ -63,6 +63,32 @@ namespace Wakefire.EditorTools
 
         void OnPreprocessModel()
         {
+            if (assetPath.StartsWith("Assets/Wakefire/Models/"))
+            {
+                // rigged characters and their clips: the game dresses and colours them itself, so
+                // nothing but meshes, bones and motion comes in. Loose gear (Models/Gear) is plain mesh.
+                var r = (ModelImporter)assetImporter;
+                bool gear = assetPath.Contains("/Gear/");
+                r.materialImportMode = ModelImporterMaterialImportMode.None;
+                r.animationType = gear ? ModelImporterAnimationType.None : ModelImporterAnimationType.Generic;
+                if (!gear) r.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                r.importAnimation = !gear;
+                r.importBlendShapes = false;
+                r.importCameras = false;
+                r.importLights = false;
+                r.importVisibility = false;
+                r.meshCompression = ModelImporterMeshCompression.Off;
+                r.isReadable = true;                 // the game measures and paints the body when it dresses it
+                r.importNormals = ModelImporterNormals.Import;
+                r.animationCompression = ModelImporterAnimationCompression.KeyframeReduction;
+                r.animationRotationError = 0.4f;
+                r.animationPositionError = 0.4f;
+                r.animationScaleError = 0.5f;
+                r.optimizeGameObjects = false;
+                r.useFileScale = true;
+                r.globalScale = 1f;
+                return;
+            }
             if (!assetPath.StartsWith("Assets/Wakefire/Resources/Models/")) return;
             var m = (ModelImporter)assetImporter;
             m.materialImportMode = ModelImporterMaterialImportMode.None;

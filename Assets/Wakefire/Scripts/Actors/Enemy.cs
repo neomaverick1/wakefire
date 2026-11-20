@@ -115,7 +115,7 @@ namespace Wakefire
             {
                 knockClock -= dt;
                 pos = Solids.Move(pos, knockVel * dt, half, this);
-                knockVel *= 0.86f;
+                knockVel *= Mathf.Exp(-9f * dt);          // the same slide to a stop at any frame rate
             }
             else if (p && p.state != Player.State.Dead && !(Story.I && Story.I.Running)) Think(dt, p);
             // touching hurts (only in the world we share)

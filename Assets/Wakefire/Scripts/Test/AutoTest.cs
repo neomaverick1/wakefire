@@ -32,9 +32,24 @@ namespace Wakefire
         readonly List<string> log = new List<string>();
         public static readonly Dictionary<string, Func<AutoTest, IEnumerator>> Scenes = new Dictionary<string, Func<AutoTest, IEnumerator>>();
 
+        /// <summary>With -wfFilm the run is filmed: the game advances exactly a sixtieth of a second
+        /// a frame however long the frame takes to draw, and every frame is saved.</summary>
+        IEnumerator Film()
+        {
+            Time.captureFramerate = 60;
+            string frames = Path.Combine(dir, "frames");
+            Directory.CreateDirectory(frames);
+            for (int i = 0; ; i++)
+            {
+                yield return new WaitForEndOfFrame();
+                ScreenCapture.CaptureScreenshot(Path.Combine(frames, $"f{i:00000}.png"));
+            }
+        }
+
         IEnumerator Start()
         {
             Directory.CreateDirectory(dir);
+            if (Boot.Flag("-wfFilm")) StartCoroutine(Film());
             Application.logMessageReceived += (msg, trace, type) =>
             {
                 if (type != LogType.Log) log.Add($"{type}: {msg}\n{trace}");

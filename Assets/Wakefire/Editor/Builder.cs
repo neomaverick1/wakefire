@@ -31,6 +31,7 @@ namespace Wakefire.EditorTools
                 PlayerSettings.iOS.buildNumber = (1000 + minor * 100 + patch).ToString();
             }
             ApplyIconAndSplash();
+            Models.Build();
             if (EditorUserBuildSettings.activeBuildTarget != target) EditorUserBuildSettings.SwitchActiveBuildTarget(group, target);
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path)));
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
