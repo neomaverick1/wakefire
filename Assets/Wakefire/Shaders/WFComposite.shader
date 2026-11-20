@@ -9,6 +9,7 @@ Shader "Wakefire/Composite"
     {
         [PerRendererData] _MainTex ("World", 2D) = "white" {}
         _LightTex ("Light", 2D) = "white" {}
+        _GlowTex ("Glow", 2D) = "black" {}
         _Strength ("Night strength", Float) = 1
     }
     SubShader
@@ -29,15 +30,8 @@ Shader "Wakefire/Composite"
             float4 _MainTex_TexelSize;
             float4 _WF_RTWorld;   // world camera centre xy, world size of the render target zw
 
-            // how much a pixel burns: bright and strongly warm-coloured, or not at all
-            float3 Ember(float2 uv)
-            {
-                float3 c = tex2D(_MainTex, uv).rgb;
-                float hi = max(c.r, max(c.g, c.b)), lo = min(c.r, min(c.g, c.b));
-                float sat = hi > 0.001 ? (hi - lo) / hi : 0;
-                return c * smoothstep(0.70, 0.92, hi) * smoothstep(0.74, 0.90, sat) * step(c.b, c.r);
-            }
             sampler2D _LightTex;
+            sampler2D _GlowTex;      // what burns, blurred small (WFEmber)
             float _Strength;
 
             struct A { float4 vertex : POSITION; float2 uv : TEXCOORD0; float4 color : COLOR; };
@@ -65,14 +59,8 @@ Shader "Wakefire/Composite"
                 float3 over = max(lit - 1, 0);
                 lit = min(lit, 1) + over * float3(0.6, 0.45, 0.3);
 
-                // the glow of fire: two rings of samples round each pixel, the nearer weighing more
-                float2 t = _MainTex_TexelSize.xy;
-                float3 glow = 0;
-                glow += (Ember(i.uv + t * float2(1.5, 0)) + Ember(i.uv + t * float2(-1.5, 0)) + Ember(i.uv + t * float2(0, 1.5)) + Ember(i.uv + t * float2(0, -1.5))) * 0.11;
-                glow += (Ember(i.uv + t * float2(1.1, 1.1)) + Ember(i.uv + t * float2(-1.1, 1.1)) + Ember(i.uv + t * float2(1.1, -1.1)) + Ember(i.uv + t * float2(-1.1, -1.1))) * 0.10;
-                glow += (Ember(i.uv + t * float2(3.2, 0)) + Ember(i.uv + t * float2(-3.2, 0)) + Ember(i.uv + t * float2(0, 3.2)) + Ember(i.uv + t * float2(0, -3.2))) * 0.045;
-                glow += (Ember(i.uv + t * float2(2.3, 2.3)) + Ember(i.uv + t * float2(-2.3, 2.3)) + Ember(i.uv + t * float2(2.3, -2.3)) + Ember(i.uv + t * float2(-2.3, -2.3))) * 0.045;
-                lit += glow * float3(1.0, 0.82, 0.55);
+                // the glow of fire, laid softly over everything near it
+                lit += tex2D(_GlowTex, i.uv).rgb * float3(1.15, 0.94, 0.62);
 
                 // the corners fall away into the night
                 float2 q = i.uv - 0.5;

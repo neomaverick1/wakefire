@@ -18,6 +18,7 @@ namespace Wakefire
         float seg;                      // spacing between rows
         Mesh mesh;
         (Transform a, Transform b, float r)[] body;
+        Vector3[] limbA, limbB;
         bool hung;
 
         public static Cape Make(ModelActor actor, Tailor t, Color colour, Vector3 left, Vector3 right, float length, float hemWidth, string pinBone = "spine_03")
@@ -121,6 +122,8 @@ namespace Wakefire
         void Step(float h, Vector3 wind)
         {
             for (int k = 0; k < cols; k++) p[k] = prev[k] = Local(pin.TransformPoint(pinLocal[k]));
+            if (limbA == null) { limbA = new Vector3[body.Length]; limbB = new Vector3[body.Length]; }
+            for (int j = 0; j < body.Length; j++) { limbA[j] = Local(body[j].a.position); limbB[j] = Local(body[j].b.position); }
             var fall = new Vector3(0, -gravity * actor.def.scale, 0);
             for (int i = cols; i < p.Length; i++)
             {
@@ -139,9 +142,10 @@ namespace Wakefire
                         Hold(r * cols + k, r * cols + k + 1, across[r], false, false);
                 for (int i = cols; i < p.Length; i++)
                 {
-                    foreach (var (a, b, rad) in body)
+                    for (int j = 0; j < body.Length; j++)
                     {
-                        Vector3 pa = Local(a.position), pb = Local(b.position), ab = pb - pa;
+                        Vector3 pa = limbA[j], ab = limbB[j] - pa;
+                        float rad = body[j].r;
                         float k = Mathf.Clamp01(Vector3.Dot(p[i] - pa, ab) / Mathf.Max(0.0001f, ab.sqrMagnitude));
                         var off = p[i] - (pa + ab * k);
                         float d = off.magnitude;
