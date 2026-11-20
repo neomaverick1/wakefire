@@ -153,7 +153,9 @@ namespace Wakefire
             if (anim.model)
             {
                 var m = anim.model;
+                m.ownVelocity = true;
                 m.velocity = dt > 0.0001f ? (pos - before) / dt : Vector2.zero;
+                if (m.props.TryGetValue("shield", out var mirror) && mirror.gameObject.activeSelf != hasShield) mirror.gameObject.SetActive(hasShield);
                 // the body points where it's going, not just four ways, and tips into its own acceleration
                 if (state == State.Free && vel.sqrMagnitude > 0.5f) m.Aim(vel);
                 else if (state == State.Roll) m.Aim(rollDir);
@@ -161,9 +163,11 @@ namespace Wakefire
                 m.lean = Vector2.Lerp(m.lean, push, 1f - Mathf.Exp(-12f * dt));
             }
             lastVel = vel;
-            // a stride covers the same ground whatever the pace: the legs slow as he does
-            float pace = anim.anim == "run" ? Mathf.Clamp(vel.magnitude / speed, 0.4f, 1.25f) : 1f;
-            anim.Tick(dt * pace);
+            // the camera looks a little ahead of where he's heading
+            var view = PixelView.I;
+            if (view && view.target == transform)
+                view.lookAhead = Vector2.Lerp(view.lookAhead, state == State.Free || state == State.Roll ? vel * 0.14f : Vector2.zero, 1f - Mathf.Exp(-2.5f * dt));
+            anim.Tick(dt);
             Place();
 
             if (hurtFlash > 0)

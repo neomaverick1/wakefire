@@ -201,7 +201,7 @@ namespace Wakefire
             if (shadow)
             {
                 shadow.sortingOrder = o - 1;
-                shadow.enabled = anim.anim != "lie";
+                shadow.enabled = anim.model || anim.anim != "lie";
             }
         }
     }

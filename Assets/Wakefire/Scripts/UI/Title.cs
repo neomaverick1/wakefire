@@ -11,6 +11,9 @@ namespace Wakefire
         public static Title I;
         RawImage bg, logo, menuImg, hero;
         int heroFrames = 1;
+        SpriteAnim heroAnim;                 // Azar himself on the roof, when he has a model
+        GameObject heroHost;
+        Material heroMat;
 
         [System.Serializable] class HeroInfo { public int frames, w, h, x, y; }
         PixelCanvas menu;
@@ -58,7 +61,34 @@ namespace Wakefire
             // Azar on a roof in the foreground, cape and crest moving in the night wind
             var ht = Resources.Load<Texture2D>("UI/title_hero");
             var hj = Resources.Load<TextAsset>("UI/title_hero");
-            if (ht && hj)
+            if (hj && ModelDefs.For("azar") != null)
+            {
+                // the real Azar stands there, posed on the model stage, his cape in the night wind
+                var hi = JsonUtility.FromJson<HeroInfo>(hj.text);
+                heroHost = new GameObject("TitleAzar");
+                var body = new GameObject("Sprite");
+                body.transform.SetParent(heroHost.transform, false);
+                var sr = body.AddComponent<SpriteRenderer>();
+                sr.sharedMaterial = Map.SpriteMat;
+                sr.enabled = false;
+                heroAnim = body.AddComponent<SpriteAnim>();
+                heroAnim.sr = sr;
+                heroAnim.sheet = SpriteSheet.Load("azar");
+                heroAnim.Play("idle", Facing.Right, true);
+                if (heroAnim.model)
+                {
+                    heroAnim.model.ownVelocity = true;
+                    heroAnim.model.velocity = new Vector2(2.6f, 0.4f);
+                    heroAnim.model.Aim(new Vector2(1f, 0.45f), true);
+                }
+                float feetX = Mathf.Max(34f, Mathf.Round((W - bgt.width) / 2f) + hi.x + hi.w * 0.5f), feetY = H - bgt.height + hi.y + hi.h;
+                hero = Img("hero", Texture2D.whiteTexture, feetX - ModelStage.Cell * 0.5f, feetY - (ModelStage.Cell - ModelStage.FeetPx));
+                ((RectTransform)hero.transform).sizeDelta = new Vector2(ModelStage.Cell, ModelStage.Cell);
+                heroMat = new Material(Map.SpriteMat);
+                heroMat.SetFloat("_Model", 1f);
+                hero.material = heroMat;
+            }
+            else if (ht && hj)
             {
                 var hi = JsonUtility.FromJson<HeroInfo>(hj.text);
                 ht.filterMode = FilterMode.Point;
@@ -69,7 +99,7 @@ namespace Wakefire
             }
             var lt = Resources.Load<Texture2D>("UI/title_logo");
             lt.filterMode = FilterMode.Point;
-            logo = Img("logo", lt, Mathf.Round((W - lt.width) / 2f), 18 + off);
+            logo = Img("logo", lt, Mathf.Round((W - lt.width) / 2f), Mathf.Max(3, 18 + off));
             options = Save.Exists ? new[] { "Continue", "New Game" } : new[] { "Begin" };
             menu = new PixelCanvas(W, 80);
             menuImg = Img("menu", menu.tex, 0, 96 + off);
@@ -106,7 +136,13 @@ namespace Wakefire
         {
             if (leaving) return;
             clock += Time.unscaledDeltaTime;
-            if (hero) hero.uvRect = new Rect(((int)(clock * 5f) % heroFrames) / (float)heroFrames, 0, 1f / heroFrames, 1);
+            if (heroAnim)
+            {
+                heroHost.transform.position = (Vector2)PixelView.I.world.transform.position;      // "in view", so the stage keeps posing him
+                heroAnim.Tick(Time.unscaledDeltaTime);
+                if (heroAnim.model) heroMat.SetVector("_Cell", heroAnim.model.Cell);
+            }
+            else if (hero) hero.uvRect = new Rect(((int)(clock * 5f) % heroFrames) / (float)heroFrames, 0, 1f / heroFrames, 1);
             var mv = Controls.MoveVector;
             int before = sel;
             if (Controls.Move.WasPerformedThisFrame() || Keyboard.current != null && (Keyboard.current.upArrowKey.wasPressedThisFrame || Keyboard.current.downArrowKey.wasPressedThisFrame))
@@ -139,6 +175,7 @@ namespace Wakefire
         {
             yield return Fade.Out(0.5f);
             if (!resume) Save.Clear();
+            if (heroHost) Destroy(heroHost);
             Destroy(gameObject);
             I = null;
             Game.I.Begin(resume);

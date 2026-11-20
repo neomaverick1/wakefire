@@ -13,6 +13,8 @@ Shader "Wakefire/Model"
         _Glow ("Unlit", Range(0,1)) = 0
         _Rim ("Rim light", Range(0,1)) = 1
         _Both ("Seen from both sides (cloth)", Float) = 0
+        _Fire ("Firelight: direction to it (view space), strength", Vector) = (0,1,0,0)
+        _FireColor ("Firelight colour", Color) = (1,0.62,0.26,1)
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
     }
     SubShader
@@ -35,6 +37,8 @@ Shader "Wakefire/Model"
                 float _Glow;
                 float _Rim;
                 float _Both;
+                float4 _Fire;
+                float4 _FireColor;
                 float _Cull;
             CBUFFER_END
             float4 _WF_StageDepth;   // x = z of the stage floor line, y = 1 / depth range
@@ -75,10 +79,15 @@ Shader "Wakefire/Model"
                 float rim = dot(n, normalize(float3(0.80, 0.30, -0.52)));
                 if (rim > 0.50 && d < 0.12) col = lerp(col, base * float3(0.62, 0.74, 1.05) + float3(0.02, 0.04, 0.09), _Rim);
 
+                // firelight: whatever burns nearby (a brazier, the Wakefire itself) paints the side that faces it
+                float fire = dot(n, normalize(_Fire.xyz));
+                if (_Fire.w > 0.02 && fire > 0.28)
+                    col = lerp(col, min(base * _FireColor.rgb * 1.55 + _FireColor.rgb * 0.08, 1.0), _Fire.w * (fire > 0.62 ? 1.0 : 0.55));
+
                 // bronze catches the lamp
                 float3 H = normalize(L + float3(0, 0, 1));
                 float spec = dot(n, H);
-                if (metal > 0.01 && spec > lerp(1.0, 0.90, metal)) col = lerp(light, float3(1.0, 0.96, 0.82), 0.65);
+                if (metal > 0.01 && spec > lerp(1.0, 0.962, metal)) col = lerp(light, float3(1.0, 0.88, 0.52), 0.55);
 
                 col = lerp(col, base, glow);
                 return half4(col, 0.5 + 0.5 * saturate(i.depth));
