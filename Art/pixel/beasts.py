@@ -221,114 +221,142 @@ JACKAL = [rgb('#e8c48a'), rgb('#c8965a'), rgb('#94683a'), rgb('#5a3c22')]
 DOG = [rgb('#d8a874'), rgb('#a8703e'), rgb('#7a4c28'), rgb('#4a2c16')]
 
 
-GALLOP = [  # hind foot offset, front foot offset, lift, body stretch, bob
-    (3, -3, 0, 0, -1),     # gathered under
-    (-3, 3, 0, 2, 0),      # pushing off, reaching
-    (-4, 4, 2, 3, -2),     # in the air
-    (1, 1, 0, 1, 0),       # landing
+HP_JACKAL = {'O': O, 'J': rgb('#e0a860'), 'j': rgb('#a8703a'), 'D': rgb('#5a3c22'), 'c': rgb('#f4e0b4'), 'A': rgb('#ffe060'), 'K': rgb('#241410')}
+HP_DOG = {'O': O, 'J': rgb('#c08850'), 'j': rgb('#8a5a30'), 'D': rgb('#6a4424'), 'c': rgb('#ecd8b0'), 'A': rgb('#2a1c18'), 'K': rgb('#241410')}
+H_SIDE = [
+    "..................OO....",
+    ".................OjO.O..",
+    ".................OjjOjO.",
+    "................OJJJJJO.",
+    "...............OJJAJJJJO",
+    "OO....OOOOOOOOOOJJJJJJjKO",
+    "OjO.OOJJJJJJJJJJJJjjjOOO",
+    ".OjOJDDDDDDDDJJJJJjOO...",
+    ".OJJJJJJJJJJJJJJJjO.....",
+    "..OJJJJJJJJJJJjjjjO.....",
+    "..OjjjjccccccccjcO......",
+    "...OOOOOOOOOOOOOO.......",
 ]
+H_SIDE_DOG = [
+    "........................",
+    "........................",
+    ".................OOOO...",
+    "................OJJJJJO.",
+    "...............OjjAJJJJO",
+    "OO....OOOOOOOOOOjjJJJJjKO",
+    "OjO.OOJJJJJJJJJOjjJjjOOO",
+    ".OjOJDDDDDDDDJJJOOjOO...",
+    ".OJJJJJJJJJJJJJJJjO.....",
+    "..OJJJJJJJJJJJjjjjO.....",
+    "..OjjjjccccccccjcO......",
+    "...OOOOOOOOOOOOOO.......",
+]
+H_FRONT = [
+    ".OO......OO.",
+    "OjjO....OjjO",
+    "OjJjOOOOjJjO",
+    ".OJJJJJJJJO.",
+    ".OJAOJJOAJO.",
+    ".OJJJccJJJO.",
+    "..OJcKKcJO..",
+    "..OJJccJJO..",
+    ".OJJJJJJJJO.",
+    ".OJJccccJJO.",
+    ".OjJccccJjO.",
+    "..OjjjjjjO..",
+]
+H_FRONT_DOG = [
+    "............",
+    "..OOOOOOOO..",
+    ".OJJJJJJJJO.",
+    "OjOJJJJJJOjO",
+    "OjOAOJJOAOjO",
+    "OjOJJccJJOjO",
+    ".OOJcKKcJOO.",
+    "..OJJccJJO..",
+    ".OJJJJJJJJO.",
+    ".OJJccccJJO.",
+    ".OjJccccJjO.",
+    "..OjjjjjjO..",
+]
+H_BACK = [
+    ".OO......OO.",
+    "OjjO....OjjO",
+    "OjJjOOOOjJjO",
+    ".OJJJJJJJJO.",
+    ".OJJJJJJJJO.",
+    ".OJJDDDDJJO.",
+    "..OJDDDDJO..",
+    "..OJDDDDJO..",
+    ".OJJDDDDJJO.",
+    ".OJJJDDJJJO.",
+    ".OjJJjjJJjO.",
+    "..OjjOOjjO..",
+]
+GALLOP = [(3, -3, 0), (-3, 3, 0), (-4, 4, 2), (1, 1, 0)]      # hind foot, front foot, lift
 
 
-def hound(view, ramp, t=0.0, step=0.0, pose='stand', bob=0, ears='tall', snout=5, length=8, eye=rgb('#f0d060'),
-          gallop=None):
-    """A lean four-legged animal facing right (side) or the viewer (down) or away (up).
-    pose: stand, crouch, lunge, sleep. gallop: a frame of the run (0-3) for the side view."""
+def hleg(cv, pal, x, top, base, far, dx=0, lift=0):
+    c = pal['j'] if not far else pal['D']
+    n = max(1, base - 1 - lift - top)
+    for k in range(n):
+        xx = x + int(round(dx * (k + 1) / n)); y = top + k
+        cv.a[y, xx] = c
+        for ox in (-1, 1):
+            if cv.a[y, xx + ox, 3] == 0:
+                cv.a[y, xx + ox] = O
+    fy = base - 1 - lift
+    for ox in (-1, 0, 1, 2):
+        cv.a[fy, x + dx + ox] = pal['D'] if ox in (0, 1) else O
+    for ox in (0, 1):
+        if fy + 1 < CELL:
+            cv.a[fy + 1, x + dx + ox] = O
+
+
+def hound(view, ramp, t=0.0, step=0.0, pose='stand', bob=0, ears='tall', snout=5, length=8, eye=None, gallop=None):
+    """Jackal (tall ears) or dog (flop ears), pixel by pixel. side faces right."""
+    dog = ears != 'tall'
+    pal = HP_DOG if dog else HP_JACKAL
     cv = Canvas(CELL, CELL)
-    cx, base = FX, FY
-    low = {'stand': 0, 'crouch': 3, 'lunge': -1, 'sleep': 6}[pose]
-    g = GALLOP[gallop] if gallop is not None and view == 'side' else None
-    by = base - 10 + low + bob + (g[4] if g else 0)
+    base = FY
+    low = {'stand': 0, 'crouch': 2, 'lunge': 0, 'sleep': 4}[pose]
     if view == 'side':
-        stretch = 3 if pose == 'lunge' else (g[3] if g else 0)
-        legs = layer()
+        rows = [list(r) for r in (H_SIDE_DOG if dog else H_SIDE)]
+        if pose == 'sleep':
+            rows[4] = list(''.join(rows[4]).replace('A', 'K'))
+        bx = FX - 11 + (3 if pose == 'lunge' else 0)
+        by = base - 17 + bob + low + (-1 if gallop == 2 else 0)
         if pose != 'sleep':
-            for k, (lx, ph) in enumerate(((-length + 2, 0.0), (length - 2, 0.5), (-length + 4, 0.5), (length, 0.0))):
-                sw = math.sin((t + ph) * 2 * math.pi) * step
-                lift = max(0, int(round(-math.cos((t + ph) * 2 * math.pi) * step * 2)))
-                hip = cx + lx + (stretch if k in (1, 3) else -stretch)
-                foot = hip + int(round(sw * 2.5))
-                if g:
-                    foot = hip + (g[0] if k in (0, 2) else g[1]) + (1 if k >= 2 else 0)
-                    lift = g[2]
+            xs = [bx + 4, bx + 14, bx + 6, bx + 16]
+            ph = [0.0, 0.5, 0.5, 0.0]
+            for k in range(4):
+                sw = math.sin((t + ph[k]) * 2 * math.pi) * step
+                lift = max(0, int(round(-math.cos((t + ph[k]) * 2 * math.pi) * step * 1.4)))
+                dx = int(round(sw * 2))
+                if gallop is not None:
+                    g = GALLOP[gallop]; dx = g[0] if k in (0, 2) else g[1]; lift = g[2]
                 if pose == 'lunge':
-                    foot = hip + (-3 if k in (0, 2) else 4)
-                c = ramp[3] if k < 2 else ramp[2]
-                line(legs, hip, by + 2, foot, base - 2 - lift, c)
-                legs.px(foot, base - 1 - lift, ramp[3]); legs.px(foot + 1, base - 1 - lift, ramp[3])
-                if k == 1:
-                    put(cv, legs); legs = layer()
-        put(cv, legs)
-        body = layer()
-        ellipse(body, cx, by, length + stretch, 3.6, ramp)
-        # dark saddle along the back
-        for x in range(cx - length + 2, cx + length - 1):
-            body.px(x, int(by - 3), ramp[3] if (x % 3) else ramp[2])
-        # tail
-        tx = cx - length - stretch
-        for k in range(6):
-            body.px(tx - k, int(by - 1 + k * (0.5 if pose != 'sleep' else 0.2)), ramp[2] if k < 4 else ramp[3])
-            body.px(tx - k, int(by + k * 0.5), ramp[3])
-        put(cv, body)
-        hd = layer()
-        if pose == 'sleep':
-            hx, hy = cx + length - 1, by
-        elif pose == 'crouch':
-            hx, hy = cx + length + 2, by - 1
-        elif pose == 'lunge':
-            hx, hy = cx + length + 5, by - 2
-        else:
-            hx, hy = cx + length + 1, by - 5
-        line(hd, cx + length - 3, by - 1, hx - 1, hy + 1, ramp[1], 3)
-        ellipse(hd, hx, hy, 3.2, 2.8, ramp)
-        line(hd, hx + 2, hy + 1, hx + 2 + snout - 2, hy + 1.5, ramp[1], 1)
-        line(hd, hx + 2, hy + 2, hx + 2 + snout - 3, hy + 2, ramp[2], 1)
-        hd.px(int(hx + snout), int(hy + 1), O)
-        if pose == 'lunge':
-            hd.px(int(hx + snout - 1), int(hy + 3), rgb('#f4ecdc')); hd.px(int(hx + snout - 2), int(hy + 3), O)
-        # ears
-        if ears == 'tall':
-            line(hd, hx - 1, hy - 2, hx - 2, hy - 6, ramp[1]); line(hd, hx, hy - 2, hx, hy - 6, ramp[2])
-        else:
-            line(hd, hx - 1, hy - 2, hx - 3, hy + 1, ramp[2]); hd.px(int(hx - 3), int(hy + 2), ramp[3])
-        put(cv, hd)
+                    dx = -3 if k in (0, 2) else 4
+                if k == 2:
+                    stamp(cv, rows, bx, by, pal)
+                hleg(cv, pal, xs[k], by + 11, base, k < 2, dx, lift)
+        stamp(cv, rows, bx, by if pose != 'sleep' else base - 12, pal)
         if pose != 'sleep':
-            cv.px(int(hx + 1), int(hy - 1), eye)
-        else:
-            cv.px(int(hx + 1), int(hy - 1), O)
+            for k in (2, 3):
+                pass
         return cv
-    back = view == 'up'
-    legs = layer()
-    for k, lx in enumerate((-3, 2)):
-        sw = math.sin((t + k * 0.5) * 2 * math.pi) * step
-        lift = max(0, int(round(sw * 2)))
-        for y in range(by + 1, base - 1 - lift):
-            legs.px(cx + lx, y, ramp[2]); legs.px(cx + lx + 1, y, ramp[3])
-        legs.px(cx + lx, base - 1 - lift, ramp[3]); legs.px(cx + lx + 1, base - 1 - lift, ramp[3])
-    put(cv, legs)
-    body = layer()
-    ellipse(body, cx, by - 1, 5, 5 + (2 if back else 0), ramp)
-    if back:
-        for k in range(5):
-            body.px(cx, by + 3 + k, ramp[2] if k < 3 else ramp[3])
-    put(cv, body)
-    hd = layer()
-    hy = by - 7 + (3 if pose in ('crouch',) else 0) + (2 if pose == 'lunge' else 0)
-    ellipse(hd, cx, hy, 3.6, 3.2, ramp if not back else [ramp[1], ramp[2], ramp[2], ramp[3]])
-    if not back:
-        ellipse(hd, cx, hy + 3, 1.8, 2.0, ramp)
-        hd.px(cx - 1, hy + 5, O); hd.px(cx, hy + 5, O)
-        if pose == 'lunge':
-            hd.px(cx - 1, hy + 6, rgb('#f4ecdc')); hd.px(cx, hy + 6, O)
-    if ears == 'tall':
-        line(hd, cx - 2, hy - 2, cx - 4, hy - 7, ramp[1]); line(hd, cx + 2, hy - 2, cx + 4, hy - 7, ramp[2])
+    rows = [list(r) for r in ((H_FRONT_DOG if dog else H_FRONT) if view == 'down' else H_BACK)]
+    if pose == 'sleep' and view == 'down':
+        rows[4] = list(''.join(rows[4]).replace('A', 'K'))
+    gx = FX - 6
+    gy = base - 16 + bob + low
+    if pose != 'sleep':
+        for k, x in enumerate((gx + 3, gx + 8)):
+            sw = math.sin((t + k * 0.5) * 2 * math.pi) * step
+            hleg(cv, pal, x, gy + 11, base, False, 0, max(0, int(round(sw * 1.5))))
     else:
-        line(hd, cx - 3, hy - 1, cx - 5, hy + 2, ramp[2]); line(hd, cx + 3, hy - 1, cx + 5, hy + 2, ramp[3])
-    put(cv, hd)
-    if not back:
-        if pose == 'sleep':
-            cv.px(cx - 2, hy - 1, O); cv.px(cx + 1, hy - 1, O)
-        else:
-            cv.px(cx - 2, hy - 1, eye); cv.px(cx + 1, hy - 1, eye)
+        gy = base - 12
+    stamp(cv, rows, gx, gy, pal)
     return cv
 
 
