@@ -246,6 +246,11 @@ RAMPS = {
     'straw':   hexes('#3a2a20', '#6a4e30', '#9a7a44', '#c8a45c', '#e8cc80', '#f8e8a8'),
     'linen':   hexes('#34304a', '#5c5670', '#8a8294', '#b6aeb0', '#dcd4c8', '#f4eedc'),
     'fig':     hexes('#241030', '#42184a', '#682660', '#903c70', '#b85c84'),
+    'alabaster': hexes('#34262e', '#57434a', '#82685f', '#ad9178', '#d0b692', '#ead8b2', '#fbf0d4'),
+    'bone':    hexes('#2c2634', '#4a4250', '#70666c', '#989086', '#bdb49e', '#dcd4b6', '#f2ecd0'),
+    'ghost':   hexes('#1e4a5c', '#2e7a86', '#48aaa8', '#7ed6c4', '#bcf2dc', '#ecfff2'),
+    'tomb':    hexes('#1c1622', '#30262e', '#4a3a3c', '#66524a', '#84705c', '#a28e72', '#beac8a'),
+    'basalt':  hexes('#100e18', '#1e1a26', '#302a38', '#463e4a', '#5e545c', '#7c7070'),
 }
 
 
@@ -468,6 +473,15 @@ class Model:
             self.quad(*[c[i] for i in f], mat, two=True)
         return self
 
+    def mirrored(self):
+        """The same model facing the other way (left for right)."""
+        for i in range(len(self.P)):
+            p = self.P[i].copy(); p[:, 0] *= -1; self.P[i] = p[[0, 2, 1]]
+            n = self.N[i].copy(); n[:, 0] *= -1; self.N[i] = n[[0, 2, 1]]
+            self.UV[i] = self.UV[i][[0, 2, 1]]
+        self.lights = [(-x, y, z, r, c, st) for (x, y, z, r, c, st) in self.lights]
+        return self
+
     def arrays(self):
         return (np.array(self.P), np.array(self.UV), np.array(self.N), np.array(self.mat, int), np.array(self.pt, int), np.array(self.two, bool))
 
@@ -593,12 +607,14 @@ def draw(model, seed=0, ink=True, sky=True, shadow=True, pad=2):
 
     out = Drawn()
     rgb = np.zeros((H, W, 3)); tone_ix = np.zeros((H, W), int)
+    burning = np.zeros((H, W), bool)                    # pixels of anything that gives its own light
     mid = MAT[t]
     for k, mat in enumerate(model.mats):
         m = on & (mid == k)
         if not m.any():
             continue
         if mat.glow:
+            burning |= m
             tone = np.full(m.sum(), float(mat.base))
             sel = None
             if mat.marks:
@@ -672,6 +688,7 @@ def draw(model, seed=0, ink=True, sky=True, shadow=True, pad=2):
         line = grow & ~on
         img[line] = (int(INK[0]), int(INK[1]), int(INK[2]), 255)
     out.rgba = img
+    out.burning = burning
     nm = np.zeros((H, W, 4), np.uint8)
     nm[..., :3] = np.clip((nrm * 0.5 + 0.5) * 255, 0, 255).astype(np.uint8)
     nm[..., 3] = np.clip(1 + Q[..., 2] * 24, 1, 255).astype(np.uint8)

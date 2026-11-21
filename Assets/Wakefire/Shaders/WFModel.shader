@@ -90,6 +90,14 @@ Shader "Wakefire/Model"
                 if (metal > 0.01 && spec > lerp(1.0, 0.962, metal)) col = lerp(light, float3(1.0, 0.88, 0.52), 0.55);
 
                 col = lerp(col, base, glow);
+                // metal that is only metal: however hard the fire lights it, it stays this side of the colour
+                // the glow pass takes for something burning (a flag of -1 on the paint)
+                if (i.flags.y < -0.5 && col.r > col.b)
+                {
+                    // only its brightest tones are touched: they go to pale gold, the way a highlight on polished metal does
+                    float hi = max(col.r, col.g);
+                    col = lerp(col, hi * float3(1.0, 0.80, 0.40), 0.50 * smoothstep(0.62, 0.74, hi));
+                }
                 return half4(col, 0.5 + 0.5 * saturate(i.depth));
             }
             ENDHLSL

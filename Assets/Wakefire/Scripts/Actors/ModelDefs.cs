@@ -117,11 +117,11 @@ namespace Wakefire
             defs = new Dictionary<string, ModelDef>();
             Off = Boot.Flag("-sprites");
             if (Off) return;
-            Add("azar", Azar(1.45f));
+            Add("azar", Azar(1.33f));            // the same build as the people he guards; the helmet does the rest
             var portrait = Azar(2.5f);          // the same man, nearer the lens: the title screen and the cover
             portrait.span = 2;
             Add("azar_title", portrait);
-            Add("captain", Human(1.50f, Cast.Dur));
+            Add("captain", Human(1.40f, Cast.Dur));
             var sentinel = Human(1.52f, Cast.Sentinel);
             Run(sentinel, 1.52f, 6.5f).With(Gesture.Level);
             Add("sentinel", sentinel);
@@ -195,6 +195,7 @@ namespace Wakefire
             d.Own("shrug", "Idle_Loop").With(Gesture.Shrug);
             d.Own("sigh", "Idle_Loop").With(Gesture.Sigh);
             d.Own("itemget", "Idle_Torch_Loop");
+            d.Own("open", "Chest_Open", loop: false, fade: 0.08f);
             d.Own("hurt", "Hit_Chest", loop: false, fade: 0.03f);
             d.Own("death", "Death01", loop: false, fade: 0.08f);
             return d;
@@ -204,14 +205,18 @@ namespace Wakefire
         {
             var d = Human(scale, Cast.Azar);
             Run(d, scale);
-            // the three cuts: a chop down across the body, a thrust, and a long overhead cut that ends the combo
-            d.Fit("attack1", "Sword_Attack", 0.26f, 0.80f, warp: new[] { 0f, 0f, 0.333f, 0.30f, 1f, 1f }, fade: 0.04f).With(Gesture.Across(34f));
-            d.Fit("attack2", "Punch_Cross", 0.12f, 0.62f, warp: new[] { 0f, 0f, 0.333f, 0.36f, 1f, 1f }, fade: 0.05f);
-            d.Fit("attack3", "Sword_Attack", 0.05f, 0.95f, warp: new[] { 0f, 0f, 0.43f, 0.40f, 1f, 1f }, fade: 0.05f).With(Gesture.Leap);
+            // the three cuts, chained the way a swordsman chains them: a rising cut from the left hip,
+            // a backhand cut across at the shoulder, and an overhead chop that ends it. Each clip begins
+            // where the one before left the blade; the strike of each falls on the frame the game hits on.
+            d.Fit("attack1", "Sword_Regular_A", 0.10f, 0.433f, warp: new[] { 0f, 0f, 0.333f, 0.45f, 1f, 1f }, fade: 0.04f);
+            d.Fit("attack2", "Sword_Regular_B", 0.12f, 0.533f, warp: new[] { 0f, 0f, 0.333f, 0.363f, 1f, 1f }, fade: 0.04f);
+            var chop = d.Fit("attack3", "Sword_Regular_C", 0.22f, 1.02f, warp: new[] { 0f, 0f, Player.ChopHit / (float)Player.ChopFrames, 0.54f, 1f, 1f }, fade: 0.05f);
+            chop.frames = Player.ChopFrames;
+            chop.fps = 17f;
             d.Fit("roll", "Roll", 0.30f, 1.02f, fade: 0.05f);
             d.Own("push", "Push_Loop");
             d.Own("use", "Spell_Simple_Shoot", loop: false, fade: 0.06f);
-            d.Own("block", "Idle_Loop", fade: 0.04f).With(Gesture.Block);
+            d.Own("block", "Idle_Shield_Loop", fade: 0.05f);
             d.Own("nod", "Idle_Loop", fade: 0.05f).With(Gesture.NodOff);
             d.Own("wake", "Idle_Loop", fade: 0.03f).With(Gesture.WakeUp);
             d.Own("doze", "Idle_Loop", speed: 0.5f).With(Gesture.Doze);

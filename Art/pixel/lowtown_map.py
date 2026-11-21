@@ -16,6 +16,7 @@ W, H = TW * 16, TH * 16
 
 # (key, centre x, front y, width, depth, height, extras) in tiles for the last three
 ROW1, ROW2, ROW3 = 132, 276, 470
+QUAY = 560            # the top of the water: south of this is the sea
 HOUSES = [
     # the north row, backs to the old inner wall
     ('lt_a1', 72, ROW1, 6.0, 3.0, 2.5, dict(seed=21, plaster=2, door_x=0.6, stair='l')),
@@ -59,7 +60,7 @@ def build():
     # a drain down the middle of the main street, a darker course of stone
     T.slabs(T.rect(476, 0, 8, 292), seed=13, rows=(8, 9), wmin=7, wmax=8, ramp='cobble', base=3.2, jitter=0.6, crack=0, whole=False)
     # the paths south: trodden earth, paler than the street dirt, with flagstones dropped where it gets muddy
-    lanes = T.stroke([(480, 344), (482, 420), (476, 500), (480, 580)], 38) | T.stroke([(470, 352), (380, 372), (330, 420), (310, 490)], 20) | \
+    lanes = T.stroke([(480, 344), (482, 420), (476, 500), (480, 540)], 38) | T.stroke([(470, 352), (380, 372), (330, 420), (310, 490)], 20) | \
             T.stroke([(500, 352), (560, 372), (590, 440), (600, 500)], 20) | T.stroke([(730, 348), (760, 400), (770, 480)], 18) | T.stroke([(170, 348), (166, 420), (170, 490)], 18)
     T.earth(T.ragged(lanes, 3, 7, seed=8) & ~(main | cross), seed=9, base=4.3, ramp='dust', pebbles=0.008)
     T.slabs(T.disc(482, 372, 20, 14) | T.disc(478, 452, 16, 12), seed=15, rows=(9, 10), wmin=9, wmax=15, base=3.5)
@@ -75,7 +76,12 @@ def build():
     # where each house stands: the dark where wall meets street
     for (key, cx, y, w, d, h, kw) in HOUSES:
         T.contact(cx - w * 8, y - d * 16, cx + w * 8, y, reach=5, strength=1.5)
+    # the harbour: the town stops at a quay of big stones, and past it the sea
+    T.slabs(T.rect(0, QUAY - 22, W, 22), seed=18, rows=(11,), wmin=14, wmax=22, base=3.7, moss=0.04)
+    T.water(T.rect(0, QUAY, W, H - QUAY), seed=19, deep=30.0)
     m.bake()
+    m.set_into_ground(town.quay(W / 16.0), 0, QUAY, seed=20)
+    m.solid(0, QUAY - 8, W, H)
 
     # ---------------------------------------------------------------- the houses
     for (key, cx, y, w, d, h, kw) in HOUSES:
@@ -91,16 +97,14 @@ def build():
     m.model("oracle_awning", town.awning(3.0, 1.1, colors=('fig', 'blue')), 868, ROW1 + 18, box=None)
     m.light(868, ROW1 + 4, 3.0, (0.75, 0.6, 1.0), 0.6, h=1.2)
     # the bakery yard: an oven still glowing after forty nights, and sacks of flour
-    m.prop("oven", lambda cv, ax, ay, fi: G.oven(cv, ax, ay, fi), 318, 512, box=(-12, -6, 12, 0), size=(40, 36), pad=4, frames=3)
-    m.light(318, 504, 3.6, (1.0, 0.6, 0.3), 0.9, h=0.6)
+    m.model("oven", town.oven, 318, 512, box=(-14, -22, 14, 0), frames=3)
     m.model("lt_sacks", town.sacks(40), 196, 508, kind=None)
     m.model("lt_sacks_b", town.sacks(41), 226, 494)
     # the potter's yard: kiln, wheel, rows of drying jars
-    m.prop("kiln", lambda cv, ax, ay, fi: G.kiln(cv, ax, ay, fi), 780, 520, box=(-11, -8, 11, 0), size=(36, 34), pad=4, frames=2)
-    m.light(780, 508, 3.0, (1.0, 0.55, 0.28), 0.8, h=0.6)
-    m.prop("wheel", lambda cv, ax, ay, fi: G.potters_wheel(cv, ax, ay), 640, 516, box=(-6, -3, 6, 0), size=(20, 18), pad=4)
+    m.model("kiln", town.kiln, 780, 520, box=(-10, -18, 10, 0), frames=2)
+    m.model("wheel", town.potters_wheel(), 640, 516, box=(-6, -8, 6, 0))
     for i, x in enumerate(range(600, 690, 13)):
-        kit.pot(m, x, 552, i % 2 == 1)
+        kit.pot(m, x, 534, i % 2 == 1)
     for (x, y, big) in ((116, 136, True), (240, 137, False), (668, 136, False), (790, 137, True), (300, 280, True), (60, 474, False), (910, 474, True), (700, 474, False)):
         kit.pot(m, x, y, big)
 
@@ -117,20 +121,36 @@ def build():
         kit.torch(m, x, y)
 
     # trees and bushes
-    for (x, y, sd) in ((420, 560, 3), (40, 536, 0), (936, 420, 1), (372, 430, 2)):
+    for (x, y, sd) in ((420, 530, 3), (48, 520, 0), (920, 420, 1), (372, 430, 2)):
         kit.olive(m, x, y, sd)
     for (x, y, sd) in ((434, 62, 0), (526, 62, 1)):
         kit.cypress(m, x, y, sd)
-    for (x, y, sd) in ((536, 200, 1), (646, 204, 0), (560, 440, 3), (566, 566, 4), (20, 420, 5), (800, 470, 2)):
+    for (x, y, sd) in ((536, 200, 1), (646, 204, 0), (560, 440, 3), (40, 426, 5), (800, 470, 2)):
         kit.palm(m, x, y, sd)
-    for k, (x, y) in enumerate(((40, 556), (60, 562), (130, 560), (146, 566), (920, 562), (840, 566), (470, 566), (350, 440), (400, 446), (772, 440), (540, 560))):
+    for k, (x, y) in enumerate(((130, 530), (146, 536), (840, 534), (350, 440), (400, 446), (772, 440), (540, 532))):
         kit.bush(m, x, y, k)
-    for (x, y, sd) in ((196, 548, 0), (742, 560, 1), (16, 356, 2)):
+    for (x, y, sd) in ((196, 532, 0), (742, 536, 1)):
         kit.rock(m, x, y, sd)
 
+    # ---------------------------------------------------------------- where the town stops
+    # west and east: yard walls north of the street, cypress hedges south of it; the street itself goes on
+    kit.wall_ns(m, 0, 40, 290, seed=11, plaster=1)
+    kit.wall_ns(m, W - 10, 40, 290, seed=12, plaster=4)
+    kit.cypress_row(m, 8, 364, 536, seed=3)
+    kit.cypress_row(m, W - 8, 364, 500, seed=4)
+    m.model("lt_amph_w", town.amphorae(42), 26, 172)
+    # south: the quay. Mooring posts, the boats all in
+    for x in (238, 418, 540, 668, 736):
+        m.model("post", town.post(0.8), x, QUAY - 6, box=(-2, -3, 2, 0))
+    kit.say(m, "lt_mooring", town.post(0.8), 302, QUAY - 6, (-3, -4, 3, 0),
+            "The fishing boats, all in, tied up tight.^Forty nights, and nobody has asked the fish how they feel about it.")
+    m.model("lt_boat", town.boat(1), 270, QUAY - 2, box=None, shadow=False)
+    m.model("lt_boat_b", town.boat(2), 702, QUAY - 1, box=None, shadow=False)
+    kit.say(m, "lt_nets", town.sacks(44), 452, QUAY - 22, (-10, -8, 10, 0),
+            "Nets, folded for a morning that hasn't come yet.^The road ends here. So does the land.")
+
     # a chest at the end of the alley behind the potter
-    m.prop("chest", lambda cv, ax, ay, fi: cv.blit(Canvas.load('/srv/Wakefire/Assets/Wakefire/Resources/Objects/chest.png'), ax - 8, ay - 15),
-           936, 520, box=(-7, -6, 7, 0), size=(24, 24), pad=4, kind="chest", data={"id": "lt_alley", "text": "shekels:20"})
+    kit.chest(m, 936, 520, "lt_alley", "shekels:20")
 
     # people
     m.marker("npc", 300, 518, who="hesha")
@@ -143,7 +163,7 @@ def build():
     m.marker("npc", 604, 262, who="dog")
     # the dream has its own residents here
     for (x, y, uid) in ((150, 524, "lt_m1"), (760, 544, "lt_m2"), (480, 500, "lt_m3")):
-        m.enemy("moth", x, y, uid)
+        m.enemy("moth", x, min(y, 524), uid)
     # ways out
     m.spawn("north", 480, 26, "down")
     m.spawn("west", 22, 320, "right")

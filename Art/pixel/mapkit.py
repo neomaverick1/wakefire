@@ -104,7 +104,7 @@ class MapBuilder:
 
     # ---- props from the forge
     def model(self, key, build, x, y, box='foot', layer=0, kind=None, data=None, frames=None, seed=0, shadow=True,
-              lights=True, grow_box=0):
+              lights=True, grow_box=0, names=None, still=False):
         """Place a forge model with its origin at map (x, y). build is a Model or f(frame) -> Model.
         box: 'foot' = solid where it stands, None = not solid, or (x0, y0, x1, y1) pixels from the origin."""
         if key not in self.sprite_cache:
@@ -112,27 +112,27 @@ class MapBuilder:
             ds = [forge.draw(build(fi) if callable(build) else build, seed=seed, shadow=shadow and fi == 0) for fi in range(n)]
             left = max(d.ax for d in ds); top = max(d.ay for d in ds)
             right = max(d.rgba.shape[1] - d.ax for d in ds); bot = max(d.rgba.shape[0] - d.ay for d in ds)
-            names = []
+            out_names = []
             for fi, d in enumerate(ds):
                 cv = np.zeros((top + bot, left + right, 4), np.uint8)
                 cv[top - d.ay:top - d.ay + d.rgba.shape[0], left - d.ax:left - d.ax + d.rgba.shape[1]] = d.rgba
-                fname = key if not frames else f"{key}_{fi}"
+                fname = names[fi] if names else key if not frames else f"{key}_{fi}"
                 Image.fromarray(cv).save(f"{RES}/Objects/{fname}.png")
-                names.append(fname)
-                if fi == 0:
+                out_names.append(fname)
+                if fi == 0 or still:
                     nm = np.zeros((top + bot, left + right, 4), np.uint8); nm[:] = (128, 128, 255, 1)
                     nm[top - d.ay:top - d.ay + d.rgba.shape[0], left - d.ax:left - d.ax + d.rgba.shape[1]] = d.normal
-                    Image.fromarray(nm).save(f"{RES}/Objects/{names[0]}_lin.png")
+                    Image.fromarray(nm).save(f"{RES}/Objects/{fname}_lin.png")
             d0 = ds[0]
-            c = {"names": names, "w": left + right, "h": top + bot, "px": left, "py": top, "foot": d0.foot, "lights": d0.lights}
+            c = {"names": out_names, "w": left + right, "h": top + bot, "px": left, "py": top, "foot": d0.foot, "lights": d0.lights, "still": still}
             if d0.shade is not None:
                 sh = np.zeros((*d0.shade.shape, 4), np.uint8); sh[d0.shade] = (8, 8, 24, 255)
-                Image.fromarray(sh).save(f"{RES}/Objects/{names[0]}_sh.png")
-                c.update({"sh": names[0] + "_sh", "shx": int(d0.sx), "shy": int(d0.sy)})
+                Image.fromarray(sh).save(f"{RES}/Objects/{out_names[0]}_sh.png")
+                c.update({"sh": out_names[0] + "_sh", "shx": int(d0.sx), "shy": int(d0.sy)})
             self.sprite_cache[key] = c
         c = self.sprite_cache[key]
         o = {"s": c["names"][0], "x": int(x), "y": int(y), "px": c["px"], "py": c["py"], "w": c["w"], "h": c["h"], "layer": layer, "n": 1}
-        if len(c["names"]) > 1:
+        if len(c["names"]) > 1 and not c.get("still"):
             o["frames"] = c["names"]
         if "sh" in c:
             o.update({"sh": c["sh"], "shx": c["shx"], "shy": c["shy"]})

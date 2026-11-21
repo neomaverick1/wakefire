@@ -16,8 +16,7 @@ C = 8
 
 
 def chest(m, x, y, cid, what, layer=0):
-    m.prop("chest" if layer == 0 else "chest_dream", lambda cv, ax, ay, fi: cv.blit(Canvas.load(CHEST), ax - 8, ay - 15), x, y, box=(-7, -6, 7, 0),
-           size=(24, 24), pad=4, kind="chest", layer=layer, data={"id": cid, "text": what})
+    kit.chest(m, x, y, cid, what, layer=layer)
 
 
 def pit_boxes(m, mask, layer):
@@ -94,23 +93,22 @@ def temple_yard():
     pit_boxes(m, draw & road, 1)
     for (x0, y0, x1, y1) in ((296, 200, 344, 340),):
         m.marker("drawbridge", x0, y0, w=x1 - x0, h=y1 - y0)
-    m.prop("drawbridge", lambda cv, ax, ay, fi: G.dock(cv, ax, ay, 48, 140), 296, 200, size=(48, 144), anchor=(0, 0), pad=0, kind="drawbridge")
+    m.model("drawbridge", town.bridge_deck(3.0, 8.75), 296, 200, box=None, kind="drawbridge", shadow=False)
     xs = [p[0] for p in YARD_BRIDGE]; ys = [p[1] for p in YARD_BRIDGE]
     bx0, by0, bx1, by1 = min(xs) - 12, min(ys) - 12, max(xs) + 12, max(ys) + 12
     def bridge_draw(cv, ax, ay, fi):
         G.moon_bridge(cv, [(p[0] - bx0, p[1] - by0) for p in YARD_BRIDGE], 16, fi)
     m.prop("moon_bridge_yard", bridge_draw, bx0, by0, layer=2, size=(bx1 - bx0, by1 - by0), anchor=(0, 0), pad=0)
     # guardians, fire, a sign
-    lam = Canvas.load('/srv/Wakefire/Art/sprites/props/lamassu.png')
-    m.prop("lamassu_yl", lambda cv, ax, ay, fi: cv.blit(lam, ax - 13, ay - 36), 250, 100, box=(-10, -8, 10, 0), size=(48, 56), pad=8)
-    m.prop("lamassu_yr", lambda cv, ax, ay, fi: cv.blit(lam, ax - (lam.w - 13), ay - 36, flip=True), 390, 100, box=(-10, -8, 10, 0), size=(48, 56), pad=8)
+    kit.lamassu(m, 246, 104, west=False)
+    kit.lamassu(m, 394, 104, west=True)
     for i, (x, y) in enumerate(((120, 380), (520, 380), (120, 150), (520, 150))):
         kit.brazier(m, x, y, lit=True)
     kit.brazier_frames(m)
     kit.sign(m, 360, 470, "sign_yard", "sign_yard")
     for (x, y, sd) in ((60, 560, 0), (580, 560, 1), (70, 420, 2), (570, 430, 3)):
         kit.palm(m, x, y, sd)
-    for (x, y, sd) in ((180, 520, 1), (470, 540, 2), (200, 120, 3), (440, 126, 4)):
+    for (x, y, sd) in ((180, 520, 1), (470, 540, 2), (176, 122, 3), (464, 122, 4)):
         m.model(f"planter_{sd}", town.planter(sd), x, y, box=(-14, -10, 14, 0))
     m.light(320, 260, 7.0, (0.55, 0.62, 1.0), 0.45, flicker=False, h=0.4)
     m.marker("npc", 140, 500, who="goat_yard")
@@ -118,28 +116,48 @@ def temple_yard():
     m.spawn("door", 320, 80, "down")
     m.exit(296, H - 8, 344, H, "ashkel", "gate")
     m.exit(306, 56, 334, 64, "zig_1", "south")
-    m.solid(0, H - 4, 296, H); m.solid(344, H - 4, W, H)
+    # the south wall, seen from inside: its walk and merlons either side of the gate passage
+    m.model("yard_south_w", town.parapet_ew((296 - 32) / 16.0), 32, H - 2, box=None)
+    m.model("yard_south_e", town.parapet_ew((W - 32 - 344) / 16.0), 344, H - 2, box=None)
+    m.solid(0, H - 14, 296, H); m.solid(344, H - 14, W, H)
     m.save()
 
 
 # ------------------------------------------------------------------ inside
-def room(m, W, H, wall_h=48, seed=80, door=True):
-    g = m.ground
-    G.tile_floor(g, 0, 0, W, H, seed=seed)
-    G.floor_inlays(g, 24, wall_h, W - 48, H - wall_h - 16)
-    G.glazed_wall(g, 0, 0, W, wall_h, seed=seed)
-    for x in range(0, W):
-        g.px(x, wall_h, OUTLINE)
-    # the north and west walls throw shade across the floor
-    G.floor_shadow(g, 24, wall_h + 1, W - 48, 6, 'y+')
-    G.floor_shadow(g, 24, wall_h + 1, 5, H - wall_h - 17, 'x+')
-    # thick walls seen from above: capstones, gold coping on the inner edge
-    G.wall_top(g, 0, wall_h, 24, H - wall_h, inner='right', seed=seed + 1)
-    G.wall_top(g, W - 24, wall_h, 24, H - wall_h, inner='left', seed=seed + 2)
-    G.wall_top(g, 24, H - 16, W - 48, 16, inner='up', seed=seed + 3)
+def floor(m, W, H, wall_h=48, seed=80, door=True):
+    """Lays a hall's floor: fired tiles with a blue lozenge here and there, an inlaid band round the
+    room, the tops of the thick side walls. Returns the Terrain so carpets and daises can go on
+    before it is baked."""
+    T = m.lay(seed=seed)
+    T.tiles(T.all(), seed=seed, size=16, ramp='tile', base=3.5, inlay='lapis', every=5)
+    band = T.rect(36, wall_h + 14, W - 72, H - wall_h - 44) & ~T.rect(39, wall_h + 17, W - 78, H - wall_h - 50)
+    T.put(band, 'lapis', np.full((H, W), 3.2) + ((T.xx + T.yy) % 6 < 3) * 0.8, 1.2)
+    corner = band & (((T.xx - 36) % (W - 75) < 3) & ((T.yy - wall_h - 14) % (H - wall_h - 47) < 3))
+    T.put(corner, 'gold', np.full((H, W), 4.0), 1.5)
+    tops = T.rect(0, wall_h, 24, H - wall_h) | T.rect(W - 24, wall_h, 24, H - wall_h) | T.rect(24, H - 16, W - 48, 16)
     if door:
-        G.doorway(g, W // 2, H, 40, 16)
-    m.solid(0, 0, W, wall_h - 4); m.solid(0, 0, 24, H); m.solid(W - 24, 0, W, H); m.solid(0, H - 14, W // 2 - 20, H); m.solid(W // 2 + 20, H - 14, W, H)
+        gap = T.rect(W // 2 - 20, H - 16, 40, 16)
+        tops &= ~gap
+        T.slabs(gap, seed=seed + 7, rows=(8,), wmin=20, wmax=20, ramp='pale', base=4.0, whole=False, crack=0)
+    T.walltop(tops, seed=seed + 1)
+    coping = (T.rect(22, wall_h, 2, H - wall_h - 16) | T.rect(W - 24, wall_h, 2, H - wall_h - 16) | T.rect(24, H - 16, W - 48, 2)) & tops
+    T.put(coping, 'gold', np.full((H, W), 3.6), 3.4)
+    # the north and west walls shade the floor at their feet
+    T.contact(0, 0, W, wall_h, reach=7, strength=1.6)
+    T.contact(0, wall_h, 24, H, reach=5, strength=1.0)
+    return T
+
+
+def walls(m, W, H, wall_h=48, portal=None, steps_to=None, door=True):
+    """The sanctuary wall along the north side (with a doorway and steps up to it, if asked) and the collision of the hall."""
+    m.set_into_ground(town.temple_wall(W / 16.0, h=wall_h / 16.0 - 0.25, d=0.25, door_at=None if portal is None else portal / 16.0), 0, wall_h)
+    if portal is not None and steps_to:
+        run = (steps_to - wall_h) / 16.0
+        rise = min(1.25, run * 0.42)
+        m.set_into_ground(town.steps(2.5, n=6, rise=rise, run=run - rise), portal - 20, steps_to)
+    m.solid(0, 0, W, wall_h - 4); m.solid(0, 0, 24, H); m.solid(W - 24, 0, W, H)
+    if door:
+        m.solid(0, H - 14, W // 2 - 20, H); m.solid(W // 2 + 20, H - 14, W, H)
 
 
 def torches(m, pts):
@@ -154,34 +172,31 @@ def pillar(m, x, y, kind=None):
 def zig_1():
     TW, TH = 32, 24
     W, H = TW * 16, TH * 16
-    m = MapBuilder("zig_1", TW, TH, R['brick'][2], music="dungeon")
-    room(m, W, H, seed=81)
-    g = m.ground
-    G.carpet(g, 244, 208, 24, H - 224)
-    G.carpet(g, 244, 120, 24, 56)
-    G.cobweb(g, 26, 50); G.cobweb(g, W - 27, 50, flip=True)
+    m = MapBuilder("zig_1", TW, TH, (36, 22, 32, 255), music="dungeon")
+    T = floor(m, W, H, seed=81)
+    T.carpet(T.rect(244, 208, 24, H - 224), seed=1)
+    T.carpet(T.rect(244, 104, 24, 72), seed=2)
+    T.contact(24, 176, 236, 208, reach=5, strength=1.3); T.contact(276, 176, W - 24, 208, reach=5, strength=1.3)
+    g = m.bake()
+    walls(m, W, H, portal=256, steps_to=100)
+    G.cobweb(g, 26, 52); G.cobweb(g, W - 27, 52, flip=True)
     # a dividing wall with the locked door, and stairs up beyond it
-    G.inner_wall(g, 24, 176, W - 48, 32, seed=82)
+    m.set_into_ground(town.partition((236 - 24) / 16.0), 24, 208, seed=82)
+    m.set_into_ground(town.partition((W - 24 - 276) / 16.0), 276, 208, seed=83)
     m.solid(24, 176, 236, 204); m.solid(276, 176, W - 24, 204)
     m.model("lockdoor", town.bronze_door(2.5, 1.9, 'lock'), 256, 206, box=(-20, -26, 20, 0), kind="lockdoor", data={"id": "z1_door"})
-    G.stairs_up(g, 256, 100, 40, 36)
     # the east alcove, closed off by a wall that only the waking world has
-    m.prop("dreamwall", lambda cv, ax, ay, fi: G.inner_wall(cv, ax - 8, ay - 122, 8, 122, seed=84), 400, 330,
-           size=(16, 126), anchor=(8, 122), pad=0, layer=1)
+    m.model("dreamwall", town.partition_ns(122 / 16.0), 392, 330, box=None, layer=1)
     m.solid(392, 208, 400, 330, 1)
     chest(m, 450, 276, "z1_key", "key")
     # the west: a block, a plate, bars that lift
     m.model("block", town.stone_block(), 172, 296, box=(-8, -12, 8, 0), kind="block", data={"id": "z1_block"})
-    m.prop("plate", lambda cv, ax, ay, fi: G.plate(cv, ax, ay - 6), 140, 296, size=(20, 16), pad=2, kind="plate", data={"id": "z1_plate"})
+    m.model("plate", town.plate(), 140, 284, box=None, kind="plate", data={"id": "z1_plate"}, shadow=False)
     chest(m, 66, 236, "z1_coins", "shekels:30")
-    G.inner_wall(g, 108, 204, 8, 54, seed=85)
+    m.set_into_ground(town.partition_ns(54 / 16.0), 108, 258, seed=85)
     m.solid(108, 204, 116, 258)
-    def bars(cv, ax, ay, fi):
-        for k in range(-42, 43, 3):
-            cv.vline(ax + k, ay - 22, ay - 1, R['bronze'][4] if k % 6 == 0 else R['bronze'][2])
-        cv.hline(ax - 42, ax + 42, ay - 22, R['bronze'][4])
-    m.prop("bars", bars, 66, 258, box=(-42, -6, 42, 0), size=(96, 30), pad=4, kind="bars", data={"id": "z1_bars"})
-    for (x, y) in ((150, 120), (362, 120), (150, 330), (362, 330)):
+    m.model("bars", town.bars(5.25, 1.4), 66, 258, box=(-42, -6, 42, 0), kind="bars", data={"id": "z1_bars"})
+    for (x, y) in ((150, 120), (362, 120), (204, 336), (308, 336)):
         pillar(m, x, y)
     torches(m, ((80, 160), (432, 160)))
     m.enemy("sentinel", 300, 280, "z1_s1", once=True)
@@ -198,24 +213,26 @@ def zig_1():
 def zig_2():
     TW, TH = 32, 24
     W, H = TW * 16, TH * 16
-    m = MapBuilder("zig_2", TW, TH, R['brick'][2], music="dungeon")
-    room(m, W, H, seed=91)
-    g = m.ground
-    G.carpet(g, 244, 290, 24, H - 306)
-    G.carpet(g, 244, 84, 24, 64)
-    G.cobweb(g, 26, 50); G.cobweb(g, W - 27, 50, flip=True)
+    m = MapBuilder("zig_2", TW, TH, (36, 22, 32, 255), music="dungeon")
+    T = floor(m, W, H, seed=91)
+    T.carpet(T.rect(244, 290, 24, H - 306), seed=1)
+    T.carpet(T.rect(244, 84, 24, 64), seed=2)
     # the shield on its dais
-    A.slabs(g, 216, 236, 80, 52, R['lime'], 16, 12, seed=92)
+    T.slabs(T.rect(216, 236, 80, 52), seed=92, rows=(13,), wmin=16, wmax=16, ramp='pale', base=4.4, jitter=0.6, whole=False, crack=0.04)
+    T.border(T.rect(216, 236, 80, 52), 'gold', 3.6, 2, 1.5)
+    T.contact(24, 150, 236, 180, reach=5, strength=1.3); T.contact(276, 150, W - 24, 180, reach=5, strength=1.3)
+    g = m.bake()
+    walls(m, W, H, portal=256, steps_to=76)
+    G.cobweb(g, 26, 52); G.cobweb(g, W - 27, 52, flip=True)
     chest(m, 256, 268, "z2_shield", "shield")
     # the bull's head that breathes fire across the way north
-    G.inner_wall(g, 24, 150, W - 48, 30, seed=93)
+    m.set_into_ground(town.partition((236 - 24) / 16.0, h=1.375), 24, 180, seed=93)
+    m.set_into_ground(town.partition((W - 24 - 276) / 16.0, h=1.375), 276, 180, seed=94)
     m.solid(24, 150, 236, 176); m.solid(276, 150, W - 24, 176)
-    m.prop("bullhead", lambda cv, ax, ay, fi: G.bull_statue(cv, ax, ay), 256, 178, box=(-20, -8, 20, 0), size=(44, 34), pad=4, kind="bullhead",
-           data={"id": "z2_bull"})
+    m.model("bullhead", town.bull_statue(), 256, 178, box=(-20, -8, 20, 0), kind="bullhead", data={"id": "z2_bull"})
     # beyond it: the bull key, and the great door up
     chest(m, 120, 110, "z2_bigkey", "bigkey")
     m.model("bigdoor", town.bronze_door(2.5, 2.0, 'bull'), 256, 76, box=(-20, -26, 20, 0), kind="bigdoor", data={"id": "z2_bigdoor"})
-    G.stairs_up(g, 256, 52, 40, 20)
     for (x, y) in ((120, 330), (392, 330)):
         pillar(m, x, y)
     torches(m, ((80, 220), (432, 220), (80, 120), (432, 120)))
@@ -235,25 +252,31 @@ def zig_3():
     city a scatter of embers far below."""
     TW, TH = 30, 24
     W, H = TW * 16, TH * 16
-    m = MapBuilder("zig_3", TW, TH, R['brick'][2], music="summit")
-    g = m.ground
+    m = MapBuilder("zig_3", TW, TH, (36, 22, 32, 255), music="summit")
     E, wall_h, P = 40, 64, 12          # drop beyond the edge, sanctuary wall height, parapet thickness
-    G.night_drop(g, 0, 0, W, H, seed=111)
-    # the platform
-    A.marble(g, E, wall_h, W - 2 * E, H - wall_h - 24, 24, seed=102)
-    G.glazed_wall(g, E, 0, W - 2 * E, wall_h, seed=101)
-    for x in range(E, W - E):
-        g.px(x, wall_h, OUTLINE)
-    G.floor_shadow(g, E + P, wall_h + 1, W - 2 * E - 2 * P, 6, 'y+')
-    G.floor_shadow(g, E + P, wall_h + 1, 4, H - wall_h - 24 - P - 1, 'x+')
-    G.floor_inlays(g, E + P, wall_h + 2, W - 2 * E - 2 * P, H - wall_h - 24 - P - 2, inset=8, band=7)
-    G.carpet(g, W // 2 - 12, 262, 24, H - 262 - 24)
+    T = m.lay(seed=101)
+    plat = T.rect(E, wall_h, W - 2 * E, H - wall_h - 24)
+    # the sky god's floor is the sky: deep glazed blue, gold stars let into it
+    T.tiles(T.all(), seed=102, size=24, ramp='night', base=3.3, jitter=0.9)
+    T.stars(T.all(), seed=103, size=24, density=0.42)
+    band = T.rect(E + P + 8, wall_h + 10, W - 2 * E - 2 * P - 16, H - wall_h - 24 - P - 18) & ~T.rect(E + P + 12, wall_h + 14, W - 2 * E - 2 * P - 24, H - wall_h - 24 - P - 26)
+    T.put(band, 'gold', np.full((H, W), 3.4) + ((T.xx + T.yy) % 8 < 4) * 0.8, 1.3)
+    T.carpet(T.rect(W // 2 - 12, 262, 24, H - 262 - 24), seed=3)
+    T.contact(E, 0, W - E, wall_h, reach=7, strength=1.6)
+    g = m.bake()
+    # beyond the platform: the night, and the city far below
+    sky = Canvas(W, H)
+    G.night_drop(sky, 0, 0, W, H, seed=111)
+    out = np.ones((H, W), bool); out[0:H - 24, E:W - E] = False
+    g.a[out] = sky.a[out]
+    m.ground_n[out] = (128, 128, 255, 1)
     A.sigil(g, W // 2, 230, 26)
+    m.set_into_ground(town.temple_wall((W - 2 * E) / 16.0, h=wall_h / 16.0 - 0.25, d=0.25), E, wall_h)
     # parapets, crenellated against the sky
-    G.wall_top(g, E, wall_h, P, H - wall_h - 24, inner='right', seed=103, merlons=True)
-    G.wall_top(g, W - E - P, wall_h, P, H - wall_h - 24, inner='left', seed=104, merlons=True)
-    G.wall_top(g, E + P, H - 24 - P, W // 2 - 20 - E - P, P, inner='up', seed=105, merlons=True)
-    G.wall_top(g, W // 2 + 20, H - 24 - P, W // 2 - 20 - E - P, P, inner='up', seed=106, merlons=True)
+    m.set_into_ground(town.parapet_ns((H - wall_h - 24) / 16.0, inner='right'), E, H - 24)
+    m.set_into_ground(town.parapet_ns((H - wall_h - 24) / 16.0, inner='left'), W - E - P, H - 24)
+    m.set_into_ground(town.parapet_ew((W // 2 - 20 - E - P) / 16.0), E + P, H - 24)
+    m.set_into_ground(town.parapet_ew((W // 2 - 20 - E - P) / 16.0), W // 2 + 20, H - 24)
     # the stair down through the gap, falling away into the dark
     lime = R['lime']; gd = R['gold']
     for k in range(H - 24 - P, H):

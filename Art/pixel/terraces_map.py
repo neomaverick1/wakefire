@@ -23,7 +23,8 @@ def build():
     paths = T.none()
     for (y0, y1) in ((540, 600), (420, 500), (300, 380), (180, 260), (40, 140)):
         mid = y0 + (y1 - y0) // 2
-        paths |= T.stroke([(0, mid + 4), (200, mid - 3), (420, mid + 5), (640, mid - 2), (W, mid + 3)], 15)
+        # each terrace's path stops short of the hedges at either end; only the one to town runs out
+        paths |= T.stroke([(34, mid + 4), (200, mid - 3), (420, mid + 5), (640, mid - 2), (W if y0 == 300 else W - 34, mid + 3)], 15)
     for (y, s0, s1) in WALLS:
         cx = (s0 + s1) / 2
         paths |= T.stroke([(cx, y - 44), (cx, y + 64)], 22)
@@ -49,17 +50,25 @@ def build():
             kit.olive(m, x, row_y, sd); sd += 3
     for k, (x, y) in enumerate(((120, 330), (136, 340), (560, 210), (576, 220), (700, 470), (300, 600), (316, 610), (780, 90))):
         kit.bush(m, x, y, k)
-    for (x, y, k) in ((20, 150, 0), (800, 250, 1), (90, 450, 2), (660, 560, 3), (500, 24, 4)):
+    for (x, y, k) in ((60, 150, 0), (780, 250, 1), (90, 450, 2), (660, 560, 3), (520, 52, 4)):
         kit.rock(m, x, y, k)
+    # ---------------------------------------------------------------- where the hillside stops
+    # north: the hill goes on up as bare rock. West and east: cypress windbreaks, terrace by terrace.
+    # South: the lowest terrace's own wall.
+    m.set_into_ground(town.cliff(W / 16.0, h=1.6, seed=41), 0, 28, seed=41)
+    m.solid(0, 0, W, 30)
+    for i, (ya, yb) in enumerate(((46, 156), (196, 276), (316, 396), (436, 516), (556, 626))):
+        kit.cypress_row(m, 8, ya, yb, seed=i)
+        if ya == 316: kit.cypress_row(m, W - 8, 362, yb, seed=i + 2)
+        else: kit.cypress_row(m, W - 8, ya, yb, seed=i + 2)
+    m.model("tr_south", town.drystone(W / 16.0, h=0.7, seed=9), 0, H - 2, box=None)
+    m.solid(0, H - 13, W, H)
     # the shrine at the top: an altar, and in the dream, what was offered on it
     m.model("altar", town.altar(), 420, 70, box=(-9, -12, 9, 0), kind="look", data={"id": "shrine_altar"})
-    m.prop("lamassu_t", lambda cv, ax, ay, fi: cv.blit(Canvas.load('/srv/Wakefire/Art/sprites/props/lamassu.png'), ax - 13, ay - 36),
-           360, 70, box=(-10, -8, 10, 0), size=(48, 56), pad=8)
-    m.prop("chest_dream", lambda cv, ax, ay, fi: cv.blit(Canvas.load(CHEST), ax - 8, ay - 15), 452, 76, box=(-7, -6, 7, 0), size=(24, 24), pad=4,
-           kind="chest", layer=2, data={"id": "shrine_lamp", "text": "lamp"})
+    kit.lamassu(m, 352, 76, west=False)
+    kit.chest(m, 452, 76, "shrine_lamp", "lamp", layer=2)
     # a vessel of flame, guarded, in the far corner of the lowest terrace
-    m.prop("chest", lambda cv, ax, ay, fi: cv.blit(Canvas.load(CHEST), ax - 8, ay - 15), 40, 620, box=(-7, -6, 7, 0), size=(24, 24), pad=4,
-           kind="chest", data={"id": "terrace_vessel", "text": "vessel"})
+    kit.chest(m, 40, 620, "terrace_vessel", "vessel")
     for i, (x, y) in enumerate(((300, 340), (520, 350), (180, 220), (620, 230), (500, 100), (240, 470), (420, 600))):
         m.enemy("jackal", x, y, f"tr_j{i}")
     m.marker("npc", 600, 330, who="goat_terrace")

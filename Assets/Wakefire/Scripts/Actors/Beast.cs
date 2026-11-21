@@ -34,6 +34,9 @@ namespace Wakefire
             public Color? back, muzzle, sock, collar;
             public float metal, eyeGlow;
             public Action<Kit, Beast> extra;
+            /// <summary>A creature that isn't made of the usual rounded parts brings its whole skin: this
+            /// replaces the stock body, neck, head, legs and tail (the skeleton and its gaits stay).</summary>
+            public Action<Kit, Beast> skin;
         }
 
         public enum Gait { Walk, Trot, Bound }
@@ -69,6 +72,9 @@ namespace Wakefire
         public readonly Transform[] upper = new Transform[4], lower = new Transform[4];   // 0 left fore, 1 right fore, 2 left hind, 3 right hind
         Vector3 trunkRest;
         public Vector3 headBase, headDir, headUp;       // the head's own frame at rest, for anything a species adds to it
+        public Vector3 neckBase, neckDir, tailBase, tailDir, trunkAt;
+        public float halfLeg;
+        public Vector3 Hip(int i) => trunkRest + hipOff[i];
         readonly Vector3[] hipOff = new Vector3[4], footRest = new Vector3[4];
         float legLen;
         protected Bearing now, want;
@@ -120,6 +126,15 @@ namespace Wakefire
 
             var kit = new Kit(a, rig, bones.ToArray());
             float m = s.metal;
+            b.neckBase = neckBase; b.neckDir = neckDir; b.tailBase = tailBase; b.tailDir = tailDir; b.trunkAt = b.trunkRest; b.halfLeg = half;
+            b.headBase = headBase; b.headDir = headDir; b.headUp = Vector3.Cross(headDir, Vector3.right);
+            if (s.skin != null)
+            {
+                s.skin(kit, b);
+                kit.Frame();
+                kit.Wear("Hide");
+                return b;
+            }
             // trunk: barrel, chest and rump, paler underneath
             float bellyLine = b.trunkRest.y - s.girth * 0.42f;
             float backLine = b.trunkRest.y + s.girth * 0.45f;
@@ -424,40 +439,157 @@ namespace Wakefire
     {
         static readonly Color Fire = new Color(1.0f, 0.62f, 0.16f), Seam = new Color(0.34f, 0.19f, 0.08f), Gold = new Color(0.96f, 0.80f, 0.40f);
 
+        static readonly Color Bronze = new Color(0.70f, 0.42f, 0.15f), BronzeLight = new Color(0.82f, 0.54f, 0.20f), BronzeDark = new Color(0.36f, 0.20f, 0.09f),
+            Lapis = new Color(0.10f, 0.19f, 0.58f), LapisDark = new Color(0.06f, 0.10f, 0.34f), Soot = new Color(0.10f, 0.06f, 0.05f);
+
         public static Shape Body => new Shape
         {
-            coat = new Color(0.74f, 0.46f, 0.16f), belly = new Color(0.50f, 0.29f, 0.11f), dark = new Color(0.28f, 0.16f, 0.08f),
-            hornColour = Gold, eye = Fire, eyeGlow = 1f, metal = 0.5f, muzzle = new Color(0.56f, 0.33f, 0.12f),
+            coat = Bronze, belly = BronzeDark, dark = BronzeDark, hornColour = Gold, eye = Fire, eyeGlow = 1f, metal = 0.5f,
             length = 1.50f, height = 0.92f, girth = 0.46f, chest = 0.58f, rump = 0.45f, legThick = 0.125f, stance = 0.30f,
             neckLen = 0.40f, neckRise = 14f, neckThick = 0.34f, headLen = 0.64f, headThick = 0.26f, headTilt = 38f,
             tailLen = 0.66f, tailRise = -64f, tailThick = 0.05f, earLen = 0.17f, stride = 1.5f, stepHeight = 0.16f,
-            horn = new[]
-            {
-                (new Vector3(0.20f, 0.20f, 0.06f), 0.095f), (new Vector3(0.38f, 0.26f, 0.10f), 0.090f), (new Vector3(0.54f, 0.36f, 0.20f), 0.078f),
-                (new Vector3(0.63f, 0.50f, 0.34f), 0.060f), (new Vector3(0.64f, 0.66f, 0.50f), 0.036f), (new Vector3(0.61f, 0.76f, 0.60f), 0.012f),
-            },
-            extra = (kit, b) =>
-            {
-                float y = b.s.height + b.s.girth * 0.5f;
-                // the hump of the shoulders
-                kit.Paint(new Color(0.80f, 0.51f, 0.18f), 1).On("trunk").Egg(new Vector3(0, y + 0.36f, 0.44f), new Vector3(0.40f, 0.30f, 0.44f), 10, 6);
-                // plate seams round the barrel, and the furnace showing through slits in its flanks
-                foreach (int side in new[] { -1, 1 })
-                {
-                    kit.Paint(Seam, 1);
-                    kit.Box(new Vector3(side * 0.44f, y + 0.02f, -0.36f), new Vector3(0.05f, 0.62f, 0.035f));
-                    kit.Box(new Vector3(side * 0.47f, y + 0.02f, 0.10f), new Vector3(0.05f, 0.66f, 0.035f));
-                    kit.Paint(Fire, 0, 1);
-                    for (int i = 0; i < 3; i++)
-                        kit.Box(new Vector3(side * 0.468f, y + 0.02f, -0.24f + i * 0.11f), new Vector3(0.03f, 0.30f, 0.045f));
-                }
-                // a ring through the nose, and fire behind the teeth
-                kit.Frame(b.headBase, Vector3.right, b.headUp, b.headDir);
-                kit.Paint(Gold, 1).On("head").Egg(new Vector3(0, -b.s.headThick * 0.62f, b.s.headLen * 0.93f), new Vector3(0.085f, 0.085f, 0.022f), 8, 4);
-                kit.Paint(Fire, 0, 1).On("jaw").Egg(new Vector3(0, -b.s.headThick * 0.40f, b.s.headLen * 0.62f), new Vector3(b.s.headThick * 0.44f, 0.028f, b.s.headLen * 0.30f), 8, 3);
-                kit.Frame();
-            },
+            skin = Cast,
         };
+
+        /// <summary>The bull as the founders cast it: one great body drawn through its sections instead of
+        /// lumps stuck together, squared off like poured bronze; a hump and a deep chest; belts of gold
+        /// round the barrel with the furnace showing through a grille between them; a cloth of blue and
+        /// gold laid over its back; lyre horns; a brow like a lintel over eyes of fire; a beard of lapis
+        /// the way the old bull-heads wore one; and its tail ends in flame.</summary>
+        static void Cast(Kit kit, Beast b)
+        {
+            var s = b.s;
+            float m = 0.6f;
+            const float Dull = -1f;         // plain metal: lit by the fire, never taken for fire itself
+            (Vector3, float, float) R(float z, float hw, float hh, float cy) => (new Vector3(0, cy, z), hw, hh);
+            // ---- the body
+            var body = new[]
+            {
+                R(-0.93f, 0.15f, 0.19f, 1.21f), R(-0.80f, 0.35f, 0.39f, 1.17f), R(-0.52f, 0.44f, 0.46f, 1.15f), R(-0.12f, 0.41f, 0.43f, 1.13f),
+                R(0.28f, 0.46f, 0.50f, 1.16f), R(0.60f, 0.52f, 0.61f, 1.25f), R(0.84f, 0.45f, 0.51f, 1.23f), R(1.00f, 0.27f, 0.31f, 1.20f),
+            };
+            kit.On("trunk").Stain(p => p.y < 0.86f ? BronzeDark : p.y > 1.58f && p.z > 0.3f ? BronzeLight : (Color?)null).Paint(Bronze, m, Dull);
+            kit.Loft(body, 3.0f, 18);
+            kit.Stain(null);
+            (Vector3, float, float)[] Slice(float z0, float z1, float grow, int steps = 3)
+            {
+                // the body's own section between two stations, let out a little: a belt, a plate, a cloth
+                var o = new (Vector3, float, float)[steps];
+                for (int i = 0; i < steps; i++)
+                {
+                    float z = Mathf.Lerp(z0, z1, i / (float)(steps - 1));
+                    int k = 0;
+                    while (k < body.Length - 2 && body[k + 1].Item1.z < z) k++;
+                    float t = Mathf.InverseLerp(body[k].Item1.z, body[k + 1].Item1.z, z);
+                    o[i] = (new Vector3(0, Mathf.Lerp(body[k].Item1.y, body[k + 1].Item1.y, t), z), Mathf.Lerp(body[k].Item2, body[k + 1].Item2, t) + grow, Mathf.Lerp(body[k].Item3, body[k + 1].Item3, t) + grow);
+                }
+                return o;
+            }
+            // two belts of gold, riveted
+            kit.Paint(Gold, 1, Dull);
+            kit.Loft(Slice(-0.40f, -0.30f, 0.022f), 3.0f, 18, true, true);
+            kit.Loft(Slice(0.40f, 0.50f, 0.022f), 3.0f, 18, true, true);
+            // the cloth over its back: blue, bordered and lozenged in gold
+            kit.Stain(p =>
+            {
+                float u = Mathf.Abs(p.x), z = p.z - 0.05f;
+                if (Mathf.Abs(z) > 0.29f || u > 0.40f) return Gold;                                   // border and the hanging edge
+                float d = Mathf.Abs(Mathf.Repeat(z + 0.6f, 0.2f) - 0.1f) / 0.1f + Mathf.Abs(Mathf.Repeat(u, 0.2f) - 0.1f) / 0.1f;
+                return d < 0.55f ? Gold : ((Mathf.FloorToInt((z + 0.6f) / 0.2f) + Mathf.FloorToInt(u / 0.2f)) & 1) == 0 ? Lapis : LapisDark;
+            });
+            kit.Paint(Lapis, 0.15f, Dull).Loft(Slice(-0.30f, 0.40f, 0.03f, 15), 3.0f, 22, false, false, -74f, 74f);
+            kit.Stain(null);
+            // the furnace: a soot-black grille let into each flank under the cloth, fire behind its bars
+            foreach (int side in new[] { -1, 1 })
+            {
+                float x = side * 0.445f;
+                kit.Paint(Soot, 0, Dull).Box(new Vector3(x, 0.99f, 0.05f), new Vector3(0.05f, 0.30f, 0.56f));
+                kit.Paint(Fire, 0, 1);
+                for (int i = 0; i < 5; i++) kit.Box(new Vector3(side * 0.462f, 0.99f, -0.17f + i * 0.11f), new Vector3(0.03f, 0.24f, 0.05f));
+                kit.Paint(BronzeDark, 1, Dull);
+                kit.Box(new Vector3(side * 0.468f, 1.135f, 0.05f), new Vector3(0.035f, 0.035f, 0.60f));
+                kit.Box(new Vector3(side * 0.468f, 0.845f, 0.05f), new Vector3(0.035f, 0.035f, 0.60f));
+            }
+            // ---- neck: thick, short, carried low, a dewlap under it and a gold collar
+            var up = Vector3.Cross(b.neckDir, Vector3.right);
+            kit.On("neck").Frame(b.neckBase, Vector3.right, up, b.neckDir).Paint(Bronze, m, Dull);
+            kit.Stain(p => p.y < 1.02f ? BronzeDark : (Color?)null);
+            kit.Loft(new[] { (new Vector3(0, -0.10f, -0.26f), 0.37f, 0.42f), (new Vector3(0, -0.07f, 0.04f), 0.32f, 0.36f), (new Vector3(0, -0.03f, 0.32f), 0.27f, 0.28f), (new Vector3(0, 0, 0.50f), 0.22f, 0.22f) }, 2.8f, 16);
+            kit.Stain(null);
+            kit.Paint(Gold, 1, Dull).Loft(new[] { (new Vector3(0, -0.045f, 0.20f), 0.305f, 0.325f), (new Vector3(0, -0.035f, 0.29f), 0.290f, 0.305f) }, 2.8f, 16);
+            kit.Paint(BronzeDark, m, Dull).Fin(new[] { new Vector3(0, -0.40f, -0.10f), new Vector3(0, -0.34f, 0.16f), new Vector3(0, -0.26f, 0.40f) },
+                                          new[] { new Vector3(0, -0.62f, -0.06f), new Vector3(0, -0.56f, 0.14f), new Vector3(0, -0.32f, 0.40f) }, 0.07f);
+            // ---- head: a long wedge, broad at the brow, square at the muzzle
+            kit.On("head").Frame(b.headBase, Vector3.right, b.headUp, b.headDir).Paint(Bronze, m, Dull);
+            kit.Loft(new[]
+            {
+                (new Vector3(0, 0.02f, -0.12f), 0.23f, 0.21f), (new Vector3(0, 0.03f, 0.06f), 0.285f, 0.25f), (new Vector3(0, 0.02f, 0.26f), 0.25f, 0.22f),
+                (new Vector3(0, -0.005f, 0.44f), 0.185f, 0.17f), (new Vector3(0, -0.02f, 0.58f), 0.175f, 0.155f), (new Vector3(0, -0.025f, 0.665f), 0.15f, 0.13f),
+            }, 3.4f, 14);
+            kit.Paint(BronzeLight, m, Dull).Box(new Vector3(0, 0.185f, 0.25f), new Vector3(0.54f, 0.075f, 0.11f));                 // the brow
+            kit.Paint(Soot, 0, Dull).Box(new Vector3(0, -0.03f, 0.675f), new Vector3(0.26f, 0.20f, 0.03f));                         // the nose
+            kit.Paint(Fire, 0, 1);
+            foreach (int side in new[] { -1, 1 })
+            {
+                kit.Egg(new Vector3(side * 0.232f, 0.085f, 0.27f), new Vector3(0.035f, 0.055f, 0.075f), 6, 4);                // an eye of fire
+                kit.Box(new Vector3(side * 0.065f, -0.02f, 0.692f), new Vector3(0.055f, 0.07f, 0.012f));                      // a nostril
+            }
+            kit.Paint(Gold, 1).Egg(new Vector3(0, -0.175f, 0.655f), new Vector3(0.085f, 0.085f, 0.022f), 8, 4);              // the ring
+            // curls of lapis between the horns
+            kit.Paint(Lapis, 0.2f);
+            for (int i = 0; i < 3; i++) kit.Egg(new Vector3((i - 1) * 0.105f, 0.235f, 0.045f + (i == 1 ? 0.03f : 0f)), new Vector3(0.062f, 0.055f, 0.075f), 6, 4);
+            kit.Paint(Gold, 1, Dull).Box(new Vector3(0, 0.215f, 0.135f), new Vector3(0.36f, 0.045f, 0.03f));
+            // ears, low and flat under the horns
+            kit.Paint(Bronze, m, Dull);
+            foreach (int side in new[] { -1, 1 })
+                kit.Egg(new Vector3(side * 0.36f, 0.035f, -0.005f), new Vector3(0.125f, 0.05f, 0.075f), 6, 4);
+            // the horns: out, up and forward in a lyre, each from a bronze socket
+            var horn = new[]
+            {
+                (new Vector3(0.20f, 0.20f, 0.06f), 0.105f), (new Vector3(0.40f, 0.27f, 0.10f), 0.094f), (new Vector3(0.57f, 0.38f, 0.20f), 0.080f),
+                (new Vector3(0.67f, 0.53f, 0.34f), 0.062f), (new Vector3(0.685f, 0.70f, 0.50f), 0.038f), (new Vector3(0.65f, 0.83f, 0.62f), 0.010f),
+            };
+            foreach (int side in new[] { -1, 1 })
+            {
+                var path = new Vector3[horn.Length];
+                var thick = new float[horn.Length];
+                for (int i = 0; i < path.Length; i++) { path[i] = new Vector3(horn[i].Item1.x * side, horn[i].Item1.y, horn[i].Item1.z); thick[i] = horn[i].Item2; }
+                kit.Paint(Gold, 1).Tube(path, thick, 8);
+                kit.Paint(BronzeDark, 1, Dull).Egg(new Vector3(side * 0.22f, 0.205f, 0.065f), new Vector3(0.125f, 0.125f, 0.125f), 8, 5);
+            }
+            // ---- jaw: the lower jaw, the fire behind the teeth, the squared beard of lapis tipped in gold
+            kit.On("jaw").Paint(BronzeDark, m, Dull).Box(new Vector3(0, -0.185f, 0.40f), new Vector3(0.27f, 0.085f, 0.44f));
+            kit.Paint(Fire, 0, 1).Box(new Vector3(0, -0.135f, 0.44f), new Vector3(0.22f, 0.03f, 0.40f));
+            kit.Paint(Lapis, 0.2f);
+            kit.Stain(p => (Mathf.FloorToInt(p.y / 0.055f) & 1) == 0 ? Lapis : LapisDark);
+            kit.Box(new Vector3(0, -0.37f, 0.30f), new Vector3(0.17f, 0.30f, 0.13f));
+            kit.Stain(null);
+            kit.Paint(Gold, 1, Dull).Box(new Vector3(0, -0.535f, 0.30f), new Vector3(0.19f, 0.045f, 0.15f));
+            kit.Frame();
+            // ---- legs: a shoulder plate with a gold boss, a tapering forearm, a knee, a cannon, a gold fetlock, a hoof
+            float half = b.halfLeg;
+            for (int i = 0; i < 4; i++)
+            {
+                var hip = b.Hip(i);
+                float side = Mathf.Sign(hip.x);
+                bool front = i < 2;
+                var knee = hip + Vector3.down * half;
+                kit.On("ul" + i).Paint(Bronze, m, Dull).Tube(new[] { hip + new Vector3(0, 0.12f, 0), hip + Vector3.down * half * 0.45f, knee }, new[] { front ? 0.235f : 0.25f, 0.17f, 0.125f }, 10);
+                kit.Paint(BronzeLight, m, Dull).Egg(hip + new Vector3(side * 0.14f, 0.02f, 0), new Vector3(0.10f, 0.25f, 0.23f), 10, 6);
+                kit.Paint(Gold, 1, Dull).Egg(hip + new Vector3(side * 0.225f, 0.04f, 0), new Vector3(0.035f, 0.07f, 0.07f), 6, 4);
+                kit.On("ll" + i).Paint(BronzeDark, m, Dull).Egg(knee, new Vector3(0.135f, 0.12f, 0.145f), 8, 5);
+                kit.Paint(Bronze, m, Dull).Tube(new[] { knee, knee + Vector3.down * half * 0.55f, knee + Vector3.down * (half - 0.12f) }, new[] { 0.115f, 0.085f, 0.095f }, 8);
+                kit.Paint(Gold, 1, Dull).Turned(knee + Vector3.down * (half - 0.17f), new[] { (0.112f, 0f), (0.112f, 0.05f) }, 8);
+                kit.Paint(Soot, 0.4f, Dull).Turned(knee + Vector3.down * half + new Vector3(0, 0, 0.012f), new[] { (0.155f, 0f), (0.125f, 0.07f), (0.105f, 0.135f) }, 8);
+            }
+            // ---- tail: a rope of bronze, and at the end of it a flame
+            var tup = Vector3.Cross(Vector3.right, b.tailDir);
+            kit.On("tail").Frame(b.tailBase, Vector3.right, b.tailDir, tup).Paint(BronzeDark, m, Dull);
+            kit.Tube(new[] { new Vector3(0, -0.04f, 0), new Vector3(0, s.tailLen * 0.5f, 0), new Vector3(0, s.tailLen * 0.92f, 0) }, new[] { 0.055f, 0.04f, 0.035f }, 6);
+            kit.Paint(Gold, 1, Dull).Turned(new Vector3(0, s.tailLen * 0.86f, 0), new[] { (0.05f, 0f), (0.05f, 0.05f) }, 6);
+            kit.Paint(Fire, 0, 1).Egg(new Vector3(0, s.tailLen * 1.04f, 0), new Vector3(0.075f, 0.15f, 0.075f), 6, 5);
+            kit.Frame();
+        }
 
         protected override void Style(ModelActor a, string anim, float n, float speed)
         {

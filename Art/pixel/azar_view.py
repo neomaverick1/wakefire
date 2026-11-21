@@ -51,5 +51,5 @@ if __name__ == '__main__':
         out.paste(im.convert('RGB').resize((im.width * Z, im.height * Z), Image.NEAREST), (x, 40)); x += im.width * Z + 10
     for n, im in ims:
         out.paste(im.convert('RGB').resize((im.width * 2, im.height * 2), Image.NEAREST), (x, 40)); x += im.width * 2 + 6
-    out.save('azar_view_check.png')
+    out.save(sys.argv[1] if len(sys.argv) > 1 else 'azar_view_check.png')
     print(out.size)

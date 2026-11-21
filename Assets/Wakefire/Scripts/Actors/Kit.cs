@@ -333,6 +333,55 @@ namespace Wakefire
             return this;
         }
 
+        /// <summary>A body drawn through cross-sections set across the frame's z axis: each has a centre, a
+        /// half-width (x) and a half-height (y). power 2 makes each section an ellipse; higher squares it
+        /// off, the way cast metal and heavy muscle are. lon0..lon1 (degrees round from the top) keeps only
+        /// part of the way round, for a plate or a cloth lying over the body.</summary>
+        public Kit Loft((Vector3 c, float hw, float hh)[] rings, float power = 2.6f, int seg = 16, bool capStart = true, bool capEnd = true, float lon0 = 0, float lon1 = 360)
+        {
+            int n = rings.Length;
+            bool whole = lon1 - lon0 >= 359.9f;
+            var P = new Vector3[n, seg + 1];
+            float e = 2f / power;
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j <= seg; j++)
+                {
+                    float a = Mathf.Lerp(lon0, lon1, j / (float)seg) * Mathf.Deg2Rad;
+                    float sn = Mathf.Sin(a), cs = Mathf.Cos(a);
+                    P[i, j] = rings[i].c + new Vector3(rings[i].hw * Mathf.Sign(sn) * Mathf.Pow(Mathf.Abs(sn), e), rings[i].hh * Mathf.Sign(cs) * Mathf.Pow(Mathf.Abs(cs), e), 0);
+                }
+            var grid = new int[n, seg + 1];
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j <= seg; j++)
+                {
+                    int ja = j > 0 ? j - 1 : whole ? seg - 1 : 0, jb = j < seg ? j + 1 : whole ? 1 : seg;
+                    var du = P[i, jb] - P[i, ja];
+                    var dv = P[Mathf.Min(n - 1, i + 1), j] - P[Mathf.Max(0, i - 1), j];
+                    var nn = Vector3.Cross(du, dv);
+                    var outward = P[i, j] - rings[i].c;
+                    if (nn.sqrMagnitude < 1e-10f) nn = outward;
+                    if (Vector3.Dot(nn, outward) < 0) nn = -nn;
+                    grid[i, j] = V(P[i, j], nn.normalized);
+                }
+            for (int i = 0; i < n - 1; i++)
+                for (int j = 0; j < seg; j++)
+                    Quad(grid[i, j], grid[i + 1, j], grid[i + 1, j + 1], grid[i, j + 1]);
+            if (whole)
+            {
+                foreach (var (on, i, dir) in new[] { (capStart, 0, Vector3.back), (capEnd, n - 1, Vector3.forward) })
+                {
+                    if (!on) continue;
+                    int c0 = V(rings[i].c, dir);
+                    for (int j = 0; j < seg; j++)
+                    {
+                        int a = V(P[i, j], dir), b = V(P[i, j + 1], dir);
+                        tri.Add(c0); tri.Add(a); tri.Add(b);
+                    }
+                }
+            }
+            return this;
+        }
+
         public Kit Box(Vector3 c, Vector3 size)
         {
             var h = size * 0.5f;

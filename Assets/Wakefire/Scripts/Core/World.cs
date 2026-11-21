@@ -25,8 +25,10 @@ namespace Wakefire
             var p = Player.I;
             if (p) p.SetState(Player.State.Cutscene);
             yield return Fade.Out(0.22f);
+            bool newPlace = map != CurrentMap;
             EnterMap(map, spawn);
             Save.Write(map, spawn);
+            if (newPlace) Notices.Place(map);
             yield return null;
             yield return Fade.In(0.22f);
             if (p) p.SetState(Player.State.Free, "idle");
@@ -64,15 +66,49 @@ namespace Wakefire
             Busy = true;
             yield return new WaitForSeconds(1.6f);
             yield return Fade.Out(0.6f);
-            Fade.Set(1, "The dark wins this round.");
-            yield return new WaitForSecondsRealtime(1.6f);
+            // where to pick up: here, at the player's own save, or the title
+            yield return Fallen.Ask(CurrentMap);
             var p = Player.I;
             p.health.hp = p.health.max;
             p.health.invulnerable = 1.5f;
             if (Dream.I.Dreaming) Dream.I.SetInstant(false);
-            EnterMap(CurrentMap, CurrentSpawn);
-            p.SetState(Player.State.Free, "idle");
+            if (Fallen.Choice == Fallen.ToTitle)
+            {
+                // he fell, so the game's own save still stands at the way into this place
+                p.SetState(Player.State.Free, "idle");
+                Busy = false;
+                Title.Show();
+                Fade.Set(0);
+                yield break;
+            }
+            var saved = Fallen.Choice == Fallen.LoadSave ? Save.ReadManual() : null;
+            if (saved != null) { Begin(saved); Save.Write(CurrentMap, CurrentSpawn, quiet: true); }
+            else
+            {
+                EnterMap(CurrentMap, CurrentSpawn);
+                p.SetState(Player.State.Free, "idle");
+            }
             yield return Fade.In(0.5f);
+            Busy = false;
+        }
+
+        /// <summary>Bring back the player's own save, from the pause menu.</summary>
+        public void LoadGame(SaveData d)
+        {
+            if (d == null || Busy) return;
+            StartCoroutine(LoadRoutine(d));
+        }
+
+        IEnumerator LoadRoutine(SaveData d)
+        {
+            Busy = true;
+            var p = Player.I;
+            if (p) p.SetState(Player.State.Cutscene);
+            yield return Fade.Out(0.35f);
+            Begin(d);
+            Save.Write(CurrentMap, CurrentSpawn, quiet: true);
+            yield return null;
+            yield return Fade.In(0.4f);
             Busy = false;
         }
 
@@ -140,11 +176,13 @@ namespace Wakefire
 
         static IEnumerator OpenChest(Prop p)
         {
+            var pl = Player.I;
+            // he bends to it and throws the lid back
+            if (pl.anim.model) { pl.SetState(Player.State.ItemGet, "open"); yield return Story.Wait(0.55f); }
             Sfx.Play("chest_open");
             p.SetSprite("chest_open", p.data.px, p.data.py);
             Story.Set("chest_" + p.data.id);
-            yield return Story.Wait(0.35f);
-            var pl = Player.I;
+            yield return Story.Wait(pl.anim.model ? 0.6f : 0.35f);
             string what = p.data.text ?? "shekels:10";
             if (what.StartsWith("shekels:"))
             {

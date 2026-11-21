@@ -42,6 +42,9 @@ namespace Wakefire
                     Dream.I.Flip(p.pos, true);
                     yield return new WaitForSeconds(1.6f);
                 }
+                // standing somewhere can set a scene going; this is a look, not a playthrough
+                if (Story.I && Story.I.Running) { Story.Abort(); p.SetState(Player.State.Free, "idle"); yield return new WaitForSeconds(0.2f); }
+                if (Boot.Flag("-wfBare") && Hud.I) Hud.I.gameObject.SetActive(false);
                 yield return t.Shot($"{n:00}-{parts[0]}-{(int)x}-{(int)y}", 0.4f);
                 n++;
             }

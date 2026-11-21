@@ -84,7 +84,7 @@ namespace Wakefire
             { "attack3", (17f, false) }, { "roll", (24f, false) }, { "hurt", (10f, false) }, { "death", (8f, false) }, { "nod", (12f, false) },
             { "wake", (12f, false) }, { "use", (10f, false) }, { "itemget", (2f, false) }, { "push", (8f, true) }, { "block", (8f, false) },
             { "doze", (9f, false) }, { "yawn", (7f, false) }, { "shrug", (2f, false) }, { "point", (2f, false) }, { "sigh", (3f, false) },
-            { "idle_nod", (8f, false) },
+            { "idle_nod", (8f, false) }, { "open", (1f, false) },
             // townsfolk
             { "sleep", (1.6f, true) }, { "lean", (1.4f, true) }, { "lie", (0.7f, true) }, { "talk", (7f, true) }, { "knead", (5f, true) },
             { "sleepwalk", (6f, true) }, { "cower", (3f, true) },

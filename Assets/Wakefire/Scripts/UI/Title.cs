@@ -33,6 +33,13 @@ namespace Wakefire
             I = go.AddComponent<Title>();
             I.Build();
             Music.Play("title");
+            // coming back to the title mid-journey: the world behind it stands still until a game begins again
+            if (Player.I)
+            {
+                Player.I.SetState(Player.State.Cutscene);
+                Player.I.health.invulnerable = 1e9f;
+                foreach (var e in Enemy.All.ToArray()) if (e) Destroy(e.gameObject);
+            }
         }
 
         RawImage Img(string name, Texture t, float x, float y)
@@ -102,10 +109,34 @@ namespace Wakefire
             var lt = Resources.Load<Texture2D>("UI/title_logo");
             lt.filterMode = FilterMode.Point;
             logo = Img("logo", lt, Mathf.Round((W - lt.width) / 2f), Mathf.Max(3, 18 + off));
-            options = Save.Exists ? new[] { "Continue", "New Game" } : new[] { "Begin" };
-            menu = new PixelCanvas(W, 80);
+            options = MakeOptions();
+            menu = new PixelCanvas(W, 96);
             menuImg = Img("menu", menu.tex, 0, 96 + off);
             Redraw();
+        }
+
+        bool sure;          // New Game asked once already
+        /// <summary>Test runs choose a line by its first words through here.</summary>
+        public static string TestPick;
+        public string[] Lines => options;
+
+        string[] MakeOptions()
+        {
+            var o = new System.Collections.Generic.List<string>();
+            if (Save.Exists) o.Add("Continue");
+            if (Save.HasManual) o.Add("Load game");
+            o.Add(o.Count == 0 ? "Begin" : sure ? "New Game: sure?" : "New Game");
+            return o.ToArray();
+        }
+
+        /// <summary>Under the list: what the chosen line would bring back.</summary>
+        string Hint()
+        {
+            string s = options[sel];
+            if (s == "Continue") return Save.Describe(Save.Read());
+            if (s == "Load game") return Save.Describe(Save.ReadManual());
+            if (s.StartsWith("New Game: sure")) return "Continue would be lost. Your save stays.";
+            return "";
         }
 
         void Redraw()
@@ -116,21 +147,31 @@ namespace Wakefire
             var ink = new Color32(244, 234, 216, 255);
             var dim = new Color32(150, 140, 170, 255);
             var sh = new Color32(6, 4, 12, 255);
-            string sub = "Chapter One: The Sleeping God";
-            f.DrawString(menu, (menu.W - f.Measure(sub)) / 2, 0, sub, dim, sh);
+            // every line is cut out of the picture behind it with a dark edge all round, so it reads over anything
+            void Line(string t, int y, Color32 col)
+            {
+                int x = (menu.W - f.Measure(t)) / 2;
+                for (int ox = -1; ox <= 1; ox++)
+                    for (int oy = -1; oy <= 2; oy++)
+                        if (ox != 0 || oy != 0) f.DrawString(menu, x + ox, y + oy, t, sh);
+                f.DrawString(menu, x, y, t, col);
+            }
+            var soft = new Color32(196, 188, 214, 255);
+            Line("Chapter One: The Sleeping God", 1, soft);
             for (int i = 0; i < options.Length; i++)
             {
                 string s = options[i];
                 int x = (menu.W - f.Measure(s)) / 2, y = 22 + i * 14;
-                f.DrawString(menu, x, y, s, i == sel ? gold : ink, sh);
+                Line(s, y, i == sel ? gold : ink);
                 if (i == sel && ((int)(clock * 2.5f)) % 2 == 0)
                 {
                     f.Draw(menu, x - 12, y, '>', gold, sh);
                     f.Draw(menu, x + f.Measure(s) + 6, y, '<', gold, sh);
                 }
             }
-            string c = "Randy Kundinger 2026";
-            f.DrawString(menu, (menu.W - f.Measure(c)) / 2, 68, c, dim, sh);
+            string hint = Hint();
+            if (hint != "") Line(hint, 24 + options.Length * 14, soft);
+            Line("Randy Kundinger 2026", 82, soft);
             menu.Apply();
         }
 
@@ -145,6 +186,12 @@ namespace Wakefire
                 if (heroAnim.model) heroMat.SetVector("_Cell", heroAnim.model.Cell);
             }
             else if (hero) hero.uvRect = new Rect(((int)(clock * 5f) % heroFrames) / (float)heroFrames, 0, 1f / heroFrames, 1);
+            if (TestPick != null)
+            {
+                int ti = System.Array.FindIndex(options, o => o.StartsWith(TestPick));
+                TestPick = null;
+                if (ti >= 0) { if (ti != sel) { sel = ti; sure = false; options = MakeOptions(); } Choose(); return; }
+            }
             var mv = Controls.MoveVector;
             int before = sel;
             if (Controls.Move.WasPerformedThisFrame() || Keyboard.current != null && (Keyboard.current.upArrowKey.wasPressedThisFrame || Keyboard.current.downArrowKey.wasPressedThisFrame))
@@ -159,29 +206,40 @@ namespace Wakefire
                 var pos = tp.position.ReadValue();
                 float py = PixelView.Height - pos.y / PixelView.I.ScreenScale;   // render pixels from the top
                 for (int i = 0; i < options.Length; i++)
-                    if (Mathf.Abs(py - (96 + off + 22 + i * 14 + 4)) < 7) { sel = i; Choose(); return; }
+                    if (Mathf.Abs(py - (96 + off + 22 + i * 14 + 4)) < 7)
+                    {
+                        if (i != sel) { sel = i; sure = false; options = MakeOptions(); }
+                        Choose(); return;
+                    }
             }
-            if (before != sel) Sfx.Play("menu_move", 0.6f, 0);
+            if (before != sel) { Sfx.Play("menu_move", 0.6f, 0); if (sure) { sure = false; options = MakeOptions(); } }
             Redraw();
             if (Controls.Down(Controls.Confirm) || Controls.Down(Controls.Interact)) Choose();
         }
 
         void Choose()
         {
-            leaving = true;
+            string s = options[sel];
             Sfx.Play("menu_ok", 0.8f, 0);
-            StartCoroutine(Leave(options[sel] == "Continue"));
+            // starting over wipes the journey so far: ask once
+            if (s == "New Game" && Save.Exists) { sure = true; options = MakeOptions(); Redraw(); return; }
+            leaving = true;
+            StartCoroutine(Leave(s == "Continue" ? Save.Read() : s == "Load game" ? Save.ReadManual() : null));
         }
 
-        System.Collections.IEnumerator Leave(bool resume)
+        System.Collections.IEnumerator Leave(SaveData from)
         {
             yield return Fade.Out(0.5f);
-            if (!resume) Save.Clear();
+            if (from == null) Save.Clear();
             if (heroHost) Destroy(heroHost);
             Destroy(gameObject);
             I = null;
-            Game.I.Begin(resume);
-            if (resume) yield return Fade.In(0.4f);
+            Game.I.Begin(from);
+            if (from != null)
+            {
+                Save.Write(Game.I.CurrentMap, Game.I.CurrentSpawn, quiet: true);
+                yield return Fade.In(0.4f);
+            }
         }
     }
 }

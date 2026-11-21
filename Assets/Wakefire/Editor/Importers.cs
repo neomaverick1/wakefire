@@ -1,4 +1,5 @@
-// Import rules: textures and UI art stay pixel-crisp (point filter, no compression, no mips);
+// Import rules: textures and UI art stay pixel-crisp (point filter, no compression, no mips), except the
+// touch buttons, which are drawn large and scaled smoothly;
 // models from Blender come in with legacy animations, vertex colours and no materials.
 using UnityEditor;
 using UnityEngine;
@@ -7,7 +8,7 @@ namespace Wakefire.EditorTools
 {
     public class Importers : AssetPostprocessor
     {
-        public override uint GetVersion() => 9;
+        public override uint GetVersion() => 10;
 
         void OnPreprocessAudio()
         {
@@ -52,6 +53,13 @@ namespace Wakefire.EditorTools
                 t.textureType = TextureImporterType.Sprite;
                 t.spritePixelsPerUnit = 1;
                 t.wrapMode = TextureWrapMode.Clamp;
+                if (assetPath.Contains("/UI/Touch/"))
+                {
+                    // the touch buttons are metalwork drawn large and shown at whatever size the phone needs
+                    t.filterMode = FilterMode.Trilinear;
+                    t.mipmapEnabled = true;
+                    t.streamingMipmaps = false;
+                }
             }
             else
             {

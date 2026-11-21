@@ -359,9 +359,12 @@ namespace Wakefire
             anim.Play("use", facing, true);
         }
 
+        /// <summary>The overhead chop that ends the combo: how many frames it runs (as a model), and the frame it lands on.</summary>
+        public const int ChopFrames = 9, ChopHit = 4;
+
         void OnFrame(string a, int f)
         {
-            if (a.StartsWith("attack") && f == (a == "attack3" ? 3 : 2)) Strike(a == "attack3");
+            if (a.StartsWith("attack") && f == (a == "attack3" ? (anim.model ? ChopHit : 3) : 2)) Strike(a == "attack3");
             if (a == "nod" && f == 2) { Dream.I.Flip(pos, true); Sfx.Play("dream_in"); }
             if (a == "wake" && f == 1) { Dream.I.Flip(pos, false); Sfx.Play("dream_out"); }
             if (a == "use" && f == 1) UseLantern();

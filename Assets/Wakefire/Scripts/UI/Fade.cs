@@ -36,7 +36,12 @@ namespace Wakefire
             return I;
         }
 
-        void LateUpdate() => transform.SetAsLastSibling();
+        void LateUpdate()
+        {
+            transform.SetAsLastSibling();
+            // a picture behind the curtain covers everything else on the screen, the life flames included
+            if (backdrop && backdrop.enabled) backdrop.transform.SetSiblingIndex(Mathf.Max(0, transform.GetSiblingIndex() - 1));
+        }
 
         RawImage backdrop;
 

@@ -35,6 +35,8 @@ namespace Wakefire
         {
             I = this;
             DontDestroyOnLoad(gameObject);
+            // the scene is empty, so nothing in it is listening: without this the whole game is silent
+            if (!FindFirstObjectByType<AudioListener>()) gameObject.AddComponent<AudioListener>();
 #if UNITY_WEBGL && !UNITY_EDITOR
             Application.targetFrameRate = -1;      // the browser paces frames to the display
 #else
@@ -47,6 +49,7 @@ namespace Wakefire
             View = PixelView.Create();
             Dream = Dream.Create();
             Pause.Ensure();
+            Notices.Boot();
             TouchControls.Create();
             OnBoot();
         }
@@ -82,9 +85,11 @@ namespace Wakefire
         }
 
         /// <summary>A fresh game or the saved one, from the title screen.</summary>
-        public void Begin(bool resume)
+        public void Begin(bool resume) => Begin(resume ? Save.Read() : null);
+
+        /// <summary>Start from a save (the game's own or the player's), or from the beginning with none.</summary>
+        public void Begin(SaveData d)
         {
-            var d = resume ? Save.Read() : null;
             Story.Abort();
             Story.ResetAll();
             if (d != null)
@@ -98,9 +103,11 @@ namespace Wakefire
             else { p.coins = 0; p.keys = 0; Save.PlayTime = 0; }          // a new game starts with empty pockets
             Story.I.ApplyItems();
             p.health.hp = p.health.max;
+            p.health.invulnerable = 0;
             p.SetState(Player.State.Free, "idle");
             if (Dream.I.Dreaming) Dream.I.SetInstant(false);
             if (d == null) Story.Run(Story.I.Intro());
+            else Notices.Place(CurrentMap);
         }
     }
 }

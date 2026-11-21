@@ -36,10 +36,10 @@ def terrace():
     m = Model()
     face = M('sandstone', 4.2, m_ashlar(16, 8)); top = M('sandstone', 4.5, m_ashlar(16, 12, 5))
     d, h = 34 / 16.0, 0.5
-    m.part(); m.box(0, 0, 0, 4, d, h, face, top=top)
-    m.part(); m.box(7, 0, 0, 11, d, h, face, top=top)
+    m.part(); m.box(0, 0, 0, 4.75, d, h, face, top=top)
+    m.part(); m.box(7.75, 0, 0, 12.5, d, h, face, top=top)
     for i in range(3):
-        m.part(); m.box(4, 0.19 * i, 0, 7, d, h * (i + 1) / 3, face, top=top)
+        m.part(); m.box(4.75, 0.19 * i, 0, 7.75, d, h * (i + 1) / 3, face, top=top)
     return m
 
 
@@ -57,7 +57,7 @@ def build():
     T.grass(T.ragged(T.disc(700, 300, 60, 16) | T.disc(160, 400, 60, 14) | T.disc(780, 90, 40, 12), 4, 8, seed=8) & ~green, seed=9, ramp='dry', base=3.0, tufts=0.05)
     # the square: cut stone, with flagstones running out into the market and the lanes
     square = T.rect(380, 92, 200, 216)
-    T.slabs(square | T.rect(388, 58, 184, 40), seed=12, moss=0.06)
+    T.slabs(square | T.rect(376, 58, 208, 40), seed=12, moss=0.06)
     T.slabs(T.ragged(T.disc(640, 290, 46, 20) | T.disc(700, 150, 70, 26) | T.disc(720, 240, 50, 16) | T.disc(200, 196, 150, 12) | T.disc(160, 350, 120, 9), 3, 7, seed=10),
             seed=14, rows=(9, 10), wmin=9, wmax=15, base=4.0)
     # the processional way: pale slabs between two bands of glazed blue brick studded with gold
@@ -77,9 +77,9 @@ def build():
     T.contact(0, 30, 392, 58, reach=6, strength=1.6); T.contact(568, 30, W, 58, reach=6, strength=1.6)
     g = m.bake()
     A.sigil(g, 480, 186, 22)
-    m.set_into_ground(terrace(), 392, 92)
-    m.solid(392, 84, 456, 92); m.solid(504, 84, 568, 92)
-    m.solid(386, 58, 392, 92); m.solid(568, 58, 574, 92)
+    m.set_into_ground(terrace(), 380, 92)
+    m.solid(380, 84, 456, 92); m.solid(504, 84, 580, 92)
+    m.solid(374, 58, 380, 92); m.solid(580, 58, 586, 92)
 
     # ---------------------------------------------------------------- the wall and the gate
     m.model("wall_temple", town.city_wall(60.0, h=2.2, d=1.2, gate_at=30.0, gate_w=2.9), 0, 58, box=None)
@@ -89,7 +89,7 @@ def build():
         m.model("banner", town.banner, bx, 59, box=None, frames=4, kind="banner")
     m.model("gate_temple", town.gate_doors(False), 480, 59, box=(-23, -14, 23, 0), kind="gate", data={"id": "temple_gate"})
     m.model("gate_temple_open", town.gate_doors(True), -100, -100, box=None, lights=False)
-    for x in (437, 523):
+    for x in (364, 596):
         m.model("wall_torch", town.wall_torch, x, 67, box=None, frames=4, kind="torch")
         m.light(x, 67 - 49, 4.5, (1.0, 0.72, 0.38), 0.9, h=2.95)
 
@@ -135,24 +135,39 @@ def build():
         kit.brazier(m, x, y, False, f"square_{i}")
     kit.brazier_frames(m)
 
-    # guardians of the gate: winged bulls with crowned men's heads
-    import json as _json
-    lam = Canvas.load("/srv/Wakefire/Art/sprites/props/lamassu.png")
-    lbx, lby = _json.load(open("/srv/Wakefire/Art/sprites/props/lamassu.json"))["base"]
-    def lamassu(flip):
-        return lambda cv, ax, ay, fi: cv.blit(lam, ax - (lam.w - lbx if flip else lbx), ay - lby, flip=flip)
-    m.prop("lamassu_l", lamassu(False), 420, 86, box=(-10, -8, 10, 0), size=(48, 56), pad=8)
-    m.prop("lamassu_r", lamassu(True), 540, 86, box=(-10, -8, 10, 0), size=(48, 56), pad=8)
+    # guardians of the gate: winged bulls with crowned men's heads, facing each other across the steps
+    kit.lamassu(m, 418, 88, west=False)
+    kit.lamassu(m, 542, 88, west=True)
     # standing torches at the foot of the steps, and where the lanes meet the square
-    for (x, y) in ((442, 106), (518, 106), (600, 336), (366, 250), (604, 60)):
+    for (x, y) in ((442, 108), (518, 108), (600, 336), (366, 250), (628, 64)):
         kit.torch(m, x, y)
+
+    # ---------------------------------------------------------------- where the district stops
+    # west: the alley behind the first house is walled off, and the street ends at the dyers' wall
+    kit.wall_ew(m, 0, 16, 176, seed=5, plaster=0)
+    kit.wall_ns(m, 0, 174, 250, seed=6, plaster=2)
+    kit.say(m, "cart_wreck", town.cart_wreck(2), 50, 238, (-26, -12, 28, 0),
+            "A handcart, on its side where its owner lay down.^Past the wall is the Dyers' Quarter, snoring in three colours.")
+    m.model("amphorae_w", town.amphorae(35), 24, 196)
+    kit.cypress_row(m, 8, 356, 462, seed=1)
+    # east: the market backs onto the coppersmiths' wall
+    kit.wall_ew(m, 948, W, 176, seed=7, plaster=1)
+    kit.wall_ns(m, W - 10, 174, 334, seed=8, plaster=3)
+    kit.say(m, "crates_e", town.crates(1), 934, 300, (-12, -10, 12, 0),
+            "Crates of copper pots, stacked against the Coppersmiths' wall.^Not one of them has been hammered in forty nights. The quiet is unnatural.")
+    m.model("amphorae_e", town.amphorae(36), 936, 222)
+    kit.cypress_row(m, W - 8, 438, 462, seed=2)
+    # south: the terrace's own wall, either side of the way down to the lower town
+    m.model("south_wall_w", town.drystone(446 / 16.0, h=0.7, seed=3), 0, H - 2, box=None)
+    m.model("south_wall_e", town.drystone((W - 514) / 16.0, h=0.7, seed=4), 514, H - 2, box=None)
+    m.solid(0, H - 13, 446, H); m.solid(514, H - 13, W, H)
 
     m.marker("spawn", 480, 220)
     m.spawn("south", 480, 456, "up")
     m.spawn("gate", 480, 72, "down")
     m.exit(448, 472, 512, 480, "lowtown", "north")
     m.exit(462, 30, 498, 46, "temple_yard", "south", need="gate_open")
-    m.marker("npc", 452, 86, who="captain")
+    m.marker("npc", 466, 84, who="captain")
     m.marker("npc", 398, 222, who="goat")
     m.marker("npc", 552, 226, who="dreamer")
     m.marker("npc", 604, 300, who="walker")

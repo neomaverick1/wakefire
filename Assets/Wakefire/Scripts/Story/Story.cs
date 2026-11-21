@@ -49,6 +49,15 @@ namespace Wakefire
         {
             if (Running) return;
             if (Game.CommonProp(pr)) return;
+            // things that only have something to say about themselves (a barred way, a wreck, the boats):
+            // the map carries the words, "waking~~dream" when the dream sees it differently
+            if (pr.Kind == "look" && pr.data != null && pr.data.id == "say" && !string.IsNullOrEmpty(pr.data.text))
+            {
+                var parts = pr.data.text.Split(new[] { "~~" }, System.StringSplitOptions.None);
+                bool dream = Dream.I && Dream.I.IsDreamAt(pr.basePos);
+                Run(Narrate(dream && parts.Length > 1 ? parts[1] : parts[0]));
+                return;
+            }
             propHandler?.Invoke(pr);
         }
 
@@ -104,7 +113,7 @@ namespace Wakefire
                 float hold = 1.2f + l.Length * 0.045f;
                 for (float t = 0; t < hold; t += Time.unscaledDeltaTime)
                 {
-                    if (t > 0.4f && (Controls.Down(Controls.Interact) || Controls.Down(Controls.Attack))) break;
+                    if (t > 0.4f && (Controls.Down(Controls.Interact) || Controls.Down(Controls.Attack) || Controls.Tapped)) break;
                     yield return null;
                 }
                 Fade.Set(0.8f, "", true);
@@ -162,6 +171,7 @@ namespace Wakefire
             s.Speaker = null;
             s.Running = false;
             DialogueBox.Reset();
+            Fade.Backdrop(null);            // a scene cut short must not leave its picture over the world
             var v = PixelView.I;
             if (v && Player.I) v.target = Player.I.transform;
         }
@@ -230,7 +240,7 @@ namespace Wakefire
             var sr = go.AddComponent<SpriteRenderer>();
             sr.sharedMaterial = Map.SpriteMat;
             sr.sprite = Map.GetSprite("Items/" + itemSprite, 8, 16);
-            go.transform.position = (Vector3)(p.pos + new Vector2(0, 2.75f));
+            go.transform.position = (Vector3)(p.pos + new Vector2(0, 2.55f));
             sr.sortingOrder = Map.Order(p.pos.y) + 2;
             Sfx.Play("itemget", 1f, 0f);
             PixelView.I.Shake(0, 0);

@@ -548,15 +548,33 @@ def banner(frame=0, h=1.75, w=0.62):
     return m
 
 
+def m_chevrons(period=6, rise=3):
+    """A band of inlay round a column: zigzags in a second colour."""
+    def f(u, v, P, seed):
+        z = np.abs((u % period) - period / 2.0)
+        k = np.floor_divide(v + z, rise) % 2
+        return np.zeros(u.shape), k == 0
+    return f
+
+
 def pillar(h=2.2):
-    """A column of pale stone: a square foot, a fluted shaft that narrows as it rises, a gold band, a square head."""
+    """A round column of pale stone on a drum, three bands of blue and gold zigzag let into the
+    shaft, a spreading head rimmed in gold. Round, so its top reads as a column's and not a box's."""
     m = Model()
-    st = M('sandstone', 4.4, m_planks(3, 'v', knots=False))
-    blk = M('sandstone', 4.3, m_mottle(8, 0.3))
-    m.part(); m.box(-0.44, 0.0, 0, 0.44, 0.8, 0.2, blk, top=M('sandstone', 4.9))
-    m.part(); m.turned(0, 0.4, [(0.34, 0.2), (0.3, 0.3), (0.26, h - 0.3), (0.3, h - 0.22)], st, n=14)
-    m.part(); m.turned(0, 0.4, [(0.315, 0.3), (0.315, 0.38)], M('gold', 4.2, gloss=0.03), n=14)
-    m.part(); m.box(-0.4, 0.04, h - 0.22, 0.4, 0.76, h, blk, top=M('sandstone', 4.9))
+    shaft = M('alabaster', 4.7, m_planks(3, 'v', knots=False))
+    drum = M('sandstone', 4.2, m_mottle(8, 0.3))
+    inlay = M('lapis', 3.9, m_chevrons(6, 2), ramp2='gold')
+    gold = M('gold', 4.3, gloss=0.03)
+    cy = 0.42
+    m.part(); m.turned(0, cy, [(0.44, 0.0), (0.44, 0.14), (0.38, 0.2)], drum, n=16, cap=M('sandstone', 4.8))
+    m.part(); m.turned(0, cy, [(0.31, 0.2), (0.285, h - 0.34)], shaft, n=16)
+    for z0 in (0.3, h * 0.5 - 0.06, h - 0.52):
+        m.part(); m.turned(0, cy, [(0.318, z0), (0.316, z0 + 0.19)], inlay, n=16)
+    m.part(); m.turned(0, cy, [(0.29, h - 0.34), (0.36, h - 0.2), (0.41, h - 0.1), (0.41, h)], M('alabaster', 4.5), n=16, cap=M('alabaster', 4.6, m_mottle(6, 0.3)))
+    # the top is dressed: a gold ring let into it round a low boss
+    m.part(); m.turned(0, cy, [(0.30, h), (0.30, h + 0.012)], M('gold', 3.9), n=16, cap=M('gold', 3.9))
+    m.part(); m.turned(0, cy, [(0.24, h + 0.012), (0.2, h + 0.05)], M('alabaster', 4.4), n=16, cap=M('alabaster', 5.0))
+    m.part(); m.turned(0, cy, [(0.418, h - 0.1), (0.418, h - 0.03)], gold, n=16)
     return m
 
 
@@ -933,4 +951,661 @@ def stone_block():
     m.part()
     for x0, x1, z0, z1 in ((-0.38, 0.38, 0.12, 0.14), (-0.38, 0.38, 0.58, 0.60), (-0.38, -0.36, 0.12, 0.6), (0.36, 0.38, 0.12, 0.6)):
         m.box(x0, -0.01, z0, x1, 0, z1, M('sandstone', 3.2))
+    return m
+
+
+# ------------------------------------------------------------------ statues
+def m_feathers(h=3):
+    """Rows of carved feathers: a dark line under each row, a notch between feathers."""
+    def f(u, v, P, seed):
+        row = np.floor_divide(v, h); uu = u + (row % 2) * 2
+        t = np.where((v % h) == 0, -1.2, 0.0)
+        t = np.where(((uu % 4) == 0) & ((v % h) != h - 1), t - 0.5, t)
+        return t, None
+    return f
+
+
+def m_curls(h=2):
+    """A carved beard or mane: tight level rows of curls."""
+    def f(u, v, P, seed):
+        row = np.floor_divide(v, h)
+        t = np.where((v % h) == 0, -1.1, 0.3)
+        t = np.where(((u + row) % 2) == 0, t - 0.4, t)
+        return t, None
+    return f
+
+
+def _bez(P, s):
+    P = np.asarray(P, float)
+    return ((1 - s) ** 3) * P[0] + 3 * ((1 - s) ** 2) * s * P[1] + 3 * (1 - s) * s * s * P[2] + (s ** 3) * P[3]
+
+
+def _bez_t(P, s):
+    P = np.asarray(P, float)
+    d = 3 * ((1 - s) ** 2) * (P[1] - P[0]) + 6 * (1 - s) * s * (P[2] - P[1]) + 3 * s * s * (P[3] - P[2])
+    return d / (np.linalg.norm(d) + 1e-9)
+
+
+def lamassu(mirror=False, scale=1.4):
+    """A guardian of the gate, a winged bull with a king's head, cut in alabaster and seen from its
+    flank the way the old carvers showed it: striding, the great wing swept back over its body in
+    rows of feathers, a long squared beard in rows of curls, hair in a mass on the shoulder, the
+    domed crown with the horns of a god. Hooves, horns and the wing's edge are gilded. It faces
+    east; mirror=True turns it west."""
+    m = Model()
+    stone = M('alabaster', 5.0, m_mottle(9, 0.3))
+    far = M('alabaster', 3.6, m_mottle(9, 0.25))
+    pale = M('alabaster', 5.5)
+    basalt = M('basalt', 3.3, m_curls(2))
+    gold = M('gold', 4.4, gloss=0.03)
+    lapis = M('lapis', 3.9)
+    yc = 0.5                                              # the spine runs east-west at this depth
+    zp = 0.34                                             # top of the plinth
+    m.push(scale=scale)
+    # the plinth: a dark foot, a block with a gilded lip
+    m.part(); m.box(-1.5, 0.0, 0, 1.5, 1.0, 0.12, M('sandstone', 3.4, m_ashlar(12, 4)), top=M('sandstone', 4.0))
+    m.part(); m.box(-1.43, 0.04, 0.12, 1.43, 0.96, zp, M('sandstone', 4.1, m_ashlar(12, 5)), top=M('sandstone', 4.6, m_mottle(8, 0.3)))
+    m.part(); m.box(-1.44, 0.03, zp - 0.06, 1.44, 0.04, zp, gold)
+
+    def leg(pts, radii, mat):
+        m.part(); m.limb(pts, radii, mat, n=8, cap=False)
+        x, y, _ = pts[-1]
+        m.part(); m.limb([(x + 0.02, y, zp), (x + 0.01, y, zp + 0.13)], [0.14, 0.115], gold if mat is stone else M('gold', 3.3), n=8, cap=False)
+
+    # the far legs, in shade: the hind one stepping forward, the fore one reaching
+    leg([(-0.56, yc + 0.22, zp + 0.74), (-0.60, yc + 0.22, zp + 0.42), (-0.50, yc + 0.22, zp + 0.14), (-0.49, yc + 0.22, zp + 0.02)], [0.17, 0.12, 0.10, 0.115], far)
+    leg([(0.86, yc + 0.22, zp + 0.74), (1.04, yc + 0.22, zp + 0.44), (1.02, yc + 0.22, zp + 0.14), (1.03, yc + 0.22, zp + 0.02)], [0.16, 0.12, 0.10, 0.115], far)
+    # the body: rump, loin, barrel, the hump of the shoulder, the breast
+    m.part()
+    m.limb([(-1.04, yc, zp + 1.00), (-0.80, yc, zp + 1.04), (-0.30, yc, zp + 0.99), (0.15, yc, zp + 1.01), (0.55, yc, zp + 1.08), (0.90, yc, zp + 1.04)],
+           [0.30, 0.38, 0.33, 0.36, 0.42, 0.35], stone, n=12)
+    m.part(); m.blob(-1.06, yc, zp + 1.0, 0.26, 0.3, 0.32, stone, n=10, rings=6)
+    m.part(); m.blob(1.0, yc, zp + 0.98, 0.25, 0.33, 0.36, stone, n=10, rings=6)
+    # the near legs: the hind one thrust back, the fore one planted
+    m.part(); m.blob(-0.84, yc - 0.16, zp + 0.84, 0.30, 0.24, 0.36, stone, n=10, rings=6)            # the haunch
+    leg([(-0.82, yc - 0.24, zp + 0.70), (-1.04, yc - 0.24, zp + 0.42), (-0.96, yc - 0.24, zp + 0.14), (-0.95, yc - 0.24, zp + 0.02)], [0.18, 0.125, 0.10, 0.115], stone)
+    m.part(); m.blob(0.58, yc - 0.18, zp + 0.86, 0.22, 0.22, 0.34, stone, n=10, rings=6)             # the shoulder
+    leg([(0.60, yc - 0.24, zp + 0.72), (0.63, yc - 0.24, zp + 0.42), (0.60, yc - 0.24, zp + 0.14), (0.61, yc - 0.24, zp + 0.02)], [0.17, 0.125, 0.10, 0.115], stone)
+    # the tail: down behind the hock to a curled tuft
+    m.part(); m.limb([(-1.26, yc, zp + 1.16), (-1.42, yc, zp + 0.86), (-1.38, yc, zp + 0.5)], [0.06, 0.05, 0.045], stone, n=6)
+    m.part(); m.blob(-1.37, yc, zp + 0.34, 0.09, 0.09, 0.17, basalt, n=6, rings=4)
+
+    # the wing: an arm rising from the shoulder and sweeping back above the rump; from it hang the
+    # flight feathers, every one a blade of its own, a shorter row over them, and scale feathers on the arm
+    arm = [(0.50, 1.74), (0.36, 2.44), (-0.45, 2.62), (-1.45, 2.98)]
+    trail = [(0.0, 1.72), (-0.80, 1.66), (-1.50, 1.92), (-1.80, 2.86)]
+    yw = 0.05
+
+    def feather(a, b, w, y, mat):
+        a = np.asarray(a, float); b = np.asarray(b, float)
+        d = b - a; L = np.linalg.norm(d); d = d / L; n = np.array([-d[1], d[0]])
+        pts = [a - n * w / 2, a - n * w / 2 + d * (L - w * 0.7), b - n * w * 0.16, b + n * w * 0.16, a + n * w / 2 + d * (L - w * 0.7), a + n * w / 2]
+        cx, cz = np.mean(pts, 0)
+        for i in range(len(pts)):
+            p, q = pts[i], pts[(i + 1) % len(pts)]
+            m.tri([(cx, y, cz), (p[0], y, p[1]), (q[0], y, q[1])], mat, two=True)
+
+    N = 15
+    for tier, (reach, yy, tone) in enumerate(((1.0, yw + 0.03, 4.3), (0.52, yw + 0.015, 5.0))):
+        for i in range(N):
+            s_ = (i + 0.5) / N
+            A = _bez(arm, s_); B = _bez(trail, s_)
+            m.part()
+            feather(A, A + (B - A) * reach, 0.165, yy - 0.0004 * i, M('alabaster', tone + (0.45 if i % 2 else 0.0)))
+    m.part()
+    g = np.zeros((2, 9, 3))
+    for k in range(9):
+        s_ = k / 8.0
+        A = _bez(arm, s_); B = _bez(trail, s_); d = (B - A) / np.linalg.norm(B - A)
+        g[0, k] = (A[0], yw, A[1]); g[1, k] = (A[0] + d[0] * 0.2 * (1 - 0.4 * s_), yw, A[1] + d[1] * 0.2 * (1 - 0.4 * s_))
+    m.sheet(g, M('alabaster', 5.2, m_feathers(3)), smooth=False)
+    m.part(); m.limb([(p[0], yw - 0.01, p[1]) for p in [_bez(arm, s_) for s_ in np.linspace(0, 1, 9)]], list(np.linspace(0.065, 0.025, 9)), gold, n=5)
+
+    # neck and head. The head is cut large, as the carvers cut it. The face is the pale part:
+    # brow, eye, nose and cheek between crown, hair and beard
+    hz = zp + 2.14
+    hx = 1.04
+    m.part(); m.limb([(0.74, yc, zp + 1.36), (0.98, yc, hz - 0.3)], [0.3, 0.26], stone, n=8, cap=False)
+    m.part(); m.blob(hx, yc, hz, 0.32, 0.23, 0.38, pale, n=12, rings=7)
+    m.box(hx + 0.26, yc - 0.06, hz - 0.13, hx + 0.385, yc + 0.06, hz + 0.07, pale)                           # the nose, one piece with the face
+    m.part(); m.box(hx + 0.04, yc - 0.238, hz + 0.105, hx + 0.31, yc + 0.238, hz + 0.14, M('alabaster', 2.6))    # the brow
+    m.part(); m.box(hx + 0.13, yc - 0.236, hz + 0.02, hx + 0.20, yc - 0.21, hz + 0.085, M('basalt', 1.0))      # the eye
+    # hair in a heavy mass behind the ear, down onto the shoulder
+    m.part(); m.blob(hx - 0.40, yc, hz - 0.22, 0.22, 0.25, 0.42, basalt, n=8, rings=5)
+    m.part(); m.blob(hx - 0.2, yc - 0.225, hz - 0.2, 0.05, 0.03, 0.05, gold, n=6, rings=4)                   # an earring
+    # the beard: under the nose and along the jaw, then long and squared down the breast in rows of curls
+    m.part(); m.box(hx + 0.06, yc - 0.24, hz - 0.42, hx + 0.36, yc + 0.24, hz - 0.18, basalt)
+    m.part(); m.box(hx - 0.12, yc - 0.24, hz - 0.42, hx + 0.06, yc + 0.24, hz - 0.28, basalt)
+    m.part(); m.box(hx + 0.04, yc - 0.19, zp + 1.10, hx + 0.38, yc + 0.19, hz - 0.4, basalt)
+    # the crown: a ribbed dome banded in gold and blue, two pairs of horns laid up its front, a gold knob
+    cz0 = hz + 0.22
+    m.part(); m.turned(hx - 0.02, yc, [(0.31, cz0), (0.315, cz0 + 0.16), (0.27, cz0 + 0.29), (0.15, cz0 + 0.37), (0.0, cz0 + 0.40)], M('alabaster', 4.5, m_planks(3, 'v', knots=False)), n=12, squash=0.74)
+    m.part(); m.turned(hx - 0.02, yc, [(0.32, cz0), (0.324, cz0 + 0.07)], gold, n=12, squash=0.74)
+    m.part(); m.turned(hx - 0.02, yc, [(0.326, cz0 + 0.07), (0.328, cz0 + 0.12)], lapis, n=12, squash=0.74)
+    for hz_ in (cz0 + 0.13, cz0 + 0.23):
+        m.part(); m.limb([(hx - 0.2, yc - 0.235, hz_), (hx + 0.1, yc - 0.235, hz_ + 0.02), (hx + 0.3, yc - 0.1, hz_ + 0.12)], [0.055, 0.05, 0.015], gold, n=5)
+    m.part(); m.blob(hx - 0.02, yc, cz0 + 0.42, 0.065, 0.065, 0.07, gold, n=6, rings=4)
+    # a band of blue and gold let into the plinth
+    m.part()
+    for k in range(13):
+        x0 = -1.3 + k * 0.2
+        m.box(x0, 0.035, 0.16, x0 + 0.1, 0.04, 0.24, lapis if k % 2 == 0 else gold)
+    m.pop()
+    return m.mirrored() if mirror else m
+
+
+# ------------------------------------------------------------------ where a street or a field stops
+def yard_wall(length, h=1.5, d=0.5, seed=0, plaster=None):
+    """A yard wall of mud brick running east from the origin: a foot of fired brick, plaster flaking
+    off the brick above it, a rounded cap. Too high to see over, which is the point of it."""
+    m = Model(); mt = Mats(seed, plaster)
+    m.part(); m.box(0, 0, 0, length, d, h, mt.wall, top=mt.roof)
+    m.part(); m.box(-PX, -PX, 0, length + PX, d, 0.3, mt.plinth, top=mt.trim)
+    m.part(); m.limb([(0, d / 2, h), (length, d / 2, h)], [d / 2 + PX, d / 2 + PX], mt.trim, n=8)
+    return m
+
+
+def yard_wall_ns(depth, h=1.5, wd=0.5, seed=0, plaster=None):
+    """The same wall running north from the origin: we see its cap all the way along and its south end."""
+    m = Model(); mt = Mats(seed, plaster)
+    m.part(); m.box(0, 0, 0, wd, depth, h, mt.wall, top=mt.roof)
+    m.part(); m.box(-PX, -PX, 0, wd + PX, depth, 0.3, mt.plinth, top=mt.trim)
+    m.part(); m.limb([(wd / 2, 0, h), (wd / 2, depth, h)], [wd / 2 + PX, wd / 2 + PX], mt.trim, n=8)
+    return m
+
+
+def street_gate(w=3.0, h=2.3, seed=0):
+    """A gate across a street, shut: two brick piers, a beam over them, two leaves of cedar strapped
+    in bronze, and the bar dropped across the lot. Runs east from the origin, faces south."""
+    m = Model(); mt = Mats(seed, 2)
+    pier = 0.7
+    for x0 in (0.0, w - pier):
+        m.part(); m.box(x0, 0, 0, x0 + pier, 0.7, h, mt.wall, top=mt.roof)
+        m.part(); m.box(x0 - PX, -PX, 0, x0 + pier + PX, 0.7, 0.3, mt.plinth, top=mt.trim)
+        m.part(); m.box(x0 - PX, -PX, h, x0 + pier + PX, 0.7 + PX, h + 0.14, mt.trim, top=mt.trim)
+    door_m = M('cedar', 3.9, m_planks(4, 'v'))
+    m.part(); m.box(pier, 0.22, 0, w - pier, 0.36, h - 0.42, door_m, top=M('cedar', 3.2))
+    m.part()
+    for z in (0.34, 1.0, 1.56):
+        m.box(pier, 0.2, z, w - pier, 0.22, z + 0.1, mt.bronze)
+    m.box(w / 2 - PX / 2, 0.2, 0, w / 2 + PX / 2, 0.22, h - 0.42, M('dark', 1.6))             # where the leaves meet
+    m.part(); m.box(pier - 0.12, 0.08, 0.72, w - pier + 0.12, 0.2, 0.9, mt.beam)              # the bar
+    for bx in (pier + 0.25, w - pier - 0.35):
+        m.part(); m.box(bx, 0.06, 0.66, bx + 0.1, 0.2, 0.96, mt.bronze)
+    m.part(); m.box(-0.06, 0.1, h - 0.42, w + 0.06, 0.5, h - 0.2, mt.beam, top=mt.beam)       # the lintel
+    return m
+
+
+def cart_wreck(seed=0):
+    """A handcart on its side where its owner lay down: one wheel in the air, the load gone
+    everywhere. With what spilled, it stops a street."""
+    m = Model(); mt = MT; r = rnd(seed)
+    bed = mt.wood_h
+    m.part(); m.box(-1.0, 0.5, 0.0, 1.0, 0.62, 1.0, bed, top=mt.wood)                          # the bed, standing on edge
+    m.part()
+    for x0 in (-1.0, 0.0, 1.0 - PX):
+        m.box(x0, 0.48, 0.0, x0 + PX, 0.5, 1.0, mt.beam)
+    m.box(-1.0, 0.48, 1.0 - PX, 1.0, 0.5, 1.0, mt.beam)
+    # the wheel that ended up on top, lying flat
+    m.part(); m.turned(-0.2, 0.56, [(0.44, 1.0), (0.44, 1.07)], mt.wood, n=14, cap=mt.wood_h)
+    m.part(); m.turned(-0.2, 0.56, [(0.1, 1.07), (0.1, 1.16)], mt.bronze, n=8, cap=mt.bronze)
+    m.part()
+    for a in range(0, 180, 45):
+        c, sn = math.cos(math.radians(a)), math.sin(math.radians(a))
+        m.beam((-0.2 - c * 0.42, 0.56 - sn * 0.42, 1.09), (-0.2 + c * 0.42, 0.56 + sn * 0.42, 1.09), PX, mt.beam)
+    # the shafts, pointing at the sky
+    m.part()
+    for sx in (-0.8, 0.7):
+        m.beam((sx, 0.7, 0.9), (sx + 0.2, 1.3, 1.5), 1.2 * PX, mt.beam)
+    # what was on it
+    m.part()
+    for i, (x, y, z, rx, rz) in enumerate(((-0.7, 0.16, 0.22, 0.36, 0.24), (0.1, 0.1, 0.2, 0.34, 0.22), (-0.3, 0.22, 0.5, 0.3, 0.2), (0.9, 0.2, 0.2, 0.3, 0.22))):
+        m.blob(x, y, z, rx, 0.26, rz, mt.sack, seed=seed + i, n=9, rings=5)
+        m.part()
+    jar(m, mt, 1.4, 0.3, 0.0, s=0.9, kind=0)
+    jar(m, mt, -1.35, 0.26, 0.0, s=0.8, kind=1)
+    m.part(); m.blob(0.55, -0.08, 0.06, 0.2, 0.14, 0.07, mt.pot2, seed=seed, n=7, rings=3, facet=True)    # a broken one
+    return m
+
+
+def quay(length, h=0.42, d=0.6):
+    """The harbour's edge, running east from the origin: big dressed stones with a worn lip, a ring let into them here and there."""
+    m = Model()
+    st = M('stone', 4.0, m_ashlar(18, 6))
+    m.part(); m.box(0, 0, 0, length, d, h, st, top=M('stone', 4.7, m_ashlar(18, 9, 5)))
+    m.part()
+    x = 1.2
+    while x < length - 0.5:
+        m.box(x, -0.03, 0.14, x + 0.16, 0, 0.3, M('bronze', 3.6))
+        x += 3.4
+    return m
+
+
+# ------------------------------------------------------------------ the hill of sleepers (the dead of Ashkel)
+def m_niches(w=6, gap=3):
+    """The front of an old tomb: upright niches cut into the brick, the way the first palaces were faced."""
+    def f(u, v, P, seed):
+        k = u % (w + gap)
+        t = np.where(k < gap, -1.3, 0.0)
+        t = np.where((k == gap) | (k == w + gap - 1), 0.5, t)
+        return t, None
+    return f
+
+
+def m_cuneiform(row=5):
+    """Lines of wedge writing cut in stone."""
+    def f(u, v, P, seed):
+        r_ = np.floor_divide(v, row)
+        on = ((v % row) >= 1) & ((v % row) <= 2) & (hash2(np.floor_divide(u, 2), r_, seed) > 0.42)
+        t = np.where(on, -1.4, 0.0)
+        t = np.where((v % row) == 0, t + 0.3, t)
+        return t, None
+    return f
+
+
+def mastaba(w=5.0, d=3.0, h=1.6, seed=0, door=True, lamp=False):
+    """A house for someone dead: a low bench of mud brick with sloping sides and a niched front,
+    a false door in the middle for the spirit to come and go by, an offering slab in front of it."""
+    r = rnd(seed); m = Model()
+    brick = M('tomb', 4.2, m_niches(6, 3))
+    plain = M('tomb', 4.0, m_brick(8, 4, jitter=0.8))
+    roof = M('tomb', 4.9, m_mottle(12, 0.4, specks=0.01, speck_t=-1.0))
+    x0, x1 = -w / 2, w / 2
+    batter = 0.16
+    m.part(); m.box(x0, 0, 0, x1, d, 0.34, plain, top=roof)                                    # the foot
+    m.part()
+    # the body leans in as it rises: a front that slopes back, a flat top
+    m.quad((x0 + 0.1, 0.12, 0.34), (x1 - 0.1, 0.12, 0.34), (x1 - 0.1 - batter, 0.12 + batter, h), (x0 + 0.1 + batter, 0.12 + batter, h), brick)
+    m.quad((x0 + 0.1 + batter, 0.12 + batter, h), (x1 - 0.1 - batter, 0.12 + batter, h), (x1 - 0.1 - batter, d - 0.1, h), (x0 + 0.1 + batter, d - 0.1, h), roof)
+    m.part(); m.box(x0 + 0.1 + batter - PX, 0.12 + batter - PX, h, x1 - 0.1 - batter + PX, 0.12 + batter + 2 * PX, h + PX, M('tomb', 5.4))   # a paler course at the lip
+    if door:
+        dx = float(r.uniform(-0.3, 0.3))
+        m.part(); m.box(dx - 0.42, 0.06, 0.34, dx + 0.42, 0.2, 1.22, M('sandstone', 4.3, m_mottle(7, 0.3)))
+        m.part(); m.box(dx - 0.26, 0.04, 0.34, dx + 0.26, 0.08, 1.06, M('dark', 1.6))
+        m.part(); m.box(dx - 0.5, 0.04, 1.22, dx + 0.5, 0.22, 1.34, M('sandstone', 4.8))
+        m.part(); m.box(dx - 0.5, -0.5, 0, dx + 0.5, -0.02, 0.12, M('sandstone', 4.2, m_mottle(7, 0.3)), top=M('sandstone', 4.8))       # the offering slab
+        m.part(); m.turned(dx - 0.2, -0.26, [(0.11, 0.12), (0.14, 0.2), (0.1, 0.24)], M('clay', 4.3), n=8, cap=M('dark', 1.8))
+        if lamp:
+            m.part(); m.turned(dx + 0.22, -0.26, [(0.07, 0.12), (0.1, 0.18)], M('bronze', 4.2), n=8, cap=M('bronze', 3.6))
+            m.part(); m.blob(dx + 0.22, -0.26, 0.27, 0.05, 0.05, 0.09, Mat(RAMPS['ghost'], 3.6, glow=True), n=6, rings=4)
+            m.light(dx + 0.22, -0.26, 0.3, 2.4, (0.5, 1.0, 0.86), 0.5)
+    return m
+
+
+def stele(h=1.5, seed=0, lean=0.0):
+    """A standing stone with a rounded head, a scene cut at the top and lines of writing under it."""
+    m = Model()
+    st = M('stone', 4.3, m_cuneiform(5))
+    m.push(rx=0, ry=lean)
+    m.part(); m.box(-0.36, 0.0, 0, 0.36, 0.3, 0.12, M('stone', 3.6), top=M('stone', 4.4))
+    m.part(); m.box(-0.28, 0.06, 0.12, 0.28, 0.24, h - 0.26, st, top=M('stone', 4.8))
+    m.part(); m.limb([(0, 0.06, h - 0.26), (0, 0.24, h - 0.26)], [0.28, 0.28], M('stone', 4.5, m_mottle(6, 0.3)), n=12)
+    m.part(); m.box(-0.14, 0.045, h - 0.42, 0.14, 0.06, h - 0.18, M('gold', 3.6))                # a sun disc, once gilded
+    m.pop()
+    return m
+
+
+def offering_table(seed=0, food=True):
+    """A low stone table before a tomb: bowls, a jar, what the living brought and the dead can't eat."""
+    m = Model(); r = rnd(seed)
+    st = M('sandstone', 4.1, m_mottle(8, 0.3))
+    m.part(); m.box(-0.62, 0.1, 0, -0.42, 0.6, 0.3, st); m.box(0.42, 0.1, 0, 0.62, 0.6, 0.3, st)
+    m.part(); m.box(-0.74, 0.02, 0.3, 0.74, 0.68, 0.42, st, top=M('sandstone', 4.8, m_mottle(8, 0.25)))
+    if food:
+        m.part(); m.turned(-0.36, 0.34, [(0.08, 0.42), (0.17, 0.5), (0.16, 0.52)], M('clay', 4.4), n=9, cap=M('fig', 2.6, m_mottle(2, 0.8)))
+        m.part(); m.turned(0.3, 0.38, [(0.07, 0.42), (0.13, 0.48), (0.12, 0.5)], M('clay', 4.2), n=9, cap=M('straw', 4.2, m_mottle(2, 0.8)))
+        m.part(); m.turned(0.02, 0.26, [(0.05, 0.42), (0.1, 0.5), (0.08, 0.62), (0.05, 0.66)], M('brick', 4.3), n=8, cap=M('dark', 1.8))
+    return m
+
+
+def spirit_lamp(frame=0):
+    """A lamp for the dead on a bronze stand: its flame is the colour of deep water and gives no heat."""
+    m = Model()
+    brz = M('bronze', 3.9, gloss=0.03)
+    m.part(); m.turned(0, 0.12, [(0.16, 0.0), (0.12, 0.06), (0.04, 0.12), (0.035, 0.9), (0.1, 1.0), (0.15, 1.06)], brz, n=9, cap=M('bronze', 3.2))
+    ghost = Mat(RAMPS['ghost'], 3.4, glow=True)
+    sway = (0.0, 0.03, -0.02, 0.02)[frame % 4]; tall = (0.0, 0.04, 0.01, -0.02)[frame % 4]
+    m.part(); m.limb([(0, 0.12, 1.06), (sway * 0.5, 0.12, 1.22 + tall), (sway, 0.12, 1.4 + tall * 2)], [0.085, 0.065, 0.012], ghost, n=6)
+    m.part(); m.limb([(0, 0.11, 1.07), (sway * 0.4, 0.11, 1.2 + tall)], [0.045, 0.02], Mat(RAMPS['ghost'], 5.0, glow=True), n=5)
+    m.light(0, 0.12, 1.2, 3.0, (0.45, 1.0, 0.85), 0.6)
+    return m
+
+
+def dead_tree(seed=0, s=1.0):
+    """A tree that has not had leaves in anyone's lifetime: a trunk and a few bare limbs against the sky."""
+    r = rnd(seed); m = Model()
+    bark = M('trunk', 3.5, m_rings(4))
+    lean = float(r.uniform(-0.25, 0.25))
+    m.part(); m.limb([(0, 0.3, 0), (lean * 0.4, 0.3, 0.7 * s), (lean, 0.3, 1.5 * s), (lean * 1.4, 0.3, 2.0 * s)], [0.22 * s, 0.16 * s, 0.11 * s, 0.05 * s], bark, n=7)
+    for k in range(4):
+        z0 = (0.9 + 0.3 * k) * s
+        side = -1 if k % 2 == 0 else 1
+        x0 = lean * (z0 / (2.0 * s))
+        out = float(r.uniform(0.5, 0.95)) * s
+        up = float(r.uniform(0.3, 0.7)) * s
+        m.part(); m.limb([(x0, 0.3, z0), (x0 + side * out * 0.55, 0.3, z0 + up * 0.35), (x0 + side * out, 0.3, z0 + up)], [0.08 * s, 0.05 * s, 0.018 * s], bark, n=5)
+        m.part(); m.limb([(x0 + side * out * 0.55, 0.3, z0 + up * 0.35), (x0 + side * out * 0.75, 0.3, z0 + up * 0.35 + 0.34 * s)], [0.035 * s, 0.012 * s], bark, n=4)
+    return m
+
+
+def game_board():
+    """The game of twenty squares, laid out on a stone: two players, seven pieces each, and four hundred years to finish."""
+    m = Model()
+    st = M('sandstone', 4.0, m_mottle(8, 0.3))
+    m.part(); m.box(-0.5, 0.05, 0, 0.5, 0.75, 0.34, st, top=M('sandstone', 4.6))
+    def squares(u, v, P, seed):
+        a, b = np.floor_divide(u, 3), np.floor_divide(v, 3)
+        t = np.where(((u % 3) == 0) | ((v % 3) == 0), -1.2, np.where(((a + b) % 2) == 0, 0.5, -0.3))
+        return t, ((a * 3 + b) % 4 == 0) & ((u % 3) == 1) & ((v % 3) == 1)
+    m.part(); m.box(-0.38, 0.2, 0.34, 0.38, 0.6, 0.38, M('wood', 3.6), top=M('lapis', 3.6, squares, ramp2='gold'))
+    for i, (x, y) in enumerate(((-0.44, 0.14), (-0.3, 0.12), (0.42, 0.66), (0.3, 0.7), (0.44, 0.52))):
+        m.part(); m.turned(x, y, [(0.04, 0.34), (0.045, 0.37)], M('bone' if i < 2 else 'dark', 4.6 if i < 2 else 2.4), n=6, cap=M('bone' if i < 2 else 'dark', 5.0 if i < 2 else 2.8))
+    return m
+
+
+def tomb_door(w=2.6, h=2.3, open_=False):
+    """The way into the king's tomb: a doorway cut in the hill between two leaning jambs, a lintel with
+    the winged sun on it, and a slab of stone that has been shut for four hundred years."""
+    m = Model()
+    st = M('stone', 3.9, m_ashlar(12, 6))
+    lit = M('stone', 4.5, m_mottle(8, 0.3))
+    for sgn in (-1, 1):
+        m.part(); m.quad((sgn * (w / 2 + 0.7), 0, 0), (sgn * w / 2, 0, 0), (sgn * (w / 2 - 0.08), 0.1, h), (sgn * (w / 2 + 0.56), 0.1, h), st, two=True)
+        m.part(); m.box(min(sgn * (w / 2 + 0.7), sgn * w / 2), 0.0, 0, max(sgn * (w / 2 + 0.7), sgn * w / 2), 0.5, 0.2, M('stone', 3.4), top=lit)
+    m.part(); m.box(-w / 2 - 0.8, -0.04, h, w / 2 + 0.8, 0.5, h + 0.5, st, top=lit)
+    m.part(); m.box(-0.2, -0.06, h + 0.16, 0.2, -0.04, h + 0.38, M('gold', 4.2))                 # the sun
+    for sgn in (-1, 1):
+        m.part(); m.quad((sgn * 0.2, -0.06, h + 0.2), (sgn * 1.1, -0.06, h + 0.3), (sgn * 1.1, -0.06, h + 0.38), (sgn * 0.2, -0.06, h + 0.34), M('gold', 3.6), two=True)   # its wings
+    if open_:
+        m.part(); m.box(-w / 2 + 0.08, 0.2, 0, w / 2 - 0.08, 0.3, h, M('dark', 0.8))
+    else:
+        m.part(); m.box(-w / 2 + 0.08, 0.12, 0, w / 2 - 0.08, 0.3, h, M('stone', 3.5, m_cuneiform(6)))
+        m.part(); m.box(-w / 2 + 0.08, 0.1, h * 0.46, w / 2 - 0.08, 0.12, h * 0.54, M('bronze', 3.8))
+        m.part(); m.turned(0, 0.06, [(0.16, h * 0.42), (0.16, h * 0.58)], M('bronze', 4.3), n=10, squash=0.3)
+    return m
+
+
+def coffin(seed=0, open_=False):
+    """A coffin of fired clay shaped like a bathtub, the way the plain dead of the river cities were laid: lid on, or off and empty."""
+    m = Model()
+    clay = M('clay', 3.8, m_mottle(8, 0.35))
+    m.part(); m.limb([(-0.62, 0.42, 0.2), (0.62, 0.42, 0.2)], [0.34, 0.3], clay, n=10)
+    m.part(); m.box(-0.74, 0.12, 0, 0.74, 0.72, 0.16, clay)
+    if open_:
+        m.part(); m.box(-0.56, 0.24, 0.3, 0.56, 0.6, 0.44, M('dark', 1.2))
+        m.part(); m.box(-0.5, 0.86, 0, 0.5, 0.94, 0.6, clay, top=M('clay', 4.6))                 # the lid, stood against it
+    else:
+        m.part(); m.limb([(-0.58, 0.42, 0.34), (0.58, 0.42, 0.34)], [0.3, 0.26], M('clay', 4.4, m_stripes(5, 'u')), n=10)
+    return m
+
+
+def lyre():
+    """The great lyre from the tomb: a sounding box of dark wood, two arms and a yoke, eleven strings,
+    and at the front a bull's head of gold with a beard of lapis. It still holds one note."""
+    m = Model()
+    wood = M('cedar', 3.6, m_planks(4, 'h'))
+    gold = M('gold', 4.4, gloss=0.03)
+    m.part(); m.box(-0.62, 0.1, 0, 0.5, 0.42, 0.62, wood, top=M('cedar', 4.3))
+    m.part(); m.box(-0.62, 0.08, 0.46, 0.5, 0.1, 0.56, M('lapis', 3.8, m_stripes(3, 'u'), ramp2='gold'))
+    for x in (-0.56, 0.44):
+        m.part(); m.box(x - 0.04, 0.2, 0.62, x + 0.04, 0.3, 1.62, wood)
+    m.part(); m.box(-0.7, 0.2, 1.52, 0.58, 0.3, 1.62, gold)
+    m.part()
+    for k in range(9):
+        x = -0.46 + k * 0.1
+        m.box(x, 0.24, 0.62, x + PX * 0.5, 0.25, 1.52, M('straw', 5.0))
+    # the bull's head on the front of the box
+    m.part(); m.blob(0.66, 0.26, 0.5, 0.2, 0.17, 0.2, gold, n=8, rings=5)
+    m.part(); m.blob(0.84, 0.26, 0.4, 0.13, 0.12, 0.12, gold, n=7, rings=4)
+    for sgn in (-1, 1):
+        m.part(); m.limb([(0.6, 0.26 + sgn * 0.12, 0.64), (0.62, 0.26 + sgn * 0.26, 0.8), (0.7, 0.26 + sgn * 0.22, 0.94)], [0.045, 0.035, 0.01], gold, n=5)
+    m.part(); m.box(0.72, 0.18, 0.06, 0.9, 0.34, 0.32, M('lapis', 3.6, m_curls(2)))
+    return m
+
+
+# ------------------------------------------------------------------ chests, ovens, the potter's things
+def chest(open_=False):
+    """A treasure chest: dark cedar bound in bright bronze, a barrel lid, a gold lock plate with its
+    keyhole. Open, the lid stands back on its hinges and what is inside shows gold."""
+    m = Model()
+    wood = M('cedar', 3.3, m_planks(4, 'h'))
+    lidw = M('cedar', 3.7, m_planks(3, 'u'))
+    brz = M('bronze', 4.7, gloss=0.04)
+    gold = M('gold', 4.5, gloss=0.03)
+    x0, x1, y0, y1, h = -0.52, 0.52, 0.08, 0.62, 0.36
+    yc, r = (y0 + y1) / 2, (y1 - y0) / 2
+    bands = (x0 + 0.03, -0.06, x1 - 0.15)
+    # the box, on four bronze feet
+    m.part(); m.box(x0, y0, 0.04, x1, y1, h, wood, top=Mat(RAMPS['gold'], 3.6, m_mottle(2, 1.5), glow=True) if open_ else M('dark', 1.2))
+    m.part()
+    for fx in (x0 - 0.01, x1 - 0.09):
+        m.box(fx, y0 - 0.02, 0, fx + 0.1, y0 + 0.08, 0.07, brz)
+    m.part()
+    for sx in bands:
+        m.box(sx, y0 - 0.02, 0.04, sx + 0.12, y0, h, brz)
+    m.box(x0 - 0.01, y0 - 0.02, h - 0.05, x1 + 0.01, y0, h, brz)                       # the rim
+    if open_:
+        # the lid thrown back: we see its lining, and the box brim-full of gold
+        m.part(); m.box(x0, y0, h - 0.02, x1, y0 + 0.04, h + 0.01, brz); m.box(x0, y1 - 0.04, h - 0.02, x1, y1, h + 0.01, brz)
+        m.box(x0, y0, h - 0.02, x0 + 0.04, y1, h + 0.01, brz); m.box(x1 - 0.04, y0, h - 0.02, x1, y1, h + 0.01, brz)
+        m.part()
+        for k in range(5):
+            m.quad((x0, y1 + 0.02 + 0.05 * k, h + 0.085 * k), (x1, y1 + 0.02 + 0.05 * k, h + 0.085 * k),
+                   (x1, y1 + 0.02 + 0.05 * (k + 1), h + 0.085 * (k + 1)), (x0, y1 + 0.02 + 0.05 * (k + 1), h + 0.085 * (k + 1)), M('red', 2.8 + 0.25 * k), two=True)
+        m.part()
+        for sx in bands:
+            for k in range(5):
+                m.quad((sx, y1 + 0.015 + 0.05 * k, h + 0.085 * k), (sx + 0.12, y1 + 0.015 + 0.05 * k, h + 0.085 * k),
+                       (sx + 0.12, y1 + 0.015 + 0.05 * (k + 1), h + 0.085 * (k + 1)), (sx, y1 + 0.015 + 0.05 * (k + 1), h + 0.085 * (k + 1)), brz, two=True)
+        m.part(); m.box(x0 - 0.01, y1 + 0.26, h + 0.40, x1 + 0.01, y1 + 0.30, h + 0.46, brz)
+        m.light(0, 0.3, 0.5, 2.4, (1.0, 0.8, 0.4), 0.55)
+    else:
+        # the barrel lid, and the bands carried over it
+        m.part(); m.limb([(x0, yc, h), (x1, yc, h)], [r, r], lidw, n=12)
+        m.part()
+        for sx in bands:
+            m.limb([(sx, yc, h), (sx + 0.12, yc, h)], [r + 0.02, r + 0.02], brz, n=12)
+        m.part(); m.box(-0.11, y0 - 0.05, h - 0.13, 0.11, y0 - 0.02, h + 0.1, gold)   # the lock plate
+        m.part(); m.box(-0.025, y0 - 0.055, h - 0.07, 0.025, y0 - 0.05, h + 0.02, M('dark', 1.0))
+    return m
+
+
+def m_firemouth(frame=0):
+    def f(u, v, P, seed):
+        k = fbm(u / 2.5 + frame * 1.7, v / 2.5, 3 + frame, 2)
+        return np.where(k > 0.55, 1.2, np.where(k > 0.42, 0.0, -1.2)), None
+    return f
+
+
+def oven(frame=0):
+    """The baker's oven: a beehive of clay brick on a stone footing, its mouth still red after forty nights."""
+    m = Model(); mt = MT
+    brick = M('clay', 4.2, m_brick(6, 3, -0.9, 0.9, keep=0.7))
+    m.part(); m.box(-0.85, 0.0, 0, 0.85, 1.5, 0.3, M('sandstone', 4.0, m_ashlar(10, 5)), top=M('sandstone', 4.5))
+    m.part()
+    prof = [(0.74, 0.3), (0.76, 0.6), (0.68, 0.95), (0.5, 1.22), (0.24, 1.38), (0.1, 1.42)]
+    m.turned(0, 0.76, prof, brick, n=14, cap=M('dark', 1.6))
+    # the mouth: an arch of darker brick round the fire
+    m.part()
+    arch = [(-0.3, 0.3), (0.3, 0.3)] + [(math.cos(a) * 0.3, 0.62 + math.sin(a) * 0.26) for a in np.linspace(0, math.pi, 7)]
+    m.face(arch, 0.02, Mat(RAMPS['glow'], 1.6, m_firemouth(frame), glow=True))
+    m.part()
+    for i in range(7):
+        a0, a1 = math.pi * i / 7, math.pi * (i + 1) / 7
+        pts = [(math.cos(a0) * 0.3, 0.62 + math.sin(a0) * 0.26), (math.cos(a0) * 0.42, 0.62 + math.sin(a0) * 0.38),
+               (math.cos(a1) * 0.42, 0.62 + math.sin(a1) * 0.38), (math.cos(a1) * 0.3, 0.62 + math.sin(a1) * 0.26)]
+        m.face(pts[::-1], 0.0, M('brick', 3.4 + 0.5 * (i % 2)), two=True)
+    for sx in (-0.42, 0.3):
+        m.box(sx, -0.02, 0.3, sx + 0.12, 0.02, 0.62, M('brick', 3.6))
+    # the peel, leaning where she left it
+    m.part(); m.beam((0.95, 0.2, 0.0), (0.8, 0.7, 1.3), 1.2 * PX, mt.beam)
+    m.part(); m.box(0.7, 0.66, 1.25, 0.92, 0.74, 1.6, mt.wood)
+    m.light(0, -0.1, 0.55, 3.6, (1.0, 0.6, 0.3), 0.9)
+    return m
+
+
+def kiln(frame=0):
+    """The potter's kiln: a tapering stack of fired brick, a firebox at its foot, heat still standing over the top."""
+    m = Model()
+    brick = M('brick', 4.2, m_brick(6, 3, -0.9, 0.9, keep=0.75))
+    m.part(); m.turned(0, 0.62, [(0.62, 0), (0.6, 0.5), (0.5, 1.15), (0.42, 1.5), (0.36, 1.5), (0.36, 1.3)], brick, n=12,
+                       cap=Mat(RAMPS['glow'], 1.2, m_firemouth(frame + 2), glow=True))
+    m.part(); m.turned(0, 0.62, [(0.64, 0.0), (0.64, 0.16)], M('sandstone', 4.0, m_ashlar(8, 4)), n=12)
+    m.part()
+    arch = [(-0.2, 0.0), (0.2, 0.0)] + [(math.cos(a) * 0.2, 0.26 + math.sin(a) * 0.16) for a in np.linspace(0, math.pi, 6)]
+    m.face(arch, 0.0, Mat(RAMPS['glow'], 1.8, m_firemouth(frame), glow=True))
+    m.part(); m.box(-0.28, -0.04, 0.0, -0.2, 0.02, 0.3, M('brick', 3.4)); m.box(0.2, -0.04, 0.0, 0.28, 0.02, 0.3, M('brick', 3.4))
+    m.box(-0.28, -0.04, 0.3 + 0.1, 0.28, 0.02, 0.48, M('brick', 3.6))
+    m.light(0, -0.1, 0.3, 3.0, (1.0, 0.55, 0.28), 0.8)
+    return m
+
+
+def potters_wheel():
+    """A potter's wheel: a stone flywheel low to the ground, the head above it, a half-thrown jar left standing on it."""
+    m = Model(); mt = MT
+    m.part(); m.turned(0, 0.4, [(0.38, 0.06), (0.38, 0.16)], M('stone', 4.2, m_mottle(5, 0.4)), n=12, cap=M('stone', 4.6))
+    m.part(); m.limb([(0, 0.4, 0.16), (0, 0.4, 0.5)], 0.06, mt.beam, n=6)
+    m.part(); m.turned(0, 0.4, [(0.26, 0.5), (0.26, 0.56)], mt.wood_h, n=12, cap=M('wood', 4.8))
+    m.part(); m.turned(0, 0.4, [(0.1, 0.56), (0.17, 0.68), (0.14, 0.84), (0.16, 0.9)], M('clay', 3.9), n=10, cap=M('dark', 1.6))
+    return m
+
+
+def plate():
+    """A pressure plate let into the floor: bronze, worn bright in the middle. Origin at its far edge so feet stand on it."""
+    m = Model()
+    m.part(); m.box(-0.56, -0.8, 0, 0.56, 0.0, 0.06, M('bronze', 3.6), top=M('bronze', 4.1, m_mottle(4, 0.5)))
+    m.part(); m.box(-0.44, -0.68, 0.06, 0.44, -0.12, 0.09, M('gold', 3.9), top=M('gold', 4.2, m_mottle(3, 0.4)))
+    return m
+
+
+def bars(w=5.25, h=1.4):
+    """A grille of bronze bars between two posts."""
+    m = Model()
+    brz = M('bronze', 4.3, gloss=0.03); dk = M('bronze', 3.2)
+    m.part()
+    n = int(w / 0.19)
+    for i in range(n + 1):
+        x = -w / 2 + w * i / n
+        m.box(x - PX / 2, 0.08, 0, x + PX / 2, 0.08 + PX, h, brz if i % 2 == 0 else dk)
+    m.part(); m.box(-w / 2, 0.06, h - 0.08, w / 2, 0.14, h, brz)
+    m.part(); m.box(-w / 2, 0.06, 0.3, w / 2, 0.14, 0.36, dk)
+    return m
+
+
+def bull_statue():
+    """The bull's head that breathes fire: bronze, set in a block of the wall, horns wide, its mouth a furnace door."""
+    m = Model(); wm = wall_mats()
+    brz = M('bronze', 3.9, gloss=0.02)
+    m.part(); m.box(-1.25, 0.0, 0, 1.25, 0.5, 1.75, wm.lapis, top=wm.top)
+    m.part(); m.box(-1.27, -0.02, 1.6, 1.27, 0.5, 1.68, wm.gold)
+    m.part(); m.box(-1.27, -0.02, 0, 1.27, 0.5, 0.3, wm.base, top=wm.top)
+    # the head
+    m.part(); m.blob(0, -0.12, 1.02, 0.46, 0.3, 0.44, brz, n=10, rings=6)                      # the skull
+    m.part(); m.blob(0, -0.3, 0.72, 0.32, 0.26, 0.26, brz, n=10, rings=5)                       # the muzzle
+    m.part(); m.box(-0.2, -0.56, 0.56, 0.2, -0.5, 0.74, Mat(RAMPS['glow'], 1.6, m_firemouth(0), glow=True))    # the mouth
+    m.part()
+    for sgn in (-1, 1):
+        m.limb([(sgn * 0.36, -0.1, 1.3), (sgn * 0.72, -0.14, 1.42), (sgn * 0.9, -0.16, 1.74)], [0.11, 0.08, 0.02], M('gold', 4.2, gloss=0.03), n=6)
+        m.box(sgn * 0.2 - 0.05, -0.42, 1.04, sgn * 0.2 + 0.05, -0.38, 1.12, M('dark', 1.2))          # an eye socket
+        m.box(sgn * 0.1 - 0.03, -0.56, 0.8, sgn * 0.1 + 0.03, -0.52, 0.86, M('dark', 1.2))           # a nostril
+    m.part(); m.turned(0, -0.52, [(0.09, 0.42), (0.09, 0.46)], M('gold', 4.3), n=8)                  # the ring
+    m.light(0, -0.5, 0.65, 2.6, (1.0, 0.6, 0.3), 0.6)
+    return m
+
+
+def bridge_deck(w=3.0, length=8.75):
+    """The drawbridge, down: planks on two beams. Origin at the far (north) corner so everyone walks on it."""
+    m = Model(); mt = MT
+    m.part(); m.box(0, -length, 0.0, w, 0, 0.1, mt.beam, top=M('wood', 4.2, m_planks(5, 'h')))
+    m.part()
+    for sx in (0.0, w - 2 * PX):
+        m.box(sx, -length, 0.1, sx + 2 * PX, 0, 0.2, mt.beam)
+    return m
+
+
+# ------------------------------------------------------------------ inside the ziggurat
+def temple_wall(length, h=2.75, d=0.25, door_at=None, door_w=2.5, door_h=2.1, bulls=True, seed=0):
+    """A wall of the sanctuary, running east from the origin: a foot of pale stone, glazed blue brick,
+    a frieze of gold rosettes under a gold cornice, striding bulls in gold brick at intervals, and
+    flat buttresses whose shadows break it up. door_at puts a dark doorway through it, framed in gold."""
+    m = Model(); w = wall_mats()
+    m.part(); m.box(0, 0, 0, length, d, h, w.lapis, top=w.top)
+    m.part(); m.box(0, -PX, 0, length, d, 0.5, w.base, top=w.top)
+    m.part(); m.box(0, -0.5 * PX, h - 0.75, length, d, h - 0.3, w.frieze)
+    for zz in (h - 0.3, h - 0.81):
+        m.part(); m.box(0, -PX, zz, length, d, zz + PX, w.gold)
+    m.part(); m.box(0, -1.5 * PX, h - 0.12, length, d, h, w.gold, top=w.top)
+    x = 2.0; k = 0
+    while x < length - 1.5:
+        if door_at is None or abs(x + 0.4 - door_at) > door_w / 2 + 0.9:
+            m.part(); m.box(x, -0.14, 0, x + 0.8, 0, h - 0.82, M('lapis', 3.6, m_glazed(8, 4)), top=w.gold)
+            m.part(); m.box(x - PX, -0.14 - PX, 0, x + 0.8 + PX, 0, 0.5, w.base, top=w.top)
+        x += 4.0; k += 1
+    if bulls and h >= 2.4:
+        x = 3.2
+        while x < length - 2.6:
+            if door_at is None or abs(x + 0.8 - door_at) > door_w / 2 + 1.2:
+                def bull(u, v, P, seed_, x0=x):
+                    bx = np.floor((P[..., 0] - x0 - 0.8) * 16).astype(int); bz = np.floor((P[..., 2] - 0.72) * 16).astype(int)
+                    body = (np.abs(bx) <= 7) & (bz >= 4) & (bz <= 9)
+                    legs = ((np.abs(np.abs(bx) - 5) <= 1) & (bz >= 0) & (bz < 4))
+                    head = ((bx >= 7) & (bx <= 11) & (bz >= 7) & (bz <= 12)) | ((bx >= 10) & (bx <= 12) & (bz >= 12) & (bz <= 14))
+                    tail = (bx == -8) & (bz >= 3) & (bz <= 9)
+                    on = body | legs | head | tail
+                    return np.where(on, 0.4, 0.0), on
+                m.part(); m.quad((x, -0.7 * PX, 0.6), (x + 1.6, -0.7 * PX, 0.6), (x + 1.6, -0.7 * PX, 1.8), (x, -0.7 * PX, 1.8), M('lapis', 3.9, bull, ramp2='gold'))
+            x += 4.0
+    if door_at is not None:
+        a, b = door_at - door_w / 2, door_at + door_w / 2
+        m.part(); m.box(a - 0.25, -0.2, 0, b + 0.25, 0, door_h + 0.3, w.base, top=w.top)
+        m.part(); m.quad((a, -0.21, 0), (b, -0.21, 0), (b, -0.21, door_h), (a, -0.21, door_h), w.dark)
+        m.part()
+        for sx in (a - 0.07, b):
+            m.box(sx, -0.24, 0, sx + 0.07, -0.2, door_h + 0.07, w.gold)
+        m.box(a - 0.07, -0.24, door_h, b + 0.07, -0.2, door_h + 0.07, w.gold)
+    return m
+
+
+def partition(length, h=1.5, d=0.5, seed=0):
+    """A lower wall dividing a hall, running east from the origin: glazed brick on a stone foot, a gold coping."""
+    m = Model(); w = wall_mats()
+    m.part(); m.box(0, 0, 0, length, d, h, w.lapis, top=w.top)
+    m.part(); m.box(0, -PX, 0, length, d, 0.38, w.base, top=w.top)
+    m.part(); m.box(0, -PX, h - 0.14, length, d, h, w.gold, top=w.top)
+    m.part(); m.box(0, -0.5 * PX, h - 0.5, length, d, h - 0.2, M('lapis', 4.3, m_rosettes(12), ramp2='gold'))
+    return m
+
+
+def partition_ns(depth, wd=0.5, h=1.5):
+    """The same kind of wall running north from the origin, seen from its south end and from above."""
+    m = Model(); w = wall_mats()
+    m.part(); m.box(0, 0, 0, wd, depth, h, w.lapis, top=w.top)
+    m.part(); m.box(-PX, -PX, 0, wd + PX, depth, 0.38, w.base, top=w.top)
+    m.part(); m.box(-PX, -PX, h - 0.14, wd + PX, depth, h, w.gold, top=w.top)
+    return m
+
+
+def parapet_ew(length, h=0.45, d=0.75, merlon=True):
+    """A low wall along the edge of the summit, running east from the origin, with merlons against the sky."""
+    m = Model(); w = wall_mats()
+    st = M('sandstone', 4.3, m_ashlar(12, 6))
+    m.part(); m.box(0, 0, 0, length, d, h, st, top=M('sandstone', 4.8, m_mottle(8, 0.3)))
+    m.part(); m.box(0, d - 2 * PX, h, length, d, h + PX, w.gold)
+    if merlon:
+        merlons(m, M('sandstone', 4.6, m_mottle(6, 0.3)), 0, length, 0, 0.3, h, mw=0.5, mh=0.32)
+    return m
+
+
+def parapet_ns(depth, h=0.45, wd=0.75, inner='right'):
+    """The same low wall running north from the origin; inner says which side the gold coping is on."""
+    m = Model(); w = wall_mats()
+    st = M('sandstone', 4.3, m_ashlar(12, 6)); cap = M('sandstone', 4.8, m_mottle(8, 0.3))
+    m.part(); m.box(0, 0, 0, wd, depth, h, st, top=cap)
+    gx = wd - 2 * PX if inner == 'right' else 0
+    m.part(); m.box(gx, 0, h, gx + 2 * PX, depth, h + PX, w.gold)
+    ox = 0 if inner == 'right' else wd - 0.3
+    y = 0.25
+    while y < depth - 0.5:
+        m.part(); m.box(ox, y, h, ox + 0.3, y + 0.5, h + 0.32, M('sandstone', 4.6, m_mottle(6, 0.3)))
+        y += 1.0
     return m

@@ -1,6 +1,6 @@
-// The pause menu: the world stops, a bronze-framed panel offers to carry on, to switch the music
-// or the sounds off, or to go back to the title (the game saves every time Azar enters a new
-// place, so nothing is lost).
+// The pause menu: the world stops, a bronze-framed panel offers to carry on, to save or load the
+// player's own save, to switch the music or the sounds off, or to go back to the title (the game
+// also saves by itself every time Azar enters a new place, so nothing is lost).
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -11,11 +11,28 @@ namespace Wakefire
     {
         static Pause I;
         RawImage img;
-        PixelCanvas cv;
-        int sel;
-        float clock;
-        static string[] Options => new[] { "Carry on", "Music: " + (Settings.MusicOn ? "on" : "off"), "Sounds: " + (Settings.SoundOn ? "on" : "off"), "Back to the title" };
-        const int N = 4;
+        PanelMenu menu;
+        string said;                // what the last choice did, shown under the list
+        bool sure;                  // Load asked once already
+        const int CarryOn = 0, SaveIt = 1, LoadIt = 2, MusicLine = 3, SoundLine = 4, ToTitle = 5;
+
+        string[] Options() => new[]
+        {
+            "Carry on", "Save", sure ? "Load: sure?" : "Load",
+            "Music: " + (Settings.MusicOn ? "on" : "off"), "Sounds: " + (Settings.SoundOn ? "on" : "off"), "Back to the title",
+        };
+
+        string Footer()
+        {
+            if (said != null) return said;
+            switch (menu.sel)
+            {
+                case SaveIt: return "Keeps this moment for Load.";
+                case LoadIt: return Save.HasManual ? Save.Describe(Save.ReadManual()) : "Nothing saved yet.";
+                case ToTitle: return "The game saves as you go.";
+                default: return Places.Name(Game.I.CurrentMap) + ", " + Save.Clock(Save.PlayTime);
+            }
+        }
 
         void Update()
         {
@@ -25,19 +42,16 @@ namespace Wakefire
                 if (Controls.Down(Controls.Pause) && Player.I && !Game.Busy && !(Story.I && Story.I.Running)) Open();
                 return;
             }
-            clock += Time.unscaledDeltaTime;
-            var mv = Controls.MoveVector;
-            if (Controls.Move.WasPerformedThisFrame() && Mathf.Abs(mv.y) > 0.5f) { sel = (sel + (mv.y < 0 ? 1 : N - 1)) % N; Sfx.Play("menu_move", 0.5f, 0); }
-            var tp = Pointer.current;
-            if (tp != null && tp.press.wasPressedThisFrame)
-            {
-                var pos = tp.position.ReadValue();
-                float py = PixelView.Height - pos.y / PixelView.I.ScreenScale;
-                for (int i = 0; i < N; i++) if (Mathf.Abs(py - (PixelView.Height / 2 - 18 + i * 14)) < 7) { sel = i; Choose(); return; }
-            }
-            Draw();
-            if (Controls.Down(Controls.Pause) || Controls.Down(Controls.Back)) { Close(); return; }
-            if (Controls.Down(Controls.Confirm) || Controls.Down(Controls.Interact)) Choose();
+            int before = menu.sel;
+            menu.options = Options();
+            menu.off = new[] { false, false, !Save.HasManual, false, false, false };
+            int pick = menu.Poll();
+            if (menu.sel != before) { said = null; sure = false; }
+            menu.footer = Footer();
+            menu.options = Options();
+            menu.Draw(new Color32(6, 4, 12, 150));
+            if (pick >= 0) { Choose(pick); return; }
+            if (Controls.Down(Controls.Pause) || Controls.Down(Controls.Back)) Close();
         }
 
         public static void Ensure()
@@ -57,9 +71,11 @@ namespace Wakefire
         {
             Game.Paused = true;
             Time.timeScale = 0;
-            sel = 0;
-            cv = new PixelCanvas(PixelView.I.width, PixelView.Height);
-            img.texture = cv.tex;
+            if (menu == null || menu.cv.W != PixelView.I.width || menu.cv.H != PixelView.Height) menu = new PanelMenu(img) { title = "Rest a moment" };
+            menu.sel = 0; said = null; sure = false;
+            menu.options = Options();
+            menu.footer = Footer();
+            menu.Draw(new Color32(6, 4, 12, 150));
             img.enabled = true;
             Sfx.Play("menu_ok", 0.6f, 0);
             AudioListener.volume = 0.5f;
@@ -73,42 +89,29 @@ namespace Wakefire
             AudioListener.volume = 1f;
         }
 
-        void Choose()
+        void Choose(int pick)
         {
             Sfx.Play("menu_ok", 0.7f, 0);
-            if (sel == 0) { Close(); return; }
-            if (sel == 1 || sel == 2) { Settings.Toggle(sel == 1); return; }
-            Close();
-            if (Game.I.CurrentMap != null) Save.Write(Game.I.CurrentMap, Game.I.CurrentSpawn);
-            Title.Show();
-        }
-
-        void Draw()
-        {
-            var f = PixelFont.Main;
-            int W = cv.W, H = cv.H;
-            var veil = new Color32(6, 4, 12, 150);
-            cv.Clear(veil);
-            int bw = 150, bh = 90, bx = (W - bw) / 2, by = H / 2 - 44;
-            cv.Rect(bx, by, bw, bh, new Color32(10, 6, 16, 255));
-            cv.Rect(bx + 1, by + 1, bw - 2, bh - 2, new Color32(188, 122, 52, 255));
-            cv.HLine(bx + 1, by + 1, bw - 2, new Color32(255, 216, 138, 255));
-            cv.Rect(bx + 3, by + 3, bw - 6, bh - 6, new Color32(10, 6, 16, 255));
-            cv.Rect(bx + 4, by + 4, bw - 8, bh - 8, new Color32(22, 18, 40, 255));
-            var gold = new Color32(246, 200, 90, 255);
-            var ink = new Color32(244, 234, 216, 255);
-            var sh = new Color32(6, 4, 12, 255);
-            string t = "Rest a moment";
-            f.DrawString(cv, (W - f.Measure(t)) / 2, by + 8, t, new Color32(150, 140, 170, 255), sh);
-            var opts = Options;
-            for (int i = 0; i < N; i++)
+            switch (pick)
             {
-                string s = opts[i];
-                int x = (W - f.Measure(s)) / 2, y = H / 2 - 22 + i * 14;
-                f.DrawString(cv, x, y, s, i == sel ? gold : ink, sh);
-                if (i == sel && ((int)(clock * 3f)) % 2 == 0) f.Draw(cv, x - 10, y, '>', gold, sh);
+                case CarryOn: Close(); return;
+                case SaveIt:
+                    said = Save.WriteManual() ? "Saved: " + Save.Describe(Save.ReadManual()) : "Can't save here.";
+                    sure = false;
+                    return;
+                case LoadIt:
+                    if (!sure) { sure = true; said = "Go back to " + Save.Describe(Save.ReadManual()) + "?"; return; }
+                    Close();
+                    Game.I.LoadGame(Save.ReadManual());
+                    return;
+                case MusicLine: Settings.Toggle(true); return;
+                case SoundLine: Settings.Toggle(false); return;
+                default:
+                    Close();
+                    if (Game.I.CurrentMap != null) Save.Write(Game.I.CurrentMap, Game.I.CurrentSpawn, quiet: true);
+                    Title.Show();
+                    return;
             }
-            cv.Apply();
         }
     }
 }

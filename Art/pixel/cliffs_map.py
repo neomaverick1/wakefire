@@ -109,11 +109,20 @@ def build():
         kit.olive(m, x, y, sd)
     for k, (x, y) in enumerate(((300, 200), (316, 210), (40, 220), (460, 250), (476, 262), (230, 340))):
         kit.bush(m, x, y, k)
-    for (x, y, sd) in ((60, 470, 1), (380, 440, 2), (180, 520, 0), (850, 150, 3), (820, 320, 1), (340, 60, 4), (30, 30, 2)):
+    for (x, y, sd) in ((60, 470, 1), (380, 440, 2), (180, 520, 0), (840, 190, 3), (820, 320, 1), (340, 70, 4)):
         kit.rock(m, x, y, sd)
+    # ---------------------------------------------------------------- where the clifftop and the beaches stop
+    # north: the land climbs on as bare rock. West: a cypress windbreak either side of the road to town.
+    # The beach ends in a fall of boulders at each end, and so does the cove.
+    m.set_into_ground(town.cliff(520 / 16.0, h=1.5, seed=31), 0, 26, seed=31)
+    m.solid(0, 0, 520, 28)
+    kit.cypress_row(m, 8, 46, 284, seed=5)
+    kit.cypress_row(m, 8, 356, 372, seed=6, step=14)
+    kit.boulders(m, ((10, 436), (16, 462), (8, 488), (16, 514)), seed=1)
+    kit.boulders(m, ((884, 126), (889, 166), (883, 206), (889, 246), (884, 286), (888, 322)), seed=2)
+
     # the stolen oil, in the cove
-    m.prop("chest", lambda cv, ax, ay, fi: cv.blit(Canvas.load('/srv/Wakefire/Assets/Wakefire/Resources/Objects/chest.png'), ax - 8, ay - 15),
-           860, 140, box=(-7, -6, 7, 0), size=(24, 24), pad=4, kind="chest", data={"id": "cove_oil", "text": "oil"})
+    kit.chest(m, 860, 140, "cove_oil", "oil")
     # people and crabs
     m.marker("npc", 604, 487, who="abunur")
     for i, (x, y) in enumerate(((100, 470), (200, 500), (330, 470), (440, 500), (60, 430))):

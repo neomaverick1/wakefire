@@ -107,7 +107,7 @@ namespace Wakefire
                 bool done = false;
                 while (!done)
                 {
-                    float speed = Controls.Held(Controls.Interact) || Controls.Held(Controls.Attack) ? 90f : 42f;
+                    float speed = Controls.Held(Controls.Interact) || Controls.Held(Controls.Attack) || Controls.FingerDown ? 90f : 42f;
                     if (Advance()) shown = total;
                     int before = (int)shown;
                     shown += Time.unscaledDeltaTime * speed;
@@ -144,7 +144,15 @@ namespace Wakefire
                         var mv = Controls.MoveVector;
                         if (Controls.Move.WasPerformedThisFrame() && Mathf.Abs(mv.x) + Mathf.Abs(mv.y) > 0.5f) { optSel = 1 - optSel; Sfx.Play("menu_move", 0.5f, 0); }
                         DrawOptions(page, total, t);
-                        if (Advance() || (AutoAdvance > 0 && t > AutoAdvance)) { Choice = optSel; Sfx.Play("menu_ok", 0.7f, 0); break; }
+                        if (Controls.Tapped)
+                        {
+                            // a finger chooses by touching the answer itself; a tap anywhere else chooses nothing
+                            var at = Controls.FingerAt - new Vector2(boxImg.rectTransform.anchoredPosition.x, -boxImg.rectTransform.anchoredPosition.y);
+                            int hit = -1;
+                            for (int i = 0; i < 2; i++) if (optRect[i].Contains(at)) hit = i;
+                            if (hit >= 0) { optSel = hit; DrawOptions(page, total, 0); Choice = optSel; Sfx.Play("menu_ok", 0.7f, 0); break; }
+                        }
+                        else if (Confirmed() || (AutoAdvance > 0 && t > AutoAdvance)) { Choice = optSel; Sfx.Play("menu_ok", 0.7f, 0); break; }
                         yield return null;
                     }
                     break;
@@ -168,14 +176,23 @@ namespace Wakefire
             float t = 0;
             while (t < s)
             {
-                if (Controls.Down(Controls.Interact) || Controls.Down(Controls.Attack)) yield break;
+                if (Controls.Down(Controls.Interact) || Controls.Down(Controls.Attack) || Controls.Tapped) yield break;
                 t += Time.unscaledDeltaTime;
                 yield return null;
             }
         }
 
-        static bool Advance() => Controls.Down(Controls.Interact) || Controls.Down(Controls.Attack) || Controls.Down(Controls.Confirm) ||
-                                 (UnityEngine.InputSystem.Touchscreen.current != null && UnityEngine.InputSystem.Touchscreen.current.primaryTouch.press.wasPressedThisFrame);
+        static bool Confirmed() => Controls.Down(Controls.Interact) || Controls.Down(Controls.Attack) || Controls.Down(Controls.Confirm);
+        static bool Advance() => Confirmed() || Controls.Tapped;
+        readonly Rect[] optRect = new Rect[2];
+
+        /// <summary>Where an answer is on the screen, in screen pixels (test runs touch it there).</summary>
+        public Vector2 OptionCentre(int i)
+        {
+            var c = optRect[i].center + new Vector2(boxImg.rectTransform.anchoredPosition.x, -boxImg.rectTransform.anchoredPosition.y);
+            float k = PixelView.I.ScreenScale;
+            return new Vector2(c.x * k, (PixelView.Height - c.y) * k);
+        }
 
         void Blip(char c)
         {
@@ -206,7 +223,7 @@ namespace Wakefire
             // keep the box away from Azar: bottom of the screen unless he is down there
             bool low = Player.I && PixelView.I.WorldToPixel(Player.I.pos).y < H * 0.42f;
             float x = Mathf.Round((W - boxW) / 2f);
-            float y = low ? 34 : H - boxH - 8;
+            float y = low ? 46 : H - boxH - 8;
             boxImg.rectTransform.anchoredPosition = new Vector2(x, -y);
             tabImg.rectTransform.anchoredPosition = new Vector2(x + 8, -(y - 11));
         }
@@ -285,7 +302,9 @@ namespace Wakefire
             {
                 bool on = i == optSel;
                 if (on && ((int)(t * 3f)) % 2 == 0) f.Draw(box, x - 8, y, '>', Gold, Shadow);
+                int x0 = x;
                 x = f.DrawString(box, x, y, options[i], on ? Gold : Ink, Shadow) + 16;
+                optRect[i] = new Rect(x0 - 12, y - 9, x - 16 - x0 + 22, f.Line + 18);      // a thumb's worth of room round each answer
             }
             box.Apply();
         }

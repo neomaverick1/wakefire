@@ -54,9 +54,11 @@ namespace Wakefire
         static Sprite Spr(string name)
         {
             var t = Resources.Load<Texture2D>("UI/Touch/" + name);
-            t.filterMode = FilterMode.Point;
             return Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0.5f, 0.5f), 1f);
         }
+
+        /// <summary>The buttons are drawn six texture pixels to the game pixel (Art/ui/touch_art.py).</summary>
+        const float Density = 6f;
 
         RectTransform Place(string name, Sprite s, Vector2 anchor, Vector2 posUnits, float scale, Transform parent = null)
         {
@@ -64,12 +66,12 @@ namespace Wakefire
             go.transform.SetParent(parent ? parent : root, false);
             var img = go.AddComponent<Image>();
             img.sprite = s;
-            img.color = new Color(1, 1, 1, 0.78f);
+            img.color = new Color(1, 1, 1, 0.93f);
             var rt = (RectTransform)go.transform;
             rt.anchorMin = rt.anchorMax = anchor;
             rt.pivot = new Vector2(0.5f, 0.5f);
             float u = Screen.height / 216f;
-            rt.sizeDelta = new Vector2(s.rect.width, s.rect.height) * u * scale;
+            rt.sizeDelta = new Vector2(s.rect.width, s.rect.height) / Density * u * scale;
             rt.anchoredPosition = posUnits * u;
             return rt;
         }
@@ -90,28 +92,35 @@ namespace Wakefire
             zone.anchorMin = Vector2.zero; zone.anchorMax = new Vector2(0.46f, 0.74f);
             zone.pivot = Vector2.zero; zone.offsetMin = zone.offsetMax = Vector2.zero;
             zgo.AddComponent<Image>().color = new Color(0, 0, 0, 0);
-            var ring = Place("StickBase", Spr("stick_base"), Vector2.zero, new Vector2(48, 46), 1f, zone);
-            var knob = Place("Stick", Spr("stick_knob"), Vector2.zero, new Vector2(48, 46), 1f, zone);
+            var ring = Place("StickBase", Spr("stick_base"), Vector2.zero, new Vector2(50, 48), 1f, zone);
+            var knob = Place("Stick", Spr("stick_knob"), Vector2.zero, new Vector2(50, 48), 1f, zone);
             ring.GetComponent<Image>().raycastTarget = knob.GetComponent<Image>().raycastTarget = false;
             zgo.AddComponent<FloatStick>().Init(zone, ring, knob, 20 * u);
             // the buttons: the khopesh under the thumb, the rest in an arc around it
-            var a = new Vector2(-38, 38);
-            Button("Attack", "attack", "<Gamepad>/buttonWest", a, 1.15f);
-            Button("Nod", "nod", "<Gamepad>/buttonNorth", a + Arc(90), 1f);
-            Button("Item", "item", "<Gamepad>/rightShoulder", a + Arc(127), 1f);
-            Button("Talk", "talk", "<Gamepad>/buttonSouth", a + Arc(164), 1f);
-            Button("Roll", "roll", "<Gamepad>/buttonEast", a + Arc(201), 1f);
-            var pause = Place("Pause", Spr("pause"), new Vector2(0.5f, 1), new Vector2(0, -16), 1f);
+            var a = new Vector2(-40, 40);
+            Button("Attack", "attack", "<Gamepad>/buttonWest", a, 1.14f);
+            Button("Nod", "nod", "<Gamepad>/buttonNorth", a + Arc(90), 1.06f);
+            Button("Item", "item", "<Gamepad>/rightShoulder", a + Arc(127), 1.06f);
+            Button("Talk", "talk", "<Gamepad>/buttonSouth", a + Arc(164), 1.06f);
+            Button("Roll", "roll", "<Gamepad>/buttonEast", a + Arc(201), 1.06f);
+            var pause = Place("Pause", Spr("pause"), new Vector2(0.5f, 1), new Vector2(0, -15), 1f);
             pause.gameObject.AddComponent<OnScreenButton>().controlPath = "<Gamepad>/start";
+            pause.gameObject.AddComponent<PressLook>();
         }
 
-        static Vector2 Arc(float deg) => new Vector2(Mathf.Cos(deg * Mathf.Deg2Rad), Mathf.Sin(deg * Mathf.Deg2Rad)) * 52f;
+        static Vector2 Arc(float deg) => new Vector2(Mathf.Cos(deg * Mathf.Deg2Rad), Mathf.Sin(deg * Mathf.Deg2Rad)) * 56f;
 
         void Button(string name, string icon, string path, Vector2 pos, float scale)
         {
-            var rt = Place(name, Spr(icon), new Vector2(1, 0), pos, scale * 1.15f);
+            var rt = Place(name, Spr(icon), new Vector2(1, 0), pos, scale);
             rt.gameObject.AddComponent<OnScreenButton>().controlPath = path;
+            rt.gameObject.AddComponent<PressLook>();
         }
+
+        /// <summary>True while the buttons are on screen and taking presses.</summary>
+        public static bool Showing => I && I.shown > 0.5f;
+        float shown = 0;
+        CanvasGroup group;
 
         void Update()
         {
@@ -121,9 +130,35 @@ namespace Wakefire
             if (Application.isFocused)
                 foreach (var d in UnityEngine.InputSystem.InputSystem.devices)
                     if (!d.enabled && !d.native) UnityEngine.InputSystem.InputSystem.EnableDevice(d);
-            // keep out of the way of the title and of cutscenes
-            bool show = !Title.I && !(Story.I && Story.I.Running && !(DialogueBox.I && DialogueBox.I.Busy));
-            foreach (Transform c in root) c.gameObject.SetActive(show || c.name == "Talk" || c.name == "Attack");
+            // Out of the way of anything there is to read or watch: the title, a scene, a text box, the
+            // pause menu. They fade out (still there underneath, so the virtual gamepad stays alive) and a
+            // tap anywhere turns the page.
+            bool show = !Title.I && !Game.Paused && !(Story.I && Story.I.Running) && !(DialogueBox.I && DialogueBox.I.Busy);
+            if (!group) group = root.gameObject.GetComponent<CanvasGroup>() ?? root.gameObject.AddComponent<CanvasGroup>();
+            shown = Mathf.MoveTowards(shown, show ? 1 : 0, Time.unscaledDeltaTime / (show ? 0.22f : 0.08f));
+            group.alpha = shown;
+            group.blocksRaycasts = group.interactable = show;
+        }
+    }
+
+    /// <summary>A button answers the thumb: it sinks a little and brightens while it is held.</summary>
+    public class PressLook : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+    {
+        Image img;
+        Vector3 rest;
+        bool held;
+        float t;
+
+        void Awake() { img = GetComponent<Image>(); rest = transform.localScale; }
+        public void OnPointerDown(PointerEventData e) { held = true; }
+        public void OnPointerUp(PointerEventData e) { held = false; }
+        void OnDisable() { held = false; t = 0; transform.localScale = rest; }
+
+        void Update()
+        {
+            t = Mathf.MoveTowards(t, held ? 1 : 0, Time.unscaledDeltaTime / (held ? 0.04f : 0.12f));
+            transform.localScale = rest * (1 - 0.07f * t);
+            if (img) img.color = new Color(1, 1 - 0.06f * t, 1 - 0.16f * t, Mathf.Lerp(0.93f, 1f, t));
         }
     }
 

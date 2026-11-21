@@ -46,16 +46,18 @@ And the goat. The goat is everywhere.
 | Nod off / wake up | Q / L | Y / Triangle | Moon button |
 | Pause | Esc / P | Start | Pause button |
 
-The game saves every time you walk into a new place and every time you find something. On phones the controls stay clear of notches and rounded corners.
+The game saves by itself every time you walk into a new place and every time you find something, and says so. The pause menu has **Save** and **Load** for a save of your own, and the title screen offers both **Continue** and **Load game**. If Azar falls, you choose where to pick up: at the way into the place he fell in (full life, nothing lost), at your own save, or back at the title.
+
+On phones the buttons stay clear of notches and rounded corners, and they step aside whenever there is something to read: a tap anywhere turns the page, and touching an answer chooses it.
 
 ## How it's made
 
 - **Unity 6 (URP)**, with everything in the game built from code at startup. The scene file is empty.
 - **The pixel look** comes from a 180-line render target at 16 pixels per tile. The camera snaps to whole pixels and slides the finished image by sub-pixel amounts, so scrolling stays smooth. A separate light layer (moonlight plus torchlight) is multiplied over the picture, and the dream is repainted per pixel by the same shader that draws the gold ring.
 - **The characters are 3D figures, photographed into pixels.** Everyone in the game stands on a hidden stage where one camera shoots them all, every frame, into a small sheet at the game's own pixel size: flat bands of colour, no smoothing, an inked outline. The sprite shader then draws each one from its square of that sheet, so the dream ring, hit flashes and sorting treat a posed model exactly like a drawn sprite (`Scripts/Render/ModelStage.cs`, `Scripts/Actors/ModelActor.cs`, `Shaders/WFModel.shader`).
-- **People** share one skeleton and a set of motion clips (the Universal Animation Library by Quaternius, public domain). Everything they wear is built by code onto the body's own measurements: Azar's crested bronze helm, linen breastplate and kilt, khopesh and lantern; Captain Dur's spear and shield; the townsfolk's robes, hats, hair and beards (`Scripts/Actors/Cast.cs`, `Kit.cs`). Gestures no stock clip has, like a guard asleep on his feet or a watchman's head sinking and jerking back up, are layered on by hand (`Gesture`).
+- **People** share one skeleton and a set of motion clips (the Universal Animation Library 1 and 2 by Quaternius, public domain). Everything they wear is built by code onto the body's own measurements: Azar's crested bronze helm, linen breastplate and kilt, khopesh and lantern; Captain Dur's spear and shield; the townsfolk's robes, hats, hair and beards (`Scripts/Actors/Cast.cs`, `Kit.cs`). Gestures no stock clip has, like a guard asleep on his feet or a watchman's head sinking and jerking back up, are layered on by hand (`Gesture`).
 - **Movement has weight.** Azar builds speed and slides to a stop, leans into his own acceleration, and turns to face where he is actually going. The planted part of each stride is slowed to the true ground speed so a foot stays where it lands. His cape and the lantern in his fist are simulated and swing with him; the blade leaves a streak swept out by its real path (`Scripts/Actors/Cloth.cs`).
-- **The animals** have no stock rig: the goat, the dog, the jackals, the crabs, the moths and the Brazen Bull are skeletons built and walked by code. Every foot is planted and stays put while the body passes over it, legs fold at knee and hock to reach, and the goat's head follows Azar wherever he goes (`Scripts/Actors/Beast.cs`).
+- **The animals** have no stock rig: the goat, the dog, the jackals, the crabs, the moths and the Brazen Bull are skeletons built and walked by code. The Bull is one body drawn through its cross-sections, squared off like cast bronze, with gold belts, a furnace grille in its flanks and a lapis beard. Every foot is planted and stays put while the body passes over it, legs fold at knee and hock to reach, and the goat's head follows Azar wherever he goes (`Scripts/Actors/Beast.cs`).
 - **Light and shadow.** Everything that stands up throws a moon shadow of its own shape, people included. Every building, prop and paving stone carries a normal map and a height, so a fire lights the faces turned towards it and nothing else: a wall behind a brazier glows, the roof above it stays in moonlight, and cobbles catch the Wakefire on their near edges as Azar walks past (`Shaders/WFSprite.shader`, `FireShape`). Whatever burns nearby also lights the side of a figure that faces it. The sea moves, and trees and bushes sway in the night wind.
 - **The city is modelled, then drawn.** Houses, the precinct wall and its glazed gate, market stalls, wells, carts, jars, cliffs, palms and olive trees are small 3D scenes put together by code (`Art/pixel/town.py`) and drawn by a renderer written for this game (`Art/pixel/forge.py`): one tile to sixteen pixels, moonlight from the north-west, real cast shadows and sky occlusion, then the pixel-art finish, with tones snapped to a ramp, brick and plaster marks laid on the surface, an inked outline and a lit rim. Each prop comes out as a sprite, a normal map and the exact shadow it throws on the ground.
 - **The ground has relief.** Streets, flagstones, cobbles, sand and grass are laid as materials with a height for every stone and rut (`Art/pixel/ground.py`), so the moon picks out their edges in the picture and firelight does the same in the game.
@@ -73,12 +75,15 @@ Unity -batchmode -quit -projectPath . -executeMethod Wakefire.EditorTools.Builde
 Unity -batchmode -quit -projectPath . -executeMethod Wakefire.EditorTools.Builder.Web
 ```
 
+- **Nothing just stops.** Wherever the ground runs on but Azar can't, something stands there and says why: a yard wall, a wrecked handcart, a cypress windbreak, a fall of boulders, the harbour quay. Walk up and look, and most of them have a line about it.
+- **The touch buttons are metalwork.** Each is a small relief worked out as heights and lit like bronze under a lamp (`Art/ui/touch_art.py`): a hoop, gold beading, blue enamel, the sign raised in gold.
+
 The asset generators need Python 3 with numpy, scipy, Pillow, `bpy` (Blender as a module) and `tinysoundfont`, plus ffmpeg. To regenerate the music, place `GeneralUser-GS.sf2` in `Art/audio/`.
 
 ## Credits
 
 Made by **Randy Kundinger**.
 
-The logo uses Cinzel by Natanael Gama (SIL Open Font License). The music is played on GeneralUser GS by S. Christian Collins. The human skeleton and its motion clips are from the Universal Animation Library by Quaternius (CC0).
+The logo uses Cinzel by Natanael Gama (SIL Open Font License). The music is played on GeneralUser GS by S. Christian Collins. The human skeleton and its motion clips are from the Universal Animation Library 1 and 2 by Quaternius (CC0).
 
 © 2026 Randy Kundinger. All rights reserved.

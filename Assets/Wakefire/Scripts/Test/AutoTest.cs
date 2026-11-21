@@ -49,6 +49,7 @@ namespace Wakefire
         IEnumerator Start()
         {
             Directory.CreateDirectory(dir);
+            Fallen.AutoPick = true;             // nobody here to choose where to wake
             if (Boot.Flag("-wfFilm")) StartCoroutine(Film());
             Application.logMessageReceived += (msg, trace, type) =>
             {

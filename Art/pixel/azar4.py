@@ -160,5 +160,5 @@ if __name__ == '__main__':
         out.paste(im.convert('RGB').resize((im.width * Z, im.height * Z), Image.NEAREST), (x, 40)); x += im.width * Z + 10
     for im in ims:
         out.paste(im.convert('RGB').resize((im.width * 3, im.height * 3), Image.NEAREST), (x, 40)); x += im.width * 3 + 6
-    out.save('azar4_check.png')
+    out.save(sys.argv[1] if len(sys.argv) > 1 else 'azar4_check.png')
     print(out.size)

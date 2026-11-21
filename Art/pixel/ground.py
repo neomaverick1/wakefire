@@ -32,6 +32,10 @@ RAMPS = {
     'marble': hexes('#34365a', '#5c6088', '#8a90b0', '#b4bad0', '#d6dbe8', '#eef0f6', '#ffffff'),
     'water':  hexes('#0a1430', '#12224a', '#1c3868', '#2a568a', '#4680b0', '#84b8d8'),
     'plank':  hexes('#1e1218', '#38222a', '#563630', '#784c3a', '#9c6846', '#bc8858', '#d8a870'),
+    'night':  hexes('#060818', '#0b1230', '#121c4a', '#1a2a68', '#243c88', '#3456aa', '#5078c8'),
+    'tile':   hexes('#241620', '#3e2428', '#5c3832', '#7c4e3e', '#9c684c', '#b8845e', '#d0a076'),
+    'carpet': hexes('#2a0a16', '#4c1020', '#74182c', '#9c2634', '#be3e40', '#da6450'),
+    'wall':   hexes('#2e2634', '#50424e', '#7a6660', '#a48a70', '#c8ac84', '#e4cc9c', '#f8e8ba'),
 }
 SURF = {'earth': 's', 'dust': 's', 'soil': 's', 'sand': 's', 'grass': 'g', 'dry': 'g', 'moss': 'g', 'water': 'a', 'plank': 'w'}
 
@@ -306,6 +310,61 @@ class Terrain:
         self.tone[j] = base - 2.2; self.hgt[j] = 0
         nail = mask & ((a % w) == w // 2) & ((b % 12) == 2)
         self.tone[nail] -= 1.4
+
+    def tiles(self, mask, seed=11, size=16, ramp='tile', base=3.6, jitter=0.9, inlay=None, every=2, checker=None):
+        """A floor of square tiles, each bevelled. inlay = a ramp for a small lozenge set into every
+        `every`-th tile; checker = a second ramp for alternate tiles."""
+        X, Y = self.xx, self.yy
+        ix, iy = X // size, Y // size
+        a, b = X % size, Y % size
+        tone = base + (hash2(ix, iy, self.seed + seed) - 0.5) * jitter
+        hgt = np.ones((self.H, self.W))
+        self.put(mask, ramp, tone, hgt)
+        if checker:
+            alt = mask & (((ix + iy) % 2) == 1)
+            self.rid[alt] = self.ramp(checker)
+        j = mask & ((a == size - 1) | (b == size - 1))
+        self.tone[j] = base - 2.0; self.hgt[j] = 0
+        if inlay:
+            c = size // 2 - 0.5
+            dia = (np.abs(a - c) + np.abs(b - c)) <= size * 0.22
+            loz = mask & dia & (((ix + iy * 3) % every) == 0)
+            self.rid[loz] = self.ramp(inlay); self.tone[loz] = 3.4 + (hash2(ix, iy, self.seed + seed + 5)[loz] > 0.5) * 0.8; self.hgt[loz] = 1.2
+            rim = mask & ((np.abs(a - c) + np.abs(b - c)) <= size * 0.22 + 1) & ~dia & (((ix + iy * 3) % every) == 0)
+            self.tone[rim] -= 1.0
+
+    def stars(self, mask, seed=14, size=16, density=0.3, ramp='gold'):
+        """Gold stars let into a floor of tiles, one to a tile here and there, big and small:
+        the sky laid underfoot."""
+        X, Y = self.xx, self.yy
+        ix, iy = X // size, Y // size
+        h1 = hash2(ix, iy, self.seed + seed); h2 = hash2(ix, iy, self.seed + seed + 1); h3 = hash2(ix, iy, self.seed + seed + 2)
+        cx = ix * size + size // 2 + np.round((h2 - 0.5) * size * 0.45); cy = iy * size + size // 2 + np.round((h3 - 0.5) * size * 0.45)
+        dx, dy = np.abs(X - cx), np.abs(Y - cy)
+        reach = np.where(h1 < density * 0.18, 3, np.where(h1 < density * 0.5, 2, np.where(h1 < density, 1, -1)))
+        star = mask & (((dx == 0) & (dy <= reach)) | ((dy == 0) & (dx <= reach)) | ((dx <= 1) & (dy <= 1) & (reach >= 3)))
+        self.rid[star] = self.ramp(ramp)
+        self.tone[star] = np.where((dx + dy) == 0, 4.6, np.where((dx + dy) == 1, 3.6, 2.8))[star]
+        self.hgt[star] = 1.1
+
+    def carpet(self, mask, seed=12, ramp='carpet', base=3.4):
+        """A long red carpet: a gold edge, a lattice woven down the middle."""
+        X, Y = self.xx, self.yy
+        d = ndimage.distance_transform_edt(mask)
+        lattice = (((X + Y) % 8) == 0) | (((X - Y) % 8) == 0)
+        tone = base + (hash2(X // 2, Y // 2, self.seed + seed) - 0.5) * 0.5 + 0.9 * lattice
+        self.put(mask, ramp, tone, np.full((self.H, self.W), 1.6))
+        edge = mask & (d <= 2) & (d > 1)
+        self.rid[edge] = self.ramp('gold'); self.tone[edge] = 3.4
+        rim = mask & (d <= 1)
+        self.tone[rim] = base - 1.6
+        south = mask & ~np.roll(mask, -1, 0)
+        self.shade[np.roll(south, 1, 0) & ~mask] = 0.8
+
+    def walltop(self, mask, seed=13, ramp='wall', base=3.9, bw=24, bh=16):
+        """The top of a thick wall seen from above: long capstones."""
+        self.slabs(mask, seed=seed, rows=(bh,), wmin=bw, wmax=bw + 6, ramp=ramp, base=base, jitter=0.7, whole=False, crack=0.04, wear=0.3, joint=-1.8)
+        self.hgt[mask] += 2.0
 
     def border(self, mask, ramp='lapis', tone=3.0, width=1, hgt=1.0):
         """A line of another material just inside the edge of a mask (a kerb, an inlaid band)."""

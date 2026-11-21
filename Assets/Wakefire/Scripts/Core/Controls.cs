@@ -62,6 +62,29 @@ namespace Wakefire
             return Enabled && a.WasPressedThisFrame();
         }
         public static bool Held(InputAction a) => Enabled && a.IsPressed();
+
+        /// <summary>A finger came down on the screen this frame, wherever it landed. Text boxes, title
+        /// cards and menus turn on this, so nothing has to be drawn over them to press.</summary>
+        public static bool Tapped
+        {
+            get { var ts = Touchscreen.current; return Enabled && ts != null && ts.primaryTouch.press.wasPressedThisFrame; }
+        }
+        public static bool FingerDown
+        {
+            get { var ts = Touchscreen.current; return Enabled && ts != null && ts.primaryTouch.press.isPressed; }
+        }
+        /// <summary>Where the finger is, in the game's own pixels from the top left.</summary>
+        public static Vector2 FingerAt
+        {
+            get
+            {
+                var ts = Touchscreen.current;
+                if (ts == null || !PixelView.I) return new Vector2(-1, -1);
+                var pos = ts.primaryTouch.position.ReadValue();
+                float k = PixelView.I.ScreenScale;
+                return new Vector2(pos.x / k, PixelView.Height - pos.y / k);
+            }
+        }
         public static bool Up(InputAction a) => Enabled && a.WasReleasedThisFrame();
     }
 }
