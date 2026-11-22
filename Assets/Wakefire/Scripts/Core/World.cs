@@ -119,6 +119,7 @@ namespace Wakefire
             {
                 if (mk.kind != "enemy") continue;
                 if (!string.IsNullOrEmpty(mk.id) && Story.Has("dead_" + mk.id)) continue;
+                if (mk.who == "unremembered" && Story.Has("chapter2_done")) continue;      // they are asleep now, like everyone else up there
                 var at = Map.ToWorld(mk.x, mk.y);
                 Enemy e = mk.who switch
                 {
@@ -126,6 +127,9 @@ namespace Wakefire
                     "jackal" => Jackal.Spawn(at),
                     "moth" => Moth.Spawn(at),
                     "sentinel" => Sentinel.Spawn(at),
+                    "unremembered" => Shade.Spawn(at),
+                    "ushabti" => Ushabti.Spawn(at),
+                    "scarab" => Scarab.Spawn(at),
                     _ => null,
                 };
                 if (e && !string.IsNullOrEmpty(mk.text) && mk.text.StartsWith("once")) e.spawnId = mk.id;

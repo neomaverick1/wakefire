@@ -31,6 +31,7 @@ namespace Wakefire
             switch (map)
             {
                 case "ashkel": SetupAshkel(m); break;
+                case "necro_road": case "necropolis": case "tomb_1": case "tomb_2": case "tomb_3": SetupHill(map, m); break;
                 default: SetupRegion(map, m); break;
             }
         }
@@ -43,6 +44,10 @@ namespace Wakefire
                 Run(Narrate("Too far for one nap. The dream gave out halfway and the chasm took you.^Somebody in town must know how to dream for longer."));
             else if (Game.I.CurrentMap == "cliffs" && Bump("sea_falls") == 0)
                 Run(Narrate("Cold, salty and awake. The road of moonlight is only there while you dream.^Nod off right at the end of the pier, and run."));
+            else if (Game.I.CurrentMap == "necropolis" && Bump("hill_falls") == 0)
+                Run(Narrate("The split in the hill goes down further than the hill does.^There is a road of moonlight across it. For dreamers."));
+            else if (Game.I.CurrentMap == "tomb_2" && Bump("tomb_falls") == 0)
+                Run(Narrate("The dead filled this cut with dark so that nobody could cross it.^They did not think about dreamers. They don't, much."));
         }
 
         void OnPropAny(Prop pr)
@@ -53,9 +58,11 @@ namespace Wakefire
             // the map carries the words, "waking~~dream" when the dream sees it differently
             if (pr.Kind == "look" && pr.data != null && pr.data.id == "say" && !string.IsNullOrEmpty(pr.data.text))
             {
+                // "waking~~dream~~after": a third part is what it says once the dead of the hill are asleep
                 var parts = pr.data.text.Split(new[] { "~~" }, System.StringSplitOptions.None);
                 bool dream = Dream.I && Dream.I.IsDreamAt(pr.basePos);
-                Run(Narrate(dream && parts.Length > 1 ? parts[1] : parts[0]));
+                string say = dream && parts.Length > 1 && parts[1].Length > 0 ? parts[1] : parts.Length > 2 && Has("chapter2_done") ? parts[2] : parts[0];
+                Run(Narrate(say));
                 return;
             }
             propHandler?.Invoke(pr);
@@ -174,6 +181,19 @@ namespace Wakefire
             Fade.Backdrop(null);            // a scene cut short must not leave its picture over the world
             var v = PixelView.I;
             if (v && Player.I) v.target = Player.I.transform;
+        }
+
+        /// <summary>Play a scene as soon as whatever is playing now has finished.</summary>
+        public static void RunWhenFree(IEnumerator scene)
+        {
+            var s = Ensure();
+            s.StartCoroutine(s.Queue(scene));
+        }
+
+        IEnumerator Queue(IEnumerator scene)
+        {
+            while (Running) yield return null;
+            Run(scene);
         }
 
         public static void Run(IEnumerator scene, Npc speaker = null)

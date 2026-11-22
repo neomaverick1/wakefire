@@ -1,6 +1,7 @@
 """Placing the things every map shares, always built the same way under the same name, so one
 picture on disk serves all the maps that use it."""
 import town
+import necro
 
 OLIVES = 8
 
@@ -130,3 +131,89 @@ def boulders(m, pts, seed=0):
         rock(m, x, y, seed + i * 2 + 3)
     xs = [p[0] for p in pts]; ys = [p[1] for p in pts]
     m.solid(min(xs) - 9, min(ys) - 7, max(xs) + 12, max(ys) + 1)
+
+
+# ------------------------------------------------------------------ the hill of sleepers
+SPIRIT = (0.50, 0.84, 0.94)
+
+
+def spirit_lamp(m, x, y, light=3.6):
+    """A lamp for the dead, burning the colour of deep water."""
+    m.model("spirit_lamp", town.spirit_lamp, x, y, box=(-2, -3, 3, 0), frames=4, kind="spirit", lights=False)
+    m.light(x, y - 20, light, SPIRIT, 0.5, h=1.2)
+
+
+def spirit_bowl(m, x, y, light=4.6):
+    """A king's lamp: a bronze bowl of the same cold fire on a tripod."""
+    m.model("spirit_bowl", necro.spirit_bowl, x, y, box=(-6, -8, 6, 0), frames=4, kind="spirit", lights=False)
+    m.light(x, y - 18, light, SPIRIT, 0.55, h=1.1)
+
+
+def tomb(m, x, y, w=5.0, d=3.0, h=1.6, seed=0, style=None, lamp=False, text=None):
+    """A house of the dead, its door facing south at (x, y). text: what a listener at the door hears."""
+    style = style or ('vault', 'flat', 'step')[seed % 3]
+    key = f"tomb_{style}_{int(w * 10)}_{int(d * 10)}_{int(h * 10)}_{seed}{'l' if lamp else ''}"
+    kw = dict(kind="look", data={"id": "say", "text": text}) if text else {}
+    m.model(key, necro.tomb_house(w, d, h, seed, style, lamp), x, y, box=(int(-w * 8), int(-d * 16), int(w * 8), 0), lights=False, **kw)
+    if lamp: m.light(x + 4, y + 4, 2.4, SPIRIT, 0.45, h=0.4)
+
+
+def tumulus(m, x, y, r=2.2, seed=0, lamp=False, text=None):
+    """A round barrow, the mouth of its passage at (x, y)."""
+    key = f"tumulus_{int(r * 10)}_{seed}{'l' if lamp else ''}"
+    kw = dict(kind="look", data={"id": "say", "text": text}) if text else {}
+    m.model(key, necro.tumulus(r, seed, lamp), x, y, box=(int(-r * 16) + 5, int(-r * 32) + 6, int(r * 16) - 5, -5), lights=False, **kw)
+    m.solid(x - 11, y - 8, x - 6, y + 8); m.solid(x + 6, y - 8, x + 11, y + 8)
+    if lamp: m.light(x + 8, y + 8, 2.4, SPIRIT, 0.45, h=0.4)
+
+
+def stele(m, x, y, seed=0, text=None, uid=None):
+    k = seed % 3
+    if text:
+        return m.model(f"stele_{k}", town.stele(1.4 + 0.15 * k, k), x, y, box=(-5, -5, 5, 0), kind="look", data={"id": uid or "say", "text": text})
+    return m.model(f"stele_{k}", town.stele(1.4 + 0.15 * k, k), x, y, box=(-5, -5, 5, 0))
+
+
+def dead_tree(m, x, y, sd):
+    k = sd % 4
+    return m.model(f"dead_tree_{k}", town.dead_tree(k + 1, 0.9 + 0.12 * k), x, y, box=(-3, -5, 3, 0))
+
+
+def grave(m, x, y, sd):
+    k = sd % 8
+    return m.model(f"grave_{k}", necro.grave_mound(k), x, y, box=(-4, -13, 4, -2))
+
+
+def graves(m, x, y, cols, rows, seed=0, dx=20, dy=30):
+    """A plot of ordinary graves in rows, some rows missing a place."""
+    import numpy as np
+    r = np.random.default_rng(seed)
+    for j in range(rows):
+        for i in range(cols):
+            if r.random() < 0.14: continue
+            grave(m, x + i * dx + int(r.integers(-2, 3)), y + j * dy + int(r.integers(-2, 3)), int(r.integers(0, 8)))
+
+
+def standard(m, x, y):
+    return m.model("moon_standard", necro.moon_standard(), x, y, box=(-3, -6, 3, 0))
+
+
+def urn(m, x, y, sd):
+    """Grave jars: the whole ones break like any other jar; the broken ones have been."""
+    k = sd % 4
+    return m.model(f"urn_{k}", necro.urn(k), x, y, box=(-4, -6, 4, -1), kind="pot" if k < 2 else None)
+
+
+def bones(m, x, y, sd):
+    k = sd % 3
+    return m.model(f"bones_{k}", necro.bones(k + 1), x, y, box=None)
+
+
+def thorn(m, x, y, sd):
+    k = sd % 4
+    return m.model(f"thorn_{k}", necro.thorn(k + 1), x, y, box=(-3, -5, 3, -1))
+
+
+def gate_post(m, x, y):
+    m.model("gate_post", necro.gate_post(), x, y, box=(-8, -14, 8, 0), lights=False)
+    m.light(x, y - 44, 3.6, SPIRIT, 0.5, h=2.6)

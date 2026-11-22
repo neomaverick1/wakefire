@@ -15,6 +15,7 @@ namespace Wakefire
             propHandler = RegionProp;
             switch (map)
             {
+                case "terraces": if (Has("hill_gate")) SwingOpen(m.Find("hill_gate"), "hill_gate_open"); break;
                 case "temple_yard": SetupYard(m); break;
                 case "zig_1":
                     m.PlatePressed += id => { if (id == "z1_plate") { Set("bars_z1"); OpenProp("z1_bars"); Run(Narrate("Somewhere in the wall, a weight drops. The bronze bars lift.")); } };
@@ -230,6 +231,7 @@ namespace Wakefire
 
         void Update()
         {
+            HillUpdate();
             // the yard's old drawbridge: once Azar stands on the far side, he can kick it down
             var m = Map.Current;
             if (m && m == yardMap && !Has("yard_bridge") && !Running && Player.I && Player.I.state == Player.State.Free)
@@ -240,7 +242,7 @@ namespace Wakefire
             // NPCs that say something when Azar comes near
             foreach (var n in Npc.All)
             {
-                if (!n || n.notice == null || Running || !Player.I) continue;
+                if (!n || n.notice == null || Running || !Player.I || Game.Busy || !n.Present || Player.I.state != Player.State.Free) continue;
                 if (Vector2.Distance(n.pos, Player.I.pos) < 3.2f) { var f = n.notice; n.notice = null; Run(f()); }
             }
         }
@@ -274,6 +276,9 @@ namespace Wakefire
                     Run(dream ? Narrate("The well whispers: {t}Drink, and forget.{/}^You have enough to forget already.")
                               : Narrate("A well. Somewhere down there, a frog is asleep too."));
                     break;
+                case "gate":
+                    if (pr.data.id == "hill_gate") Run(HillGate(pr));
+                    break;
                 case "pot":
                     Run(Narrate("A storage jar. Your khopesh has opinions about storage jars."));
                     break;
@@ -298,8 +303,16 @@ namespace Wakefire
             var am = m.Marker("altar");
             ebrum = Npc.Create("ebrum", Map.ToWorld(am.x, am.y), "priest", "lie", WorldLayer.Both, Facing.Down, false);
             ebrum.turnsToTalk = false;
-            ebrum.talk = () => One(Narrate("High Priest Ebrum, asleep on the altar with a very satisfied look on his face."));
-            if (Has("bull_dead")) yield break;
+            ebrum.talk = () => One(Narrate(Has("item_hillkey") ? "High Priest Ebrum, asleep on the altar, one key lighter.^He has rolled over onto the dent it left."
+                                                              : "High Priest Ebrum, asleep on the altar with a very satisfied look on his face."));
+            if (Has("chapter2_done"))
+                god.talk = () => One(Narrate("Ninhal sleeps. He asked for ten more minutes.^He has had them several times."));
+            if (Has("bull_dead"))
+            {
+                // the bull is broken: whatever comes next in the story starts from here
+                if (!Has("chapter2_done")) StartCoroutine(AfterTheBull());
+                yield break;
+            }
             // wait for Azar to step into the room
             while (Player.I && Player.I.pos.y < Map.ToWorld(0, 300).y) yield return null;
             while (Running) yield return null;
@@ -400,13 +413,9 @@ namespace Wakefire
             yield return Fade.Out(1.0f);
             Music.Play("ending");
             yield return Card("END OF CHAPTER ONE",
-                "Ninhal still sleeps.\nBut now somebody knows why.",
-                "WAKEFIRE\nmade by Randy Kundinger",
-                "Thank you for staying awake.");
-            Destroy(self.gameObject);
-            if (goatEnd) Destroy(goatEnd.gameObject);
-            Title.Show();
-            yield return Fade.In(0.8f);
+                "Ninhal still sleeps.\nBut now somebody knows why.");
+            // and straight on: knowing why is not the same as waking him
+            yield return ChapterTwoOpens(self, goatEnd);
         }
     }
 }

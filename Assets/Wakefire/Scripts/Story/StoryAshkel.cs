@@ -195,6 +195,12 @@ namespace Wakefire
 
         IEnumerator TalkWidow()
         {
+            if (Has("item_figs") && !Has("figs_given")) { yield return FigsDelivered(); yield break; }
+            if (Has("figs_given"))
+            {
+                yield return Say("Widow Ilta", "Forty years, and he sends a watchman.| ...I've kept one back for him. Don't tell him that either.", "woman", true);
+                yield break;
+            }
             int n = Bump("widow");
             if (n == 0)
             {

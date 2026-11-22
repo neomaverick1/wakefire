@@ -657,11 +657,13 @@ namespace Wakefire
             return go.transform;
         }
 
-        public static CrabBeast Make(ModelActor a)
+        /// <summary>scarab: the same six legs under a tomb beetle instead, blue-black with a gold seam, jaws where the claws were.</summary>
+        public static CrabBeast Make(ModelActor a, bool scarab = false)
         {
             var c = new CrabBeast();
             var rig = a.rig;
             Color red = new Color(0.82f, 0.30f, 0.20f), pale = new Color(0.94f, 0.62f, 0.44f), dark = new Color(0.34f, 0.10f, 0.10f);
+            if (scarab) { red = new Color(0.10f, 0.15f, 0.36f); pale = new Color(0.90f, 0.70f, 0.28f); dark = new Color(0.05f, 0.05f, 0.10f); }
             c.shellRest = new Vector3(0, 0.17f, 0);
             c.shell = Bone("shell", rig, c.shellRest);
             var bones = new List<Transform> { c.shell };
@@ -687,11 +689,22 @@ namespace Wakefire
             foreach (var t in bones) a.bones[t.name] = t;
             var kit = new Kit(a, rig, bones.ToArray());
             float line = c.shellRest.y - 0.02f;
-            kit.On("shell").Stain(p => p.y < line ? pale : (Color?)null).Paint(red);
-            kit.Egg(c.shellRest, new Vector3(0.27f, 0.105f, 0.19f), 12, 6);
-            kit.Stain(null);
+            if (scarab)
+            {
+                // wing cases with a seam of gold down the middle and round the rim; a small dark head in front
+                kit.On("shell").Stain(p => Mathf.Abs(p.x) < 0.014f || p.y < line + 0.012f ? pale : (Color?)null).Paint(red, 0.6f);
+                kit.Egg(c.shellRest + new Vector3(0, 0.02f, -0.03f), new Vector3(0.22f, 0.135f, 0.25f), 12, 6);
+                kit.Stain(null);
+                kit.Paint(dark, 0.4f).Egg(c.shellRest + new Vector3(0, 0.0f, 0.24f), new Vector3(0.12f, 0.075f, 0.09f), 8, 5);
+            }
+            else
+            {
+                kit.On("shell").Stain(p => p.y < line ? pale : (Color?)null).Paint(red);
+                kit.Egg(c.shellRest, new Vector3(0.27f, 0.105f, 0.19f), 12, 6);
+                kit.Stain(null);
+            }
             // eyes on stalks
-            foreach (int side in new[] { -1, 1 })
+            if (!scarab) foreach (int side in new[] { -1, 1 })
             {
                 kit.Paint(red).Egg(c.shellRest + new Vector3(side * 0.085f, 0.11f, 0.15f), new Vector3(0.018f, 0.06f, 0.018f), 5, 4);
                 kit.Paint(new Color(0.06f, 0.05f, 0.08f)).Egg(c.shellRest + new Vector3(side * 0.085f, 0.18f, 0.155f), Vector3.one * 0.034f, 6, 4);
@@ -708,6 +721,12 @@ namespace Wakefire
                 int side = i == 0 ? -1 : 1;
                 var armAt = c.shellRest + new Vector3(side * 0.17f, 0, 0.15f);
                 var clawAt = armAt + new Vector3(side * 0.10f, 0.03f, 0.17f);
+                if (scarab)
+                {
+                    kit.Paint(dark).On("arm" + i).Egg(Vector3.Lerp(armAt, clawAt, 0.5f), new Vector3(0.045f, 0.035f, 0.09f), 6, 4);
+                    kit.Paint(pale, 1).On("claw" + i).Egg(clawAt + new Vector3(-side * 0.03f, 0, 0.05f), new Vector3(0.03f, 0.03f, 0.09f), 6, 4);
+                    continue;
+                }
                 kit.Paint(red).On("arm" + i).Egg(Vector3.Lerp(armAt, clawAt, 0.5f), new Vector3(0.075f, 0.05f, 0.10f), 6, 4);
                 kit.Paint(pale).On("claw" + i).Egg(clawAt + new Vector3(0, 0.01f, 0.09f), new Vector3(0.085f, 0.07f, 0.13f), 8, 5);
                 kit.Paint(red).Egg(clawAt + new Vector3(side * 0.02f, 0.075f, 0.11f), new Vector3(0.05f, 0.03f, 0.11f), 6, 4);

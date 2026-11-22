@@ -24,11 +24,11 @@ namespace Wakefire
         protected float stateClock, knockClock, flash;
         protected Vector2 knockVel, vel;
         protected SpriteRenderer shadow;
-        Material mat;
+        protected Material mat;
         protected bool flying;
         protected float hover;
 
-        protected static T Make<T>(string sheet, string anim, Vector2 at, WorldLayer layer, int hp) where T : Enemy
+        protected static T Make<T>(string sheet, string anim, Vector2 at, WorldLayer layer, int hp, string look = null) where T : Enemy
         {
             var go = new GameObject(typeof(T).Name);
             go.transform.SetParent(Map.Current ? Map.Current.transform : null, false);
@@ -43,6 +43,7 @@ namespace Wakefire
             sr.sharedMaterial = e.mat;
             e.anim = body.AddComponent<SpriteAnim>();
             e.anim.sr = sr;
+            e.anim.modelAs = look;
             e.anim.sheet = SpriteSheet.Load(sheet);
             e.anim.Play(anim, Facing.Down, true);
             e.health = go.AddComponent<Health>();
@@ -244,6 +245,8 @@ namespace Wakefire
         Vector2 drift;
         float dart;
         public static Moth Spawn(Vector2 at) => Make<Moth>("moth", "fly", at, WorldLayer.Dream, 1);
+        /// <summary>How many moths are about (the king's chamber only ever draws a few).</summary>
+        public static int All2() { int n = 0; foreach (var e in All) if (e is Moth) n++; return n; }
         protected override void Init() { flying = true; speed = 2.2f; hover = 0.6f; half = new Vector2(0.3f, 0.2f); }
         protected override Color BurstColor => new Color(0.55f, 0.45f, 0.9f);
 

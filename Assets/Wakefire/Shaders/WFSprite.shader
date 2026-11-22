@@ -16,6 +16,11 @@ Shader "Wakefire/Sprite"
         _Model ("Drawn from the model stage", Float) = 0
         _Cell ("Square of the model stage (uv origin, uv size)", Vector) = (0,0,0,0)
         _Sway ("Sway in the wind (trees, bushes)", Float) = 0
+        _Ghost ("One of the dead: how much of its colour has gone cold (0 = alive)", Float) = 0
+        _GhostFade ("A ghost thins to nothing between these heights of its picture", Vector) = (0.285, 0.40, 0, 0)
+        _GhostGain ("How brightly a ghost holds what light it had", Float) = 1.1
+        _GhostGold ("Gold on a ghost is still gold (0 = it has gone cold with the rest)", Float) = 0
+        _GhostRim ("A cold light along a ghost's outline", Float) = 0
         [PerRendererData] _NormalTex ("Normals (rgb) and height (a)", 2D) = "bump" {}
         _HasNormal ("Has a normal map", Float) = 0
     }
@@ -48,6 +53,11 @@ Shader "Wakefire/Sprite"
                 float4 _Cell;
                 float _Sway;
                 float _HasNormal;
+                float _Ghost;
+                float4 _GhostFade;
+                float _GhostGain;
+                float _GhostGold;
+                float _GhostRim;
             CBUFFER_END
             float4 _MainTex_TexelSize;
             TEXTURE2D(_NormalTex);
@@ -106,8 +116,9 @@ Shader "Wakefire/Sprite"
             // A character posed on the model stage, read out of its square of the stage sheet and
             // inked: a dark line round the outside, and a line wherever one part of the body
             // passes in front of another (the sheet's alpha is depth).
-            half4 ModelPixel(float2 uv)
+            half4 ModelPixel(float2 uv, out float edge)
             {
+                edge = 0;
                 float2 t = _WFModels_TexelSize.xy;
                 float2 p = (floor((_Cell.xy + uv * _Cell.zw) * _WFModels_TexelSize.zw) + 0.5) * t;
                 half4 m = SAMPLE_TEXTURE2D(_WFModels, sampler_PointClamp, p);
@@ -121,6 +132,7 @@ Shader "Wakefire/Sprite"
                     best = c.a > best.a ? c : best;
                     best = d.a > best.a ? d : best;
                     if (best.a < 0.25) return half4(0, 0, 0, 0);
+                    edge = 1;
                     return half4(best.rgb * float3(0.16, 0.13, 0.24) + float3(0.012, 0.010, 0.026), 1);
                 }
                 float nearest = min(min(a.a < 0.25 ? 1.0 : a.a, b.a < 0.25 ? 1.0 : b.a), min(c.a < 0.25 ? 1.0 : c.a, d.a < 0.25 ? 1.0 : d.a));
@@ -153,11 +165,27 @@ Shader "Wakefire/Sprite"
                 float vis = _Layer < 0.5 ? 1 : (_Layer < 1.5 ? 1 - dream : dream);
                 clip(vis - 0.5);
                 half4 c;
-                if (_Model > 0.5) c = ModelPixel(i.uv) * i.color;
+                float edge = 0;
+                if (_Model > 0.5) c = ModelPixel(i.uv, edge) * i.color;
                 else c = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv) * i.color;
                 clip(c.a - 0.5);
                 float3 col = c.rgb;
                 if (_Model > 0.5 && _WF_LightCount > 0.5) col *= FireOnFigure(i.world, i.positionCS.xy);
+                if (_Ghost > 0.01)
+                {
+                    // the dead keep a memory of their colours and none of their weight: cold from head to
+                    // knee, and thinning away to nothing before they reach the ground
+                    float gone = 1.0 - smoothstep(_GhostFade.x, _GhostFade.y, i.uv.y);
+                    clip(bayer - gone);
+                    float l = saturate(dot(col, float3(0.30, 0.59, 0.11)) * _GhostGain);
+                    float3 cold = lerp(float3(0.03, 0.09, 0.16), float3(0.60, 0.92, 0.92), l);
+                    float3 dead = lerp(col, cold, _Ghost);
+                    // a king is buried in his gold, and gold does not die: it is as warm on him now as
+                    // it was in the ground
+                    float gold = smoothstep(0.38, 0.58, (c.g - c.b) / max(c.g, 0.02)) * (1.0 - edge) * _GhostGold;
+                    col = lerp(dead, col * 1.12, gold);
+                    col = lerp(col, float3(0.62, 0.96, 0.92), edge * _GhostRim);
+                }
                 if (_HasNormal > 0.5)
                 {
                     half4 nt = SAMPLE_TEXTURE2D(_NormalTex, sampler_PointClamp, i.uv);

@@ -1,4 +1,4 @@
-// After the credits: the title comes back, and both a new game and Continue must leave Azar
+// After the credits (chapter two's): the title comes back, and both a new game and Continue must leave Azar
 // free to walk (not frozen in the last cutscene), with the right pockets.
 using System.Collections;
 using UnityEngine;
@@ -13,16 +13,17 @@ namespace Wakefire
         static IEnumerator Run(AutoTest t)
         {
             DialogueBox.AutoAdvance = 0.05f;
-            Story.Set("item_shield"); Story.Set("bull_seen");
+            foreach (var f in new[] { "item_shield", "bull_seen", "bull_dead", "chapter_done", "ch2", "item_hillkey", "king_done", "item_horn" }) Story.Set(f);
             Game.I.EnterMap("zig_3", "south");
+            Story.Abort();              // the summit would start the dawn by itself; this run starts it by hand
             Fade.Set(0);
             var p = Player.I;
             p.coins = 77; p.keys = 2;
             yield return new WaitForSeconds(0.5f);
             p.pos = Map.ToWorld(240, 200);
-            Story.Run(Story.I.Ending());
+            Story.Run(Story.I.Dawn());
             float w = 0;
-            while (!Title.I && w < 90f) { w += Time.deltaTime; yield return null; }
+            while (!Title.I && w < 150f) { w += Time.deltaTime; yield return null; }
             t.Note($"title after the credits: {(Title.I ? "ok" : "FAILED")} ({w:0}s)");
             yield return t.Shot("r1-title", 0.5f);
             // a new game

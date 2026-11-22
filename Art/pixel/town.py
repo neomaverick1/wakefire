@@ -935,6 +935,16 @@ def bronze_door(w=2.1, h=2.1, kind='lock'):
     if kind == 'lock':
         m.part(); m.box(-0.2, -0.06, h * 0.5 - 0.24, 0.2, -0.03, h * 0.5 + 0.2, wm.gold)
         m.part(); m.box(-PX, -0.07, h * 0.5 - 0.12, PX, -0.06, h * 0.5 + 0.04, M('dark', 1.4))
+    elif kind == 'sun':
+        # the king's sign: the sun half up, and its rays
+        cz = h * 0.56
+        m.part(); m.face([(-0.36, cz), (0.36, cz)] + [(math.cos(a) * 0.36, cz + math.sin(a) * 0.36) for a in np.linspace(0, math.pi, 9)][1:-1], -0.06, M('gold', 5.0, gloss=0.03))
+        m.part()
+        for a in np.linspace(math.radians(18), math.radians(162), 5):
+            ca, sa = math.cos(a), math.sin(a)
+            m.quad((ca * 0.44 - sa * 0.05, -0.06, cz + sa * 0.44 + ca * 0.05), (ca * 0.44 + sa * 0.05, -0.06, cz + sa * 0.44 - ca * 0.05),
+                   (ca * 0.68 + sa * 0.02, -0.06, cz + sa * 0.68 - ca * 0.02), (ca * 0.68 - sa * 0.02, -0.06, cz + sa * 0.68 + ca * 0.02), wm.gold, two=True)
+        m.part(); m.box(-0.5, -0.05, cz - 0.07, 0.5, -0.03, cz, wm.gold)
     else:
         m.part()
         m.blob(0, -0.08, h * 0.6, 0.34, 0.1, 0.3, wm.gold, n=8, rings=4)
@@ -1203,35 +1213,6 @@ def m_cuneiform(row=5):
     return f
 
 
-def mastaba(w=5.0, d=3.0, h=1.6, seed=0, door=True, lamp=False):
-    """A house for someone dead: a low bench of mud brick with sloping sides and a niched front,
-    a false door in the middle for the spirit to come and go by, an offering slab in front of it."""
-    r = rnd(seed); m = Model()
-    brick = M('tomb', 4.2, m_niches(6, 3))
-    plain = M('tomb', 4.0, m_brick(8, 4, jitter=0.8))
-    roof = M('tomb', 4.9, m_mottle(12, 0.4, specks=0.01, speck_t=-1.0))
-    x0, x1 = -w / 2, w / 2
-    batter = 0.16
-    m.part(); m.box(x0, 0, 0, x1, d, 0.34, plain, top=roof)                                    # the foot
-    m.part()
-    # the body leans in as it rises: a front that slopes back, a flat top
-    m.quad((x0 + 0.1, 0.12, 0.34), (x1 - 0.1, 0.12, 0.34), (x1 - 0.1 - batter, 0.12 + batter, h), (x0 + 0.1 + batter, 0.12 + batter, h), brick)
-    m.quad((x0 + 0.1 + batter, 0.12 + batter, h), (x1 - 0.1 - batter, 0.12 + batter, h), (x1 - 0.1 - batter, d - 0.1, h), (x0 + 0.1 + batter, d - 0.1, h), roof)
-    m.part(); m.box(x0 + 0.1 + batter - PX, 0.12 + batter - PX, h, x1 - 0.1 - batter + PX, 0.12 + batter + 2 * PX, h + PX, M('tomb', 5.4))   # a paler course at the lip
-    if door:
-        dx = float(r.uniform(-0.3, 0.3))
-        m.part(); m.box(dx - 0.42, 0.06, 0.34, dx + 0.42, 0.2, 1.22, M('sandstone', 4.3, m_mottle(7, 0.3)))
-        m.part(); m.box(dx - 0.26, 0.04, 0.34, dx + 0.26, 0.08, 1.06, M('dark', 1.6))
-        m.part(); m.box(dx - 0.5, 0.04, 1.22, dx + 0.5, 0.22, 1.34, M('sandstone', 4.8))
-        m.part(); m.box(dx - 0.5, -0.5, 0, dx + 0.5, -0.02, 0.12, M('sandstone', 4.2, m_mottle(7, 0.3)), top=M('sandstone', 4.8))       # the offering slab
-        m.part(); m.turned(dx - 0.2, -0.26, [(0.11, 0.12), (0.14, 0.2), (0.1, 0.24)], M('clay', 4.3), n=8, cap=M('dark', 1.8))
-        if lamp:
-            m.part(); m.turned(dx + 0.22, -0.26, [(0.07, 0.12), (0.1, 0.18)], M('bronze', 4.2), n=8, cap=M('bronze', 3.6))
-            m.part(); m.blob(dx + 0.22, -0.26, 0.27, 0.05, 0.05, 0.09, Mat(RAMPS['ghost'], 3.6, glow=True), n=6, rings=4)
-            m.light(dx + 0.22, -0.26, 0.3, 2.4, (0.5, 1.0, 0.86), 0.5)
-    return m
-
-
 def stele(h=1.5, seed=0, lean=0.0):
     """A standing stone with a rounded head, a scene cut at the top and lines of writing under it."""
     m = Model()
@@ -1303,42 +1284,6 @@ def game_board():
     return m
 
 
-def tomb_door(w=2.6, h=2.3, open_=False):
-    """The way into the king's tomb: a doorway cut in the hill between two leaning jambs, a lintel with
-    the winged sun on it, and a slab of stone that has been shut for four hundred years."""
-    m = Model()
-    st = M('stone', 3.9, m_ashlar(12, 6))
-    lit = M('stone', 4.5, m_mottle(8, 0.3))
-    for sgn in (-1, 1):
-        m.part(); m.quad((sgn * (w / 2 + 0.7), 0, 0), (sgn * w / 2, 0, 0), (sgn * (w / 2 - 0.08), 0.1, h), (sgn * (w / 2 + 0.56), 0.1, h), st, two=True)
-        m.part(); m.box(min(sgn * (w / 2 + 0.7), sgn * w / 2), 0.0, 0, max(sgn * (w / 2 + 0.7), sgn * w / 2), 0.5, 0.2, M('stone', 3.4), top=lit)
-    m.part(); m.box(-w / 2 - 0.8, -0.04, h, w / 2 + 0.8, 0.5, h + 0.5, st, top=lit)
-    m.part(); m.box(-0.2, -0.06, h + 0.16, 0.2, -0.04, h + 0.38, M('gold', 4.2))                 # the sun
-    for sgn in (-1, 1):
-        m.part(); m.quad((sgn * 0.2, -0.06, h + 0.2), (sgn * 1.1, -0.06, h + 0.3), (sgn * 1.1, -0.06, h + 0.38), (sgn * 0.2, -0.06, h + 0.34), M('gold', 3.6), two=True)   # its wings
-    if open_:
-        m.part(); m.box(-w / 2 + 0.08, 0.2, 0, w / 2 - 0.08, 0.3, h, M('dark', 0.8))
-    else:
-        m.part(); m.box(-w / 2 + 0.08, 0.12, 0, w / 2 - 0.08, 0.3, h, M('stone', 3.5, m_cuneiform(6)))
-        m.part(); m.box(-w / 2 + 0.08, 0.1, h * 0.46, w / 2 - 0.08, 0.12, h * 0.54, M('bronze', 3.8))
-        m.part(); m.turned(0, 0.06, [(0.16, h * 0.42), (0.16, h * 0.58)], M('bronze', 4.3), n=10, squash=0.3)
-    return m
-
-
-def coffin(seed=0, open_=False):
-    """A coffin of fired clay shaped like a bathtub, the way the plain dead of the river cities were laid: lid on, or off and empty."""
-    m = Model()
-    clay = M('clay', 3.8, m_mottle(8, 0.35))
-    m.part(); m.limb([(-0.62, 0.42, 0.2), (0.62, 0.42, 0.2)], [0.34, 0.3], clay, n=10)
-    m.part(); m.box(-0.74, 0.12, 0, 0.74, 0.72, 0.16, clay)
-    if open_:
-        m.part(); m.box(-0.56, 0.24, 0.3, 0.56, 0.6, 0.44, M('dark', 1.2))
-        m.part(); m.box(-0.5, 0.86, 0, 0.5, 0.94, 0.6, clay, top=M('clay', 4.6))                 # the lid, stood against it
-    else:
-        m.part(); m.limb([(-0.58, 0.42, 0.34), (0.58, 0.42, 0.34)], [0.3, 0.26], M('clay', 4.4, m_stripes(5, 'u')), n=10)
-    return m
-
-
 def lyre():
     """The great lyre from the tomb: a sounding box of dark wood, two arms and a yoke, eleven strings,
     and at the front a bull's head of gold with a beard of lapis. It still holds one note."""
@@ -1360,6 +1305,75 @@ def lyre():
     for sgn in (-1, 1):
         m.part(); m.limb([(0.6, 0.26 + sgn * 0.12, 0.64), (0.62, 0.26 + sgn * 0.26, 0.8), (0.7, 0.26 + sgn * 0.22, 0.94)], [0.045, 0.035, 0.01], gold, n=5)
     m.part(); m.box(0.72, 0.18, 0.06, 0.9, 0.34, 0.32, M('lapis', 3.6, m_curls(2)))
+    return m
+
+
+def m_procession(period=22, feet=3):
+    """A painted frieze: bearers walking one behind the other, each with a jar on a shoulder.
+    Marks the figures for a second colour; the wall's own colour is the ground of the painting."""
+    fig = ["...##....", "..####...", "...##.##.", "..#####..", ".######..", "..####...", "..####...", "..####...", "..#..#...", "..#..#...", ".##..##.."]
+    grid = np.array([[c == '#' for c in row] for row in fig])[::-1]
+    def f(u, v, P, seed):
+        col = u % period; row = v - feet
+        on = np.zeros(u.shape, bool)
+        ok = (col < grid.shape[1]) & (row >= 0) & (row < grid.shape[0])
+        on[ok] = grid[row[ok], col[ok]]
+        line = (v == feet - 2) | (v == feet + grid.shape[0] + 2)
+        return np.where(line, -0.9, 0.0), on | line
+    return f
+
+
+def tomb_wall(length, h=2.75, d=0.25, door_at=None, door_w=2.5, door_h=2.1, seed=0):
+    """A wall of the king's tomb, running east from the origin: a foot of dark stone, plaster the
+    colour of old honey painted with a procession of bearers in red, a band of black and red
+    lozenges under the cornice, and upright pilasters whose shadows break it up."""
+    m = Model()
+    foot = M('stone', 3.3, m_ashlar(16, 8))
+    plaster = M('ochre', 4.3, m_mottle(16, 0.5))
+    paint = M('ochre', 4.3, m_procession(22, 14), ramp2='red')
+    top = M('tomb', 4.6, m_mottle(14, 0.4))
+    def loz(u, v, P, seed_):
+        k = (np.abs((u % 8) - 4) + np.abs((v % 8) - 4)) < 3
+        return np.zeros(u.shape), k
+    band = M('dark', 3.0, loz, ramp2='red')
+    m.part(); m.box(0, 0, 0, length, d, h, plaster, top=top)
+    m.part(); m.box(0, -PX, 0, length, d, 0.5, foot, top=top)
+    m.part(); m.quad((0, -0.5 * PX, 0.62), (length, -0.5 * PX, 0.62), (length, -0.5 * PX, 0.62 + 1.2), (0, -0.5 * PX, 0.62 + 1.2), paint)
+    m.part(); m.box(0, -0.5 * PX, h - 0.75, length, d, h - 0.3, band)
+    m.part(); m.box(0, -1.5 * PX, h - 0.14, length, d, h, M('stone', 4.4), top=top)
+    x = 2.0
+    while x < length - 1.5:
+        if door_at is None or abs(x + 0.4 - door_at) > door_w / 2 + 0.9:
+            m.part(); m.box(x, -0.14, 0, x + 0.8, 0, h - 0.82, M('stone', 3.8, m_ashlar(10, 6)), top=M('stone', 4.6))
+        x += 4.0
+    if door_at is not None:
+        a, b = door_at - door_w / 2, door_at + door_w / 2
+        m.part(); m.box(a - 0.25, -0.2, 0, b + 0.25, 0, door_h + 0.3, foot, top=top)
+        m.part(); m.quad((a, -0.21, 0), (b, -0.21, 0), (b, -0.21, door_h), (a, -0.21, door_h), M('dark', 1.2))
+        m.part(); m.box(a - 0.1, -0.24, door_h, b + 0.1, -0.2, door_h + 0.1, M('gold', 3.9))
+    return m
+
+
+def tomb_partition(length, h=1.5, d=0.5, seed=0):
+    """A lower wall dividing a hall of the tomb: dark stone, a row of niches with a sealed jar in each."""
+    m = Model()
+    st = M('stone', 3.6, m_ashlar(14, 7))
+    m.part(); m.box(0, 0, 0, length, d, h, st, top=M('tomb', 4.6, m_mottle(12, 0.4)))
+    m.part(); m.box(0, -PX, 0, length, d, 0.38, M('stone', 3.2, m_ashlar(16, 8)), top=M('stone', 4.2))
+    x = 0.8
+    while x < length - 1.0:
+        m.part(); m.box(x, -0.02, 0.62, x + 0.5, 0, 1.2, M('dark', 1.4))
+        m.part(); m.turned(x + 0.25, -0.06, [(0.09, 0.62), (0.14, 0.76), (0.1, 0.92), (0.06, 0.98)], M('clay', 4.0), n=7, cap=M('dark', 1.6), squash=0.5)
+        x += 1.5
+    m.part(); m.box(0, -PX, h - 0.14, length, d, h, M('ochre', 4.0), top=M('tomb', 4.8))
+    return m
+
+
+def tomb_partition_ns(depth, wd=0.5, h=1.5):
+    m = Model()
+    st = M('stone', 3.6, m_ashlar(14, 7))
+    m.part(); m.box(0, 0, 0, wd, depth, h, st, top=M('tomb', 4.6, m_mottle(12, 0.4)))
+    m.part(); m.box(-PX, -PX, 0, wd + PX, depth, 0.38, M('stone', 3.2), top=M('stone', 4.2))
     return m
 
 

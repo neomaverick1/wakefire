@@ -25,10 +25,11 @@ namespace Wakefire.EditorTools
         {
             PlayerSettings.bundleVersion = Version();
             var parts = Version().Split('.');
-            if (parts.Length == 3 && int.TryParse(parts[2], out int patch) && int.TryParse(parts[1], out int minor))
+            // 1.3.0 -> 1300, 2.0.0 -> 2000: every release's number is higher than the last, so a phone will install it over the old one
+            if (parts.Length == 3 && int.TryParse(parts[2], out int patch) && int.TryParse(parts[1], out int minor) && int.TryParse(parts[0], out int major))
             {
-                PlayerSettings.Android.bundleVersionCode = 1000 + minor * 100 + patch;
-                PlayerSettings.iOS.buildNumber = (1000 + minor * 100 + patch).ToString();
+                PlayerSettings.Android.bundleVersionCode = major * 1000 + minor * 100 + patch;
+                PlayerSettings.iOS.buildNumber = (major * 1000 + minor * 100 + patch).ToString();
             }
             ApplyIconAndSplash();
             Models.Build();

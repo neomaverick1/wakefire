@@ -26,6 +26,14 @@ namespace Wakefire
             { "merchant", new Profile(175, 0.050f, 0.05f, 0, 0.85f) },
             { "dog", new Profile(165, 0.055f, 0.32f, 0.04f, 0.85f) },
             { "god", new Profile(62, 0.150f, 0.30f, 0.015f, 1.0f) },
+            // the dead: more breath than voice, and an echo they bring with them
+            { "clerk", new Profile(128, 0.064f, 0.26f, 0.0f, 0.8f) },
+            { "ghost", new Profile(150, 0.066f, 0.34f, 0.03f, 0.75f) },
+            { "ghost_f", new Profile(232, 0.062f, 0.30f, 0.03f, 0.72f) },
+            { "ghost_old", new Profile(196, 0.074f, 0.38f, 0.06f, 0.72f) },
+            { "general", new Profile(92, 0.072f, 0.30f, 0.0f, 0.85f) },
+            { "king", new Profile(54, 0.130f, 0.36f, 0.01f, 1.0f) },
+            { "robber", new Profile(168, 0.050f, 0.07f, 0, 0.85f) },
         };
 
         // formant pairs for a, e, i, o, u
@@ -52,6 +60,8 @@ namespace Wakefire
 
         static AudioClip[] Get(string voice, bool dream)
         {
+            // the dead always sound as if they are speaking from the next room
+            if (voice == "clerk" || voice == "king" || voice == "general" || voice.StartsWith("ghost")) dream = true;
             string key = voice + (dream ? "~" : "");
             if (clips.TryGetValue(key, out var arr)) return arr;
             if (!profiles.TryGetValue(voice, out var p)) p = profiles["narrator"];

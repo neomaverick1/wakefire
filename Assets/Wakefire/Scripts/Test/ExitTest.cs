@@ -1,4 +1,4 @@
-// Every doorway in the chapter walked through for real: Azar starts just inside each exit, walks
+// Every doorway in both chapters walked through for real: Azar starts just inside each exit, walks
 // out, and must arrive in the right place at the named spawn (a misspelt spawn would quietly
 // drop him somewhere else).
 using System.Collections;
@@ -14,8 +14,11 @@ namespace Wakefire
         static IEnumerator Run(AutoTest t)
         {
             DialogueBox.AutoAdvance = 0.05f;
-            foreach (var f in new[] { "gate_open", "door_z2_bigdoor", "yard_bridge", "key", "item_oil", "item_shield", "bigkey", "door_z1_door" }) Story.Set(f);
-            string[] maps = { "ashkel", "lowtown", "cliffs", "terraces", "temple_yard", "zig_1", "zig_2", "zig_3" };
+            foreach (var f in new[] { "gate_open", "door_z2_bigdoor", "yard_bridge", "key", "item_oil", "item_shield", "bigkey", "door_z1_door",
+                                      "bull_seen", "bull_dead", "chapter_done", "ch2", "item_hillkey", "hill_gate", "met_namtar", "queue_passed", "king_door",
+                                      "door_t1_door", "door_t2_seal", "king_seen", "king_done", "item_horn", "chapter2_done" })
+                Story.Set(f);
+            string[] maps = { "ashkel", "lowtown", "cliffs", "terraces", "temple_yard", "zig_1", "zig_2", "zig_3", "necro_road", "necropolis", "tomb_1", "tomb_2", "tomb_3" };
             int bad = 0, n = 0;
             foreach (var map in maps)
             {

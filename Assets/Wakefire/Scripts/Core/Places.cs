@@ -14,6 +14,11 @@ namespace Wakefire
             "zig_1" => "The Ziggurat: First Hall",
             "zig_2" => "The Ziggurat: Hall of the Bull",
             "zig_3" => "The Summit",
+            "necro_road" => "The Road of the Dead",
+            "necropolis" => "The Hill of Sleepers",
+            "tomb_1" => "The Tomb: Hall of Servants",
+            "tomb_2" => "The Tomb: Hall of the Lyre",
+            "tomb_3" => "The King's Chamber",
             _ => "Ashkel",
         };
     }

@@ -36,8 +36,11 @@ RAMPS = {
     'tile':   hexes('#241620', '#3e2428', '#5c3832', '#7c4e3e', '#9c684c', '#b8845e', '#d0a076'),
     'carpet': hexes('#2a0a16', '#4c1020', '#74182c', '#9c2634', '#be3e40', '#da6450'),
     'wall':   hexes('#2e2634', '#50424e', '#7a6660', '#a48a70', '#c8ac84', '#e4cc9c', '#f8e8ba'),
+    'ash':    hexes('#231e2c', '#3a3342', '#574d58', '#766b6e', '#968b86', '#b4aa9c', '#d0c6b2'),
+    'sere':   hexes('#26232c', '#403b40', '#5d564f', '#7c745c', '#9a926e', '#b6ae86', '#d0c89e'),
+    'basalt': hexes('#0d0b15', '#191722', '#282532', '#3a3644', '#4f4b58', '#69656e', '#858188'),
 }
-SURF = {'earth': 's', 'dust': 's', 'soil': 's', 'sand': 's', 'grass': 'g', 'dry': 'g', 'moss': 'g', 'water': 'a', 'plank': 'w'}
+SURF = {'earth': 's', 'dust': 's', 'soil': 's', 'sand': 's', 'ash': 's', 'grass': 'g', 'dry': 'g', 'sere': 'g', 'moss': 'g', 'water': 'a', 'plank': 'w'}
 
 
 class Terrain:
@@ -172,7 +175,7 @@ class Terrain:
                                 if 0 <= cx0 < self.W: isj[yy_, cx0] = True
                         elif hv > 0.9:
                             # a chipped corner
-                            if ya == y and xa == x: isj[ya:ya + 2, xa:xa + 2] = True; isj[ya + 1, xa + 1] = False
+                            if ya == y and xa == x and ya + 1 < self.H and xa + 1 < self.W: isj[ya:ya + 2, xa:xa + 2] = True; isj[ya + 1, xa + 1] = False
                 x += w; k += 1
             y += h; r += 1
         if not whole:

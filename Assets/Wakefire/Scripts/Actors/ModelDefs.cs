@@ -137,6 +137,7 @@ namespace Wakefire
             Add("bull", Built(1.60f, a => Beast.Make<BullBeast>(a, BullBeast.Body), 2));
             Add("crab", Built(1.50f, a => CrabBeast.Make(a)));
             Add("moth", Built(1.60f, a => MothBeast.Make(a)));
+            Hill();
         }
 
         /// <summary>A creature whose skeleton and skin are made by code.</summary>

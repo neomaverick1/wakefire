@@ -85,6 +85,8 @@ namespace Wakefire
         }
 
         public static int Choice;
+        /// <summary>Test runs line up their answers here; each question takes the next one.</summary>
+        public static readonly Queue<int> Answers = new Queue<int>();
         string[] options;
         int optSel;
 
@@ -136,7 +138,7 @@ namespace Wakefire
                 bool lastPage = page == pages[pages.Count - 1];
                 if (lastPage && options != null)
                 {
-                    optSel = 0;
+                    optSel = Answers.Count > 0 ? Answers.Dequeue() : 0;
                     yield return null;
                     while (true)
                     {
@@ -220,12 +222,33 @@ namespace Wakefire
                 boxImg.texture = box.tex;
                 boxImg.rectTransform.sizeDelta = new Vector2(boxW, boxH);
             }
-            // keep the box away from Azar: bottom of the screen unless he is down there
-            bool low = Player.I && PixelView.I.WorldToPixel(Player.I.pos).y < H * 0.42f;
+            // keep the box off Azar and off whoever he is talking to: the bottom of the screen,
+            // unless more of the two of them is standing down there than up at the top
             float x = Mathf.Round((W - boxW) / 2f);
-            float y = low ? 46 : H - boxH - 8;
+            int top = 46, bottom = H - boxH - 8;
+            float y = Hidden(bottom, x, H) <= Hidden(top, x, H) ? bottom : top;
             boxImg.rectTransform.anchoredPosition = new Vector2(x, -y);
             tabImg.rectTransform.anchoredPosition = new Vector2(x + 8, -(y - 11));
+        }
+
+        /// <summary>How many pixels of Azar and of the one he is speaking with a box whose top edge
+        /// is y0 pixels down the screen would cover, name tab included.</summary>
+        float Hidden(float y0, float x, int H)
+        {
+            float sum = 0;
+            void Figure(Vector2 at, float tall)
+            {
+                var px = PixelView.I.WorldToPixel(at);
+                float feet = H - px.y;
+                // the name tab stands on the box's left shoulder only
+                bool underTab = px.x > x && px.x < x + 130;
+                float a = Mathf.Max(feet - tall, y0 - (underTab ? 11 : 0)), b = Mathf.Min(feet + 2, y0 + boxH);
+                if (b > a && px.x > x - 8 && px.x < x + boxW + 8) sum += b - a;
+            }
+            if (Player.I) Figure(Player.I.pos, 28);
+            if (Story.I && Story.I.Speaker) Figure(Story.I.Speaker.pos, 28);
+            if (SleeplessKing.I) Figure(SleeplessKing.I.pos, 46);
+            return sum;
         }
 
         void DrawTab(string speaker)

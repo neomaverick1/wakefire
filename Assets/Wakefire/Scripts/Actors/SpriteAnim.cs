@@ -93,6 +93,9 @@ namespace Wakefire
             { "butt", (14f, false) },
             // creatures and the bull
             { "crab:attack", (12f, false) }, { "bull:shoot", (8f, false) }, { "bull:charge", (14f, true) }, { "bull:stun", (5f, true) },
+            // the Hill of Sleepers
+            { "wait", (3f, true) }, { "no", (3f, true) }, { "yes", (3f, true) }, { "sit", (3f, true) }, { "sit_talk", (3f, true) }, { "lamp", (3f, true) },
+            { "scratch", (12f, false) }, { "slam", (13f, false) }, { "cast", (12f, false) }, { "rise", (1f, false) }, { "reel", (1.2f, false) }, { "kneel", (1f, true) },
         };
 
         public void Play(string name, Facing f, bool restart = false)

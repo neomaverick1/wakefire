@@ -398,6 +398,17 @@ namespace Wakefire
             }
             // live fire throws the odd ember up into the night
             bool fire = (Kind == "brazier" && lit) || Kind == "torch";
+            if (Kind == "spirit" && !Game.Paused)
+            {
+                // the lamps of the dead: a cold wisp now and then, and no moth will go near
+                emberClock -= Time.deltaTime;
+                if (emberClock <= 0)
+                {
+                    emberClock = UnityEngine.Random.Range(0.5f, 1.3f);
+                    Fx.Spawn(basePos + new Vector2(UnityEngine.Random.Range(-0.1f, 0.1f), 0), new Vector2(UnityEngine.Random.Range(-0.2f, 0.2f), 0.1f), 1.3f, UnityEngine.Random.Range(0.3f, 0.9f),
+                        UnityEngine.Random.Range(0.6f, 1.1f), new Color(0.75f, 1f, 0.92f), new Color(0.12f, 0.45f, 0.5f), -0.6f);
+                }
+            }
             if (fire && !mothsMade) { mothsMade = true; TorchMoths.Add(this); }
             if (fire && !Game.Paused)
             {

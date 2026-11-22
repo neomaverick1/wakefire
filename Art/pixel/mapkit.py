@@ -9,7 +9,8 @@ from px import Canvas, R
 import forge
 from ground import Terrain
 
-RES = "/srv/Wakefire/Assets/Wakefire/Resources"
+# WF_RES points a map script at a staging folder instead of the game's own Resources
+RES = os.environ.get("WF_RES", "/srv/Wakefire/Assets/Wakefire/Resources")
 
 
 SURF_CELL = 8

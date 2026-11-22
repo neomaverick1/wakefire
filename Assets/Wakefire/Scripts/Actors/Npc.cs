@@ -24,6 +24,7 @@ namespace Wakefire
         public Func<IEnumerator> talk;
         public string voice = "man";
         public int orderBias;
+        public float lift;                         // drawn this far above where they stand (someone sitting on a seat)
         public System.Func<IEnumerator> notice;   // said once, when Azar first comes near
         public string snore;                       // sleepers breathe loud enough to hear when Azar is close
         float snoreClock = UnityEngine.Random.Range(1.5f, 8f);
@@ -38,7 +39,8 @@ namespace Wakefire
         Facing restFacing;
         string talkAnimBefore;
 
-        public static Npc Create(string id, Vector2 at, string sheet, string anim, WorldLayer layer, Facing facing = Facing.Down, bool solid = true)
+        /// <summary>look: the figure that plays this character, when it is not the one the sheet is named for.</summary>
+        public static Npc Create(string id, Vector2 at, string sheet, string anim, WorldLayer layer, Facing facing = Facing.Down, bool solid = true, string look = null)
         {
             var go = new GameObject("Npc " + id);
             go.transform.SetParent(Map.Current ? Map.Current.transform : null, false);
@@ -54,6 +56,7 @@ namespace Wakefire
             sr.sharedMaterial = Mat(layer);
             n.anim = body.AddComponent<SpriteAnim>();
             n.anim.sr = sr;
+            n.anim.modelAs = look;
             n.anim.sheet = SpriteSheet.Load(sheet);
             n.anim.Play(anim, facing, true);
             n.anim.time = UnityEngine.Random.value * 3f;   // sleepers breathe out of step
@@ -63,6 +66,36 @@ namespace Wakefire
             All.Add(n);
             n.Place();
             return n;
+        }
+
+        static Material matGhost;
+        public bool ghost;
+
+        /// <summary>The material of the dead: pale, cold, and not all there. They belong to the waking
+        /// world only. The dead do not dream.</summary>
+        public static Material GhostMat
+        {
+            get
+            {
+                if (!matGhost)
+                {
+                    matGhost = new Material(Map.SpriteMat);
+                    matGhost.SetFloat("_Layer", 1);
+                    matGhost.SetFloat("_Ghost", 0.56f);
+                    matGhost.SetVector("_GhostFade", new Vector4(0.285f, 0.40f, 0, 0));
+                }
+                return matGhost;
+            }
+        }
+
+        /// <summary>Makes this character one of the dead: seen through, shadowless, awake.</summary>
+        public Npc Ghost()
+        {
+            ghost = true;
+            snore = null;
+            anim.sr.sharedMaterial = GhostMat;
+            if (shadow) { Destroy(shadow.gameObject); shadow = null; }
+            return this;
         }
 
         public static Material Mat(WorldLayer layer)
@@ -216,6 +249,9 @@ namespace Wakefire
             transform.position = new Vector3(pos.x, pos.y, 0);
             int o = Map.Order(pos.y) + orderBias;
             anim.sr.sortingOrder = o;
+            // the dead do not quite stand on the ground
+            if (ghost) anim.sr.transform.localPosition = new Vector3(0, (1f + Mathf.Round(Mathf.Sin(Time.time * 1.3f + pos.x * 2.1f) * 1.2f)) / 16f + lift, 0);
+            else if (lift != 0) anim.sr.transform.localPosition = new Vector3(0, lift, 0);
             if (shadow)
             {
                 shadow.sortingOrder = o - 1;

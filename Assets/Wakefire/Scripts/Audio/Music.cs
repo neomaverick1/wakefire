@@ -25,6 +25,12 @@ namespace Wakefire
             { "dungeon_dream", -2.1f },
             { "ending", -0.5f },
             { "hills", -2.3f },
+            { "hill", -2.7f },
+            { "hill_dream", -2.1f },
+            { "tomb", +1.3f },
+            { "tomb_dream", -1.8f },
+            { "king", +0.4f },
+            { "dawn", +0.4f },
             { "hills_dream", -1.7f },
             { "sea", -3.3f },
             { "sea_dream", -0.9f },
@@ -64,7 +70,7 @@ namespace Wakefire
         public static string AmbienceFor(string music) => music switch
         {
             "town" => "night", "title" => "night", "sea" => "sea", "hills" => "hills", "temple" => "temple",
-            "dungeon" => "dungeon", "summit" => "dungeon", _ => null,
+            "dungeon" => "dungeon", "summit" => "dungeon", "hill" => "wind", "tomb" => "dungeon", _ => null,
         };
 
         public static void Play(string name, bool loop = true)
@@ -77,7 +83,7 @@ namespace Wakefire
             var d = Resources.Load<AudioClip>("Music/" + name + "_dream");
             I.current = name;
             var a = AmbienceFor(name);
-            if (a != null || name == "boss" || name == "ending") Ambience(a);
+            if (a != null || name == "boss" || name == "ending" || name == "king" || name == "dawn") Ambience(a);
             // the old pair fades out while the new one comes in
             (I.oldWake, I.wake) = (I.wake, I.oldWake);
             (I.oldDream, I.dream) = (I.dream, I.oldDream);

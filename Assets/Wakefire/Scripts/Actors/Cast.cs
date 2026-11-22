@@ -115,6 +115,7 @@ namespace Wakefire
             public Color shield = new Color(0.80f, 0.54f, 0.20f);
             public float crestHeight = 0.12f;
             public bool hasCape = true, hasBlade = true, hasLantern = true, hasSpear, hasShield, plateSkin;
+            public float metal = 1f;             // how bright the plate is: 1 polished bronze, 0 fired clay
         }
 
         public static void Azar(ModelActor m) => Soldier(m, new Look());
@@ -145,7 +146,7 @@ namespace Wakefire
 
             // ---- the body's own paint (what shows between the pieces)
             var skin = look.plateSkin ? look.bronze : look.skin;
-            float skinMetal = look.plateSkin ? 1f : 0f;
+            float skinMetal = look.plateSkin ? look.metal : 0f;
             t.Paint((p, bone) =>
             {
                 if (bone.StartsWith("spine") || bone.StartsWith("clavicle") || bone == "pelvis") return (look.tunic, 0f);
@@ -155,7 +156,7 @@ namespace Wakefire
             });
 
             // ---- helmet: a bronze bowl with a T cut for the eyes and mouth, darkness behind it, two eyes in the dark
-            kit.Paint(look.bronze, 1).On("Head");
+            kit.Paint(look.bronze, look.metal).On("Head");
             kit.Egg(hc, hr, 16, 9, -44, 90, d => !(d.z > 0.2f && ((Mathf.Abs(d.x) < 0.2f && d.y < 0.25f) || (Mathf.Abs(d.x) < 0.7f && d.y > -0.12f && d.y < 0.22f))));
             var inner = hr - Vector3.one * 0.016f;
             kit.Paint(Dark).Egg(hc, inner, 10, 6, -44, 50, null, -80, 80);
@@ -194,15 +195,15 @@ namespace Wakefire
                 var q = new Vector2(p.x, p.y) - strapA;
                 return Mathf.Abs(q.x * strapDir.y - q.y * strapDir.x) < 0.034f ? look.leather : (Color?)null;
             });
-            kit.Paint(look.tunic, look.plateSkin ? 1 : 0).Turned(f.trunk, new[]
+            kit.Paint(look.tunic, look.plateSkin ? look.metal : 0).Turned(f.trunk, new[]
             {
                 (f.wx + 0.030f, f.waistY + 0.02f), (f.wx + 0.050f, f.waistY + 0.12f), (f.chestX + 0.050f, f.chest.y - 0.10f),
                 (f.chestX + 0.062f, f.chest.y - 0.01f), (f.chestX + 0.036f, f.neck.y - 0.055f), (0.085f, f.neck.y - 0.012f),
             }, 16, f.deepChest);
             kit.Stain(null);
-            kit.Paint(look.bronze, 1).On("spine_03").Egg(new Vector3(0.025f, f.chest.y - 0.045f, f.trunk.z + (f.chestX + 0.062f) * f.deepChest), new Vector3(0.078f, 0.078f, 0.03f), 10, 5);
+            kit.Paint(look.bronze, look.metal).On("spine_03").Egg(new Vector3(0.025f, f.chest.y - 0.045f, f.trunk.z + (f.chestX + 0.062f) * f.deepChest), new Vector3(0.078f, 0.078f, 0.03f), 10, 5);
 
-            Limbs(kit, t, skin, skinMetal, look.bronze, look.leather, true);
+            Limbs(kit, t, skin, skinMetal, look.bronze, look.leather, true, null, 1f, look.metal);
 
             // ---- kilt of linen strips: swings with the thighs, hemmed in gold
             kit.On(f.Skirt(hemY));
@@ -210,14 +211,14 @@ namespace Wakefire
             float y1 = Mathf.Lerp(f.waistY, hemY, 0.3f), y2 = Mathf.Lerp(f.waistY, hemY, 0.68f);
             var waist = f.waist;
             kit.Stain(p => Mathf.FloorToInt((Mathf.Atan2(p.x, p.z - waist.z) + Mathf.PI) / (Mathf.PI * 2f) * 16f + 0.5f) % 2 == 0 ? look.tunicFold : (Color?)null);
-            kit.Paint(look.tunic, look.plateSkin ? 1 : 0).Turned(waist, new[] { (r0, f.waistY + 0.03f), (r1, y1), (r2, y2), (r3, hemY + 0.04f) }, 16, f.deep);
+            kit.Paint(look.tunic, look.plateSkin ? look.metal : 0).Turned(waist, new[] { (r0, f.waistY + 0.03f), (r1, y1), (r2, y2), (r3, hemY + 0.04f) }, 16, f.deep);
             kit.Stain(null);
-            kit.Paint(look.trim, look.plateSkin ? 1 : 0).Turned(waist, new[] { (r3, hemY + 0.04f), (r3 + 0.014f, hemY) }, 16, f.deep);
+            kit.Paint(look.trim, look.plateSkin ? look.metal : 0).Turned(waist, new[] { (r3, hemY + 0.04f), (r3 + 0.014f, hemY) }, 16, f.deep);
 
             // ---- belt and buckle
             kit.Paint(look.leather).On("pelvis", "spine_01", 0.5f);
             kit.Turned(waist, new[] { (r0 + 0.02f, f.waistY - 0.035f), (r0 + 0.036f, f.waistY + 0.005f), (r0 + 0.02f, f.waistY + 0.045f) }, 16, f.deep);
-            kit.Paint(look.bronze, 1).Egg(waist + new Vector3(0, f.waistY + 0.005f, (r0 + 0.036f) * f.deep), new Vector3(0.046f, 0.046f, 0.022f), 8, 4);
+            kit.Paint(look.bronze, look.metal).Egg(waist + new Vector3(0, f.waistY + 0.005f, (r0 + 0.036f) * f.deep), new Vector3(0.046f, 0.046f, 0.022f), 8, 4);
 
             // ---- the khopesh, in the right fist: blade out past the thumb, edge towards the knuckles
             Grip(t, "_r", out var grip, out var fingers, out var across, out var palm);
@@ -228,7 +229,7 @@ namespace Wakefire
                 Vector3 along = across * Mathf.Cos(tip) + fingers * Mathf.Sin(tip), edge = fingers * Mathf.Cos(tip) - across * Mathf.Sin(tip);
                 kit.On("hand_r").Frame(grip, along, edge, palm);
                 kit.Paint(look.leather).Ribbon(new[] { new Vector2(-0.12f, 0), new Vector2(0.03f, 0) }, new[] { 0.042f, 0.042f }, 0.042f);
-                kit.Paint(look.bronze, 1).Box(new Vector3(-0.145f, 0, 0), new Vector3(0.055f, 0.066f, 0.06f));
+                kit.Paint(look.bronze, look.metal).Box(new Vector3(-0.145f, 0, 0), new Vector3(0.055f, 0.066f, 0.06f));
                 kit.Paint(look.blade, 1).Ribbon(
                     new[] { new Vector2(0.03f, 0), new Vector2(0.21f, 0), new Vector2(0.32f, 0.03f), new Vector2(0.43f, 0.09f), new Vector2(0.54f, 0.15f), new Vector2(0.65f, 0.178f), new Vector2(0.75f, 0.162f), new Vector2(0.82f, 0.118f) },
                     new[] { 0.07f, 0.07f, 0.085f, 0.105f, 0.11f, 0.10f, 0.078f, 0.04f }, 0.05f);
@@ -259,9 +260,9 @@ namespace Wakefire
                 var face = mirror ? new Color(0.98f, 0.90f, 0.62f) : look.shield;
                 sk.On("lowerarm_l");
                 sk.Stain(p => (new Vector2(p.x - c.x, p.z - c.z)).magnitude > 0.25f ? look.bronze : (Color?)null);
-                sk.Paint(face, 1).Egg(c, new Vector3(0.31f, 0.06f, 0.31f), 14, 5, 0, 90);
+                sk.Paint(face, mirror ? 1 : look.metal).Egg(c, new Vector3(0.31f, 0.06f, 0.31f), 14, 5, 0, 90);
                 sk.Stain(null);
-                sk.Paint(look.bronze, 1).Egg(c + new Vector3(0, 0.05f, 0), new Vector3(0.07f, 0.04f, 0.07f), 8, 4, 0, 90);
+                sk.Paint(look.bronze, look.metal).Egg(c + new Vector3(0, 0.05f, 0), new Vector3(0.07f, 0.04f, 0.07f), 8, 4, 0, 90);
                 sk.Paint(look.leather).Egg(c, new Vector3(0.30f, 0.02f, 0.30f), 12, 3, -90, 0);
                 var shield = sk.Wear("Shield");
                 m.props["shield"] = shield.transform;
@@ -297,7 +298,7 @@ namespace Wakefire
 
         /// <summary>Arms and legs with some meat on them: upper arms, fists, thighs; plated (or sleeved) at
         /// shoulder, forearm, knee and shin when armoured.</summary>
-        static void Limbs(Kit kit, Tailor t, Color skin, float skinMetal, Color plate, Color shoe, bool armoured, Color? sleeve = null, float build = 1f)
+        static void Limbs(Kit kit, Tailor t, Color skin, float skinMetal, Color plate, Color shoe, bool armoured, Color? sleeve = null, float build = 1f, float plateMetal = 1f)
         {
             foreach (string side in new[] { "_l", "_r" })
             {
@@ -307,8 +308,8 @@ namespace Wakefire
                 kit.On("upperarm" + side).Egg(Vector3.Lerp(sh, el, 0.48f), new Vector3(upper * 0.56f, 0.068f * build, 0.072f * build), 10, 6);
                 if (armoured)
                 {
-                    kit.Paint(plate, 1).On("clavicle" + side, "upperarm" + side, 0.5f).Egg(sh + new Vector3(s * 0.012f, 0.032f, 0), new Vector3(0.105f, 0.086f, 0.11f), 10, 5, -8, 90);
-                    kit.Paint(plate, 1).On("lowerarm" + side).Egg(Vector3.Lerp(el, wr, 0.52f), new Vector3(fore * 0.45f, 0.064f, 0.066f), 10, 6);
+                    kit.Paint(plate, plateMetal).On("clavicle" + side, "upperarm" + side, 0.5f).Egg(sh + new Vector3(s * 0.012f, 0.032f, 0), new Vector3(0.105f, 0.086f, 0.11f), 10, 5, -8, 90);
+                    kit.Paint(plate, plateMetal).On("lowerarm" + side).Egg(Vector3.Lerp(el, wr, 0.52f), new Vector3(fore * 0.45f, 0.064f, 0.066f), 10, 6);
                 }
                 else kit.Paint(skin, skinMetal).On("lowerarm" + side).Egg(Vector3.Lerp(el, wr, 0.5f), new Vector3(fore * 0.52f, 0.054f * build, 0.056f * build), 8, 5);
                 kit.Paint(skin, skinMetal).On("hand" + side).Egg(wr + (fi - wr).normalized * 0.075f, Vector3.one * 0.056f, 8, 5);
@@ -318,7 +319,7 @@ namespace Wakefire
                 kit.Paint(skin, skinMetal).On("thigh" + side).Egg(Vector3.Lerp(hip, kn, 0.5f), new Vector3(0.088f * build, thigh * 0.56f, 0.096f * build), 10, 6);
                 if (armoured)
                 {
-                    kit.Paint(plate, 1).On("calf" + side).Egg(Vector3.Lerp(kn, an, 0.45f) + new Vector3(0, 0, 0.006f), new Vector3(0.073f, shin * 0.53f, 0.084f), 10, 6);
+                    kit.Paint(plate, plateMetal).On("calf" + side).Egg(Vector3.Lerp(kn, an, 0.45f) + new Vector3(0, 0, 0.006f), new Vector3(0.073f, shin * 0.53f, 0.084f), 10, 6);
                     kit.Egg(kn + new Vector3(0, 0.005f, 0.045f), new Vector3(0.058f, 0.064f, 0.05f), 8, 5);
                 }
                 else kit.Paint(skin, skinMetal).On("calf" + side).Egg(Vector3.Lerp(kn, an, 0.42f), new Vector3(0.064f * build, shin * 0.52f, 0.072f * build), 8, 5);
@@ -356,6 +357,17 @@ namespace Wakefire
             { "sleeper_b", new Folk { skin = Warm, hair = new Color(0.29f, 0.20f, 0.12f), tunic = new Color(0.48f, 0.60f, 0.35f), fold = new Color(0.35f, 0.48f, 0.25f), beard = true, beardColour = new Color(0.29f, 0.20f, 0.12f), hem = 0.3f, build = 1.12f } },
             { "sleeper_c", new Folk { skin = Deep, hair = new Color(0.10f, 0.06f, 0.05f), tunic = new Color(0.29f, 0.63f, 0.63f), fold = new Color(0.18f, 0.49f, 0.50f), top = "curls", hem = -0.2f } },
             { "captain_child", new Folk { skin = Warm, hair = new Color(0.23f, 0.14f, 0.09f), tunic = new Color(0.78f, 0.25f, 0.25f), fold = new Color(0.63f, 0.16f, 0.18f), top = "kidhelm", hem = -0.5f, headScale = 1.34f } },
+            // ---- the Hill of Sleepers: the dead (drawn pale and thin by their material), and three living thieves
+            { "namtar", new Folk { skin = Tan, hair = new Color(0.62f, 0.62f, 0.66f), tunic = new Color(0.84f, 0.84f, 0.78f), fold = new Color(0.68f, 0.68f, 0.62f), top = "bald", beard = true, beardColour = new Color(0.70f, 0.70f, 0.74f), sash = new Color(0.20f, 0.24f, 0.44f), hem = 0.95f } },
+            { "gran", new Folk { skin = Warm, hair = new Color(0.92f, 0.92f, 0.94f), tunic = new Color(0.56f, 0.26f, 0.24f), fold = new Color(0.42f, 0.18f, 0.18f), top = "scarf", hat = new Color(0.92f, 0.90f, 0.84f), longHair = true, sash = new Color(0.93f, 0.72f, 0.26f), hem = 0.92f, build = 0.94f, headScale = 1.14f } },
+            { "belu", new Folk { skin = Deep, hair = new Color(0.88f, 0.87f, 0.90f), tunic = new Color(0.80f, 0.62f, 0.30f), fold = new Color(0.64f, 0.48f, 0.22f), top = "headband", hat = new Color(0.60f, 0.24f, 0.44f), beard = true, longBeard = true, beardColour = new Color(0.90f, 0.89f, 0.92f), hem = 0.35f } },
+            { "poet", new Folk { skin = Warm, hair = new Color(0.16f, 0.12f, 0.14f), tunic = new Color(0.70f, 0.62f, 0.86f), fold = new Color(0.54f, 0.46f, 0.72f), top = "curls", longHair = true, sash = new Color(0.93f, 0.72f, 0.26f), hem = 0.6f, build = 0.92f } },
+            { "herald", new Folk { skin = Tan, hair = new Color(0.14f, 0.10f, 0.10f), tunic = new Color(0.22f, 0.30f, 0.66f), fold = new Color(0.16f, 0.22f, 0.52f), top = "tallcap", hat = new Color(0.22f, 0.30f, 0.66f), beard = true, longBeard = true, beardColour = new Color(0.14f, 0.10f, 0.10f), sash = new Color(0.93f, 0.72f, 0.26f), gold = true, hem = 0.95f } },
+            { "servant", new Folk { skin = Tan, hair = new Color(0.14f, 0.10f, 0.10f), tunic = new Color(0.90f, 0.87f, 0.78f), fold = new Color(0.74f, 0.70f, 0.60f), top = "bald", sash = new Color(0.62f, 0.14f, 0.14f), hem = -0.15f, sleeves = false } },
+            { "robber", new Folk { skin = Tan, hair = new Color(0.12f, 0.09f, 0.08f), tunic = new Color(0.30f, 0.27f, 0.30f), fold = new Color(0.21f, 0.19f, 0.22f), top = "scarf", hat = new Color(0.22f, 0.20f, 0.24f), beard = true, beardColour = new Color(0.12f, 0.09f, 0.08f), sash = new Color(0.58f, 0.46f, 0.28f), hem = -0.1f } },
+            { "robber_b", new Folk { skin = Deep, hair = new Color(0.10f, 0.07f, 0.06f), tunic = new Color(0.36f, 0.30f, 0.22f), fold = new Color(0.26f, 0.21f, 0.15f), top = "headband", hat = new Color(0.60f, 0.16f, 0.14f), sash = new Color(0.58f, 0.46f, 0.28f), hem = -0.25f, sleeves = false, build = 1.2f } },
+            { "shade", new Folk { skin = new Color(0.50f, 0.58f, 0.62f), hair = new Color(0.20f, 0.24f, 0.30f), tunic = new Color(0.26f, 0.32f, 0.40f), fold = new Color(0.18f, 0.22f, 0.30f), top = "veil", hat = new Color(0.22f, 0.27f, 0.36f), sash = new Color(0.14f, 0.17f, 0.24f), longHair = true, hem = 1.0f, build = 0.9f } },
+            { "king", new Folk { skin = Tan, hair = new Color(0.10f, 0.08f, 0.10f), tunic = new Color(0.50f, 0.12f, 0.20f), fold = new Color(0.86f, 0.66f, 0.24f), top = "bald", beard = true, longBeard = true, beardColour = new Color(0.10f, 0.08f, 0.10f), sash = new Color(0.93f, 0.72f, 0.26f), gold = true, hem = 0.97f, longHair = true, build = 1.22f, headScale = 1.06f } },
             { "god", new Folk { skin = new Color(0.86f, 0.72f, 0.44f), hair = new Color(0.93f, 0.92f, 0.98f), tunic = new Color(0.93f, 0.91f, 0.98f), fold = new Color(0.74f, 0.74f, 0.90f), top = "crown", hat = new Color(0.98f, 0.82f, 0.34f), beard = true, longBeard = true, beardColour = new Color(0.95f, 0.94f, 1.0f), sash = new Color(0.98f, 0.82f, 0.34f), gold = true, hem = 0.95f, longHair = true, build = 1.15f } },
         };
 
@@ -363,7 +375,10 @@ namespace Wakefire
 
         /// <summary>One of the people of Ashkel: a robe or tunic to the knee or the ankle, a sash, and a head
         /// you can tell from across the square (hat, hair, beard).</summary>
-        public static void Citizen(ModelActor m, Folk look)
+        public static void Citizen(ModelActor m, Folk look) => Clothe(m, look);
+
+        /// <summary>Dresses a citizen and hands back the body's measure, for whoever has more to add.</summary>
+        static Fit Clothe(ModelActor m, Folk look)
         {
             var t = new Tailor(m);
             var f = new Fit(t);
@@ -417,6 +432,7 @@ namespace Wakefire
                 headBone.localScale = Vector3.one * k;
                 m.Posed += (a, dt) => headBone.localScale = Vector3.one * k;
             }
+            return f;
         }
 
         static void Head(Kit kit, Fit f, Folk look)
@@ -487,6 +503,66 @@ namespace Wakefire
                     kit.Paint(look.hat, 1).Turned(new Vector3(0, 0, hc.z), new[] { (hr.x + 0.02f, hc.y + 0.05f), (hr.x + 0.035f, crown + 0.02f), (hr.x + 0.06f, crown + 0.09f) }, 12, hr.z / hr.x);
                     break;
             }
+        }
+
+        // ============================================================================ the Hill of Sleepers
+        /// <summary>One of the king's clay soldiers: fired earth from helm to shin, a real bronze spearhead,
+        /// and two points of cold light where a face would be looking out.</summary>
+        public static void Clay(ModelActor m) => Soldier(m, new Look
+        {
+            plateSkin = true, metal = 0f, skin = new Color(0.66f, 0.40f, 0.28f), bronze = new Color(0.70f, 0.44f, 0.30f),
+            tunic = new Color(0.60f, 0.36f, 0.25f), tunicFold = new Color(0.48f, 0.28f, 0.20f), trim = new Color(0.80f, 0.58f, 0.40f),
+            leather = new Color(0.42f, 0.24f, 0.18f), crest = new Color(0.52f, 0.30f, 0.22f), crestHeight = 0.07f, eyes = new Color(0.45f, 1.0f, 0.86f),
+            shield = new Color(0.62f, 0.38f, 0.27f), hasCape = false, hasBlade = false, hasLantern = false, hasSpear = true, hasShield = true,
+        });
+
+        /// <summary>The two generals at their game: armour they were buried in, each his own side's colour.</summary>
+        public static Action<ModelActor> General(int side) => m => Soldier(m, new Look
+        {
+            tunic = side == 0 ? new Color(0.60f, 0.16f, 0.16f) : new Color(0.18f, 0.28f, 0.60f),
+            tunicFold = side == 0 ? new Color(0.46f, 0.10f, 0.12f) : new Color(0.12f, 0.20f, 0.46f),
+            crest = side == 0 ? new Color(0.93f, 0.72f, 0.26f) : new Color(0.92f, 0.92f, 0.96f), crestHeight = 0.16f,
+            cape = side == 0 ? new Color(0.46f, 0.10f, 0.12f) : new Color(0.12f, 0.20f, 0.46f),
+            hasBlade = false, hasLantern = false, hasSpear = false, hasShield = false,
+        });
+
+        /// <summary>Kurashtar: a king's robe with a gold fringe, the squared beard of his line, the tall
+        /// horned crown (which comes off), and the mace of his office in his right fist.</summary>
+        public static void King(ModelActor m)
+        {
+            var f = Clothe(m, People["king"]);
+            var t = f.t;
+            Color gold = new Color(0.96f, 0.78f, 0.30f), lapis = new Color(0.16f, 0.26f, 0.66f), horn = new Color(0.94f, 0.92f, 0.84f);
+            // ---- the crown: a tall cap of gold, a blue band, two horns turned in
+            var ck = new Kit(t);
+            var hc = f.hc; var hr = f.hr * 1.06f; float crown = f.crown + 0.01f;
+            ck.On("Head");
+            ck.Paint(gold, 1).Turned(new Vector3(0, 0, hc.z), new[]
+            {
+                (hr.x + 0.026f, hc.y + 0.02f), (hr.x + 0.034f, crown + 0.06f), (hr.x * 0.92f, crown + 0.17f), (hr.x * 0.5f, crown + 0.24f), (0f, crown + 0.26f),
+            }, 12, hr.z / hr.x);
+            ck.Paint(lapis).Turned(new Vector3(0, 0, hc.z), new[] { (hr.x + 0.042f, hc.y + 0.03f), (hr.x + 0.046f, hc.y + 0.085f) }, 12, hr.z / hr.x);
+            foreach (int s in new[] { -1, 1 })
+                ck.Paint(horn).Tube(new[]
+                {
+                    new Vector3(s * (hr.x + 0.02f), hc.y + 0.10f, hc.z + 0.03f), new Vector3(s * (hr.x + 0.10f), crown + 0.04f, hc.z + 0.05f),
+                    new Vector3(s * (hr.x + 0.02f), crown + 0.16f, hc.z + 0.06f),
+                }, new[] { 0.034f, 0.028f, 0.008f }, 6);
+            var worn = ck.Wear("Crown");
+            m.props["crown"] = worn.transform;
+            // ---- the mace: a shaft of dark wood, a head of gold with a blue ring
+            Grip(t, "_r", out var grip, out var fingers, out var across, out var palm);
+            var mk = new Kit(t);
+            mk.On("hand_r").Frame(grip, across, fingers, palm);
+            mk.Paint(new Color(0.24f, 0.14f, 0.10f)).Ribbon(new[] { new Vector2(0, 0.26f), new Vector2(0, -0.66f) }, new[] { 0.045f, 0.045f }, 0.045f);
+            mk.Frame();
+            Vector3 head = grip + across * -0.74f;
+            mk.Paint(gold, 1).Egg(head, Vector3.one * 0.115f, 10, 6);
+            mk.Paint(lapis).Egg(head + across * 0.085f, new Vector3(0.07f, 0.07f, 0.07f), 8, 4);
+            mk.Paint(gold, 1).Egg(grip + across * 0.27f, Vector3.one * 0.05f, 6, 4);
+            mk.Wear("Mace");
+            var hand = m.Bone("hand_r");
+            m.marks["mace"] = (hand, hand.InverseTransformPoint(t.rig.TransformPoint(t.FromTailor(head))));
         }
 
         /// <summary>Where a closed fist holds a handle: the middle of the grip, the direction the fingers

@@ -120,8 +120,13 @@ namespace Wakefire
         public static string TestPick;
         public string[] Lines => options;
 
+        string chapter = "Chapter One: The Sleeping God";
+
         string[] MakeOptions()
         {
+            // the line under the name follows the saved game: whichever chapter it has got to
+            var at = Save.Read();
+            chapter = at != null && System.Array.IndexOf(at.flags, "ch2") >= 0 ? "Chapter Two: The Sleepless Dead" : "Chapter One: The Sleeping God";
             var o = new System.Collections.Generic.List<string>();
             if (Save.Exists) o.Add("Continue");
             if (Save.HasManual) o.Add("Load game");
@@ -157,7 +162,7 @@ namespace Wakefire
                 f.DrawString(menu, x, y, t, col);
             }
             var soft = new Color32(196, 188, 214, 255);
-            Line("Chapter One: The Sleeping God", 1, soft);
+            Line(chapter, 1, soft);
             for (int i = 0; i < options.Length; i++)
             {
                 string s = options[i];
