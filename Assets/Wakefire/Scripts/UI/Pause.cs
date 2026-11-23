@@ -77,6 +77,7 @@ namespace Wakefire
             }
             page = ItemPage; shown = ItemPage; said = null; ask = -1;
             dungeon = Dungeons.Of(Game.I.CurrentMap);
+            floorShown = HereFloor();
             row = Save.Slot;
             cell = Mathf.Max(0, System.Array.IndexOf(Items.Usable, Items.Current));
             Layout();
@@ -140,6 +141,7 @@ namespace Wakefire
                 case "close": Close(); break;
                 case "page": page = int.Parse(a[1]); shown = page; if (page == MapPage) CentreMap(); Draw(); break;
                 case "cell": cell = int.Parse(a[1]); Draw(); break;
+                case "floor": floorShown = Mathf.Clamp(int.Parse(a[1]), 0, dungeon != null ? dungeon.floors.Length - 1 : 0); Draw(); break;
                 case "row": row = int.Parse(a[1]); Draw(); break;
                 case "ask": ask = int.Parse(a[1]); askStage = 0; askSel = 0; Draw(); break;
                 case "save": DoSave(int.Parse(a[1])); Draw(); break;
@@ -207,6 +209,7 @@ namespace Wakefire
                     var d = at - downAt;
                     if (!dragged) tapped = true;
                     else if (ask < 0 && sideways && Mathf.Abs(d.x) > 34f) PageTo(page + (d.x < 0 ? 1 : -1));
+                    else if (ask < 0 && !sideways && page == MapPage && dungeon != null && Mathf.Abs(d.y) > 22f) FloorTo(floorShown + (d.y > 0 ? -1 : 1));
                 }
                 lastY = at.y;
             }
@@ -242,6 +245,12 @@ namespace Wakefire
                 return;
             }
             if (at.y >= py + PH - 19 && at.x > px + PW - 70) { Sfx.Play("menu_ok", 0.6f, 0); Close(); return; }
+            if (page == MapPage && dungeon != null && dungeon.floors.Length > 1 && at.x < ix + 30)
+            {
+                // the floors are listed down the left of the plan: touch one to turn to it
+                for (int i = 0; i < dungeon.floors.Length; i++)
+                    if (Mathf.Abs(at.y - (FloorLabelY(i) + 4)) < 8) { FloorTo(i); return; }
+            }
             if (page == ItemPage)
             {
                 var cs = Cells(0);
@@ -457,7 +466,7 @@ namespace Wakefire
             {
                 f.DrawString(cv, bx + 8, by + 6, cur.def.name, Gold, Sh);
                 int ly = by + 19;
-                foreach (var part in cur.def.about.Split('|'))
+                foreach (var part in cur.def.About.Split('|'))
                     foreach (var line in Wrap(part, bw - 16))
                     {
                         if (ly > by + bh - 12) break;
@@ -673,7 +682,12 @@ namespace Wakefire
         bool MapControls(Vector2Int step, bool act)
         {
             if (step.x != 0) PageTo(page + step.x);
-            if (dungeon != null) return false;
+            if (dungeon != null)
+            {
+                // up and down turn to the floor above and the floor below (the plan shows one at a time)
+                if (step.y != 0) FloorTo(floorShown - step.y);
+                return false;
+            }
             float v = Controls.MoveVector.y;
             if (Mathf.Abs(v) > 0.3f) pan = Mathf.Clamp(pan - v * 90f * Time.unscaledDeltaTime, 0, Mathf.Max(0, world.h - IH));
             return false;
@@ -749,6 +763,66 @@ namespace Wakefire
         /// Doors are notches between boxes, gold while they are locked. Chests: in a big dungeon only
         /// where its tuning fork has found them, in the fork's colour, shut or opened; in a small one
         /// (no fork) the scroll shows the ones still shut.</summary>
+        int floorShown;
+
+        /// <summary>The floor of this dungeon he is standing on (as the plan lists them, top floor first).</summary>
+        int HereFloor()
+        {
+            if (dungeon == null) return 0;
+            for (int i = 0; i < dungeon.floors.Length; i++) if (dungeon.floors[i].map == Game.I.CurrentMap) return i;
+            return 0;
+        }
+
+        void FloorTo(int i)
+        {
+            if (dungeon == null) return;
+            i = Mathf.Clamp(i, 0, dungeon.floors.Length - 1);
+            if (i == floorShown) return;
+            floorShown = i;
+            Sfx.Play("menu_move", 0.5f, 0);
+        }
+
+        int FloorLabelY(int i) => iy + (IH - 12) / 2 - dungeon.floors.Length * 7 + i * 14;
+
+        readonly List<RectInt> planRects = new List<RectInt>();
+
+        /// <summary>Where a room's floor is on the page: its box, or the rectangles its builder gave it (a passage,
+        /// an L, a hall with its corners cut), and the box round them all.</summary>
+        RectInt RoomShape(Dungeons.Room rm, int x0, int y0, int w, int h)
+        {
+            planRects.Clear();
+            if (rm.shape == null || rm.shape.Length < 4) { planRects.Add(new RectInt(x0, y0, w, h)); return planRects[0]; }
+            int bx0 = int.MaxValue, by0 = int.MaxValue, bx1 = int.MinValue, by1 = int.MinValue;
+            for (int i = 0; i + 3 < rm.shape.Length; i += 4)
+            {
+                int ax = x0 + Mathf.RoundToInt(rm.shape[i] * w), ay = y0 + Mathf.RoundToInt(rm.shape[i + 1] * h);
+                int bx = x0 + Mathf.RoundToInt(rm.shape[i + 2] * w), by = y0 + Mathf.RoundToInt(rm.shape[i + 3] * h);
+                if (bx - ax < 3) bx = ax + 3;
+                if (by - ay < 3) by = ay + 3;
+                planRects.Add(new RectInt(ax, ay, bx - ax, by - ay));
+                bx0 = Mathf.Min(bx0, ax); by0 = Mathf.Min(by0, ay); bx1 = Mathf.Max(bx1, bx); by1 = Mathf.Max(by1, by);
+            }
+            return new RectInt(bx0, by0, bx1 - bx0, by1 - by0);
+        }
+
+        bool InPlan(int x, int y)
+        {
+            foreach (var r in planRects) if (x >= r.x && x < r.xMax && y >= r.y && y < r.yMax) return true;
+            return false;
+        }
+
+        /// <summary>Paints the room's floor shape with a line round the outside of it.</summary>
+        void PaintRoom(RectInt box, Color32 fill, Color32 edge)
+        {
+            for (int y = box.y; y < box.yMax; y++)
+                for (int x = box.x; x < box.xMax; x++)
+                {
+                    if (!InPlan(x, y)) continue;
+                    bool rim = !InPlan(x - 1, y) || !InPlan(x + 1, y) || !InPlan(x, y - 1) || !InPlan(x, y + 1);
+                    cv.Set(x, y, rim ? edge : fill);
+                }
+        }
+
         void DrawDungeon(int ox)
         {
             var f = PixelFont.Main;
@@ -757,102 +831,118 @@ namespace Wakefire
             Color32 forkCol = Dungeons.ForkColor(dungeon.name);
             string here = Game.I.CurrentMap;
             string room = Rooms.I && Rooms.I.current != null ? Rooms.I.current.id : null;
-            int rows = 0, cols = 1, nf = dungeon.floors.Length;
-            foreach (var fl in dungeon.floors) { rows += fl.rows; cols = Mathf.Max(cols, fl.cols); }
-            const int gap = 7;
-            int ch = Mathf.Clamp((IH - 8 - gap * (nf - 1)) / Mathf.Max(1, rows), 9, 26);
-            int cw = Mathf.Min(Mathf.RoundToInt(ch * 26f / 14f), (IW - 44) / cols);
-            int y = iy + (IH - (rows * ch + gap * (nf - 1))) / 2;
-            int fx = -1, fy = -1;
-            foreach (var fl in dungeon.floors)
+            int nf = dungeon.floors.Length;
+            floorShown = Mathf.Clamp(floorShown, 0, nf - 1);
+            var fl = dungeon.floors[floorShown];
+            // the floors, down the left: the one on the page in gold, a flame by the one he is standing on
+            for (int i = 0; i < nf; i++)
             {
-                int gx = ix + ox + (IW - fl.cols * cw) / 2 + 8, gy = y;
-                bool cur = fl.map == here;
-                bool Found(string id) => forked && Story.Has(Fork.FoundFlag(fl.map, id));
-                bool Known(string id) => !string.IsNullOrEmpty(id) && (scroll || Found(id) || Story.Has(Rooms.VisitedFlag(fl.map, id)));
-                f.DrawString(cv, gx - 8 - f.Measure(fl.label), gy + (fl.rows * ch - 9) / 2, fl.label, cur ? Gold : Dim, Sh);
-                foreach (var rm in fl.rooms)
+                var fi = dungeon.floors[i];
+                int ly = FloorLabelY(i);
+                bool on = i == floorShown;
+                f.DrawString(cv, ix + ox + 8, ly, fi.label, on ? Gold : Dim, Sh);
+                if (on && nf > 1) { cv.Rect(ix + ox + 3, ly + 2, 1, 5, Gold); cv.Rect(ix + ox + 4, ly + 3, 1, 3, Gold); cv.Set(ix + ox + 5, ly + 4, Gold); }
+                if (fi.map == here) { cv.Rect(ix + ox + 9 + f.Measure(fi.label), ly + 3, 2, 3, Gold); cv.Set(ix + ox + 9 + f.Measure(fi.label), ly + 2, RoomEdge); }
+            }
+            // one floor at a time, as big as the page allows: a real dungeon is not a block, and its plan should show it
+            int left = nf > 1 || fl.label.Length > 0 ? 30 : 6;
+            int availW = IW - left - 6, availH = IH - 16;
+            int ch = Mathf.Clamp(availH / Mathf.Max(1, fl.rows), 9, 28);
+            int cw = Mathf.Min(Mathf.RoundToInt(ch * 26f / 14f), availW / Mathf.Max(1, fl.cols));
+            ch = Mathf.Min(ch, Mathf.Max(9, Mathf.RoundToInt(cw * 14f / 26f)));
+            int gx = ix + ox + left + (availW - fl.cols * cw) / 2, gy = iy + 2 + (availH - fl.rows * ch) / 2;
+            bool cur = fl.map == here;
+            int fx = -1, fy = -1;
+            bool Found(string id) => forked && Story.Has(Fork.FoundFlag(fl.map, id));
+            bool Known(string id) => !string.IsNullOrEmpty(id) && (scroll || Found(id) || Story.Has(Rooms.VisitedFlag(fl.map, id)));
+            foreach (var rm in fl.rooms)
+            {
+                bool seen = Story.Has(Rooms.VisitedFlag(fl.map, rm.id));
+                bool found = Found(rm.id);
+                if (!seen && !scroll && !found) continue;
+                int x0 = gx + rm.c * cw, y0 = gy + rm.r * ch, w = rm.cw * cw - 1, h = rm.ch * ch - 1;
+                bool me = cur && rm.id == room;
+                var box = RoomShape(rm, x0, y0, w, h);
+                PaintRoom(box, seen ? (me ? RoomOn : RoomLit) : Well, seen ? RoomEdge : Faint);
+                if (me) { fx = box.x + box.width / 2; fy = box.y + box.height / 2 + 2; }
+                // who keeps the place: the scroll knows
+                if (scroll && (rm.mark == "mini" || rm.mark == "boss"))
                 {
-                    bool seen = Story.Has(Rooms.VisitedFlag(fl.map, rm.id));
-                    bool found = Found(rm.id);
-                    if (!seen && !scroll && !found) continue;
-                    int x0 = gx + rm.c * cw, y0 = gy + rm.r * ch, w = rm.cw * cw - 1, h = rm.ch * ch - 1;
-                    bool me = cur && rm.id == room;
-                    cv.Box(x0, y0, w, h, seen ? (me ? RoomOn : RoomLit) : Well, seen ? RoomEdge : Faint);
-                    if (me) { fx = x0 + w / 2; fy = y0 + h / 2 + 2; }
-                    // who keeps the place: the scroll knows
-                    if (scroll && (rm.mark == "mini" || rm.mark == "boss"))
-                    {
-                        int k = rm.mark == "boss" ? 3 : 2, mx = x0 + w - 3 - k, my = y0 + 3 + k;
-                        for (int dy = -k; dy <= k; dy++)
-                            for (int dx = -k; dx <= k; dx++)
-                                if (Mathf.Abs(dx) + Mathf.Abs(dy) <= k) cv.Set(mx + dx, my + dy, Mathf.Abs(dx) + Mathf.Abs(dy) == k ? Frame : Blood);
-                    }
-                    int n = 0;
-                    if (forked)
-                    {
-                        // a room the fork has sung in: every chest in it, shut (solid) or opened (hollow), in the fork's colour,
-                        // and the whole room ringed in that colour for as long as one of them is still shut
-                        if (!found) continue;
-                        bool shut = false;
-                        foreach (var c in fl.chests)
-                        {
-                            if (c.room != rm.id) continue;
-                            bool open = Story.Has("chest_" + c.id);
-                            shut |= !open;
-                            int sz = c.big ? 5 : 4, bx = x0 + 3 + n, by = y0 + h - 3 - sz;
-                            cv.Box(bx, by, sz, sz, open ? Well : (Color32)forkCol, open ? forkCol : Frame);
-                            n += sz + 1;
-                        }
-                        if (shut && ((int)(clock * 2.5f) % 2 == 0 || !me))
-                        {
-                            cv.Rect(x0 + 1, y0 + 1, w - 2, 1, forkCol); cv.Rect(x0 + 1, y0 + h - 2, w - 2, 1, forkCol);
-                            cv.Rect(x0 + 1, y0 + 1, 1, h - 2, forkCol); cv.Rect(x0 + w - 2, y0 + 1, 1, h - 2, forkCol);
-                        }
-                        continue;
-                    }
-                    if (!scroll) continue;
+                    int k = rm.mark == "boss" ? 3 : 2, mx = box.xMax - 3 - k, my = box.y + 3 + k;
+                    for (int dy = -k; dy <= k; dy++)
+                        for (int dx = -k; dx <= k; dx++)
+                            if (Mathf.Abs(dx) + Mathf.Abs(dy) <= k) cv.Set(mx + dx, my + dy, Mathf.Abs(dx) + Mathf.Abs(dy) == k ? Frame : Blood);
+                }
+                int n = 0;
+                if (forked)
+                {
+                    // a room the fork has sung in: every chest in it, shut (solid) or opened (hollow), in the fork's colour,
+                    // and the whole room ringed in that colour for as long as one of them is still shut
+                    if (!found) continue;
+                    bool shut = false;
                     foreach (var c in fl.chests)
                     {
-                        if (c.room != rm.id || Story.Has("chest_" + c.id)) continue;
-                        int sz = c.big ? 4 : 3, bx = x0 + 3 + n, by = y0 + h - 3 - sz;
-                        cv.Box(bx, by, sz, sz, c.big ? Gold : BronzeL, Frame);
+                        if (c.room != rm.id) continue;
+                        bool open = Story.Has("chest_" + c.id);
+                        shut |= !open;
+                        int sz = c.big ? 5 : 4, bx = box.x + 3 + n, by = box.yMax - 3 - sz;
+                        cv.Box(bx, by, sz, sz, open ? Well : (Color32)forkCol, open ? forkCol : Frame);
                         n += sz + 1;
                     }
+                    if (shut && ((int)(clock * 2.5f) % 2 == 0 || !me)) PaintRing(box, forkCol);
+                    continue;
                 }
-                foreach (var l in fl.links)
+                if (!scroll) continue;
+                foreach (var c in fl.chests)
                 {
-                    bool both = !string.IsNullOrEmpty(l.a) && !string.IsNullOrEmpty(l.b);
-                    if (both)
-                    {
-                        if (!Known(l.a) && !Known(l.b)) continue;
-                        bool locked = (l.kind == "lock" || l.kind == "big") && !Story.Has("door_" + l.id);
-                        var col = locked ? Gold : l.kind == "bars" ? Dim : RoomLit;
-                        if (l.side == "n") cv.Rect(gx + l.c * cw + cw / 2 - 2, gy + l.r * ch - 2, 4, 3, col);
-                        else cv.Rect(gx + l.c * cw - 2, gy + l.r * ch + ch / 2 - 2, 3, 4, col);
-                        continue;
-                    }
-                    // a way to another floor, or out: three steps at the head of the room, or a mark at its foot
-                    if (!string.IsNullOrEmpty(l.a) && Known(l.a))
-                    {
-                        int sx = gx + l.c * cw + cw / 2, sy = gy + l.r * ch + 2;
-                        for (int k = 0; k < 3; k++) cv.Rect(sx - 1 - k, sy + k, 3 + 2 * k, 1, k % 2 == 0 ? Ink : Dim);
-                    }
-                    else if (!string.IsNullOrEmpty(l.b) && Known(l.b))
-                    {
-                        int sx = gx + l.c * cw + cw / 2, sy = gy + l.r * ch - 6;
-                        if (l.kind == "out") { for (int k = 0; k < 3; k++) cv.Rect(sx - 2 + k, sy + 1 + k, 5 - 2 * k, 1, Ink); }
-                        else for (int k = 0; k < 3; k++) cv.Rect(sx - 3 + k, sy + k, 7 - 2 * k, 1, k % 2 == 0 ? Ink : Dim);
-                    }
+                    if (c.room != rm.id || Story.Has("chest_" + c.id)) continue;
+                    int sz = c.big ? 4 : 3, bx = box.x + 3 + n, by = box.yMax - 3 - sz;
+                    cv.Box(bx, by, sz, sz, c.big ? Gold : BronzeL, Frame);
+                    n += sz + 1;
                 }
-                y += fl.rows * ch + gap;
+            }
+            foreach (var l in fl.links)
+            {
+                bool both = !string.IsNullOrEmpty(l.a) && !string.IsNullOrEmpty(l.b);
+                if (both)
+                {
+                    if (!Known(l.a) && !Known(l.b)) continue;
+                    bool locked = (l.kind == "lock" || l.kind == "big") && !Story.Has("door_" + l.id);
+                    var col = locked ? Gold : l.kind == "bars" ? Dim : RoomLit;
+                    if (l.side == "n") cv.Rect(gx + l.c * cw + cw / 2 - 2, gy + l.r * ch - 2, 4, 3, col);
+                    else cv.Rect(gx + l.c * cw - 2, gy + l.r * ch + ch / 2 - 2, 3, 4, col);
+                    continue;
+                }
+                // a way to another floor, or out: three steps at the head of the room, or a mark at its foot
+                if (!string.IsNullOrEmpty(l.a) && Known(l.a))
+                {
+                    int sx = gx + l.c * cw + cw / 2, sy = gy + l.r * ch + 2;
+                    for (int k = 0; k < 3; k++) cv.Rect(sx - 1 - k, sy + k, 3 + 2 * k, 1, k % 2 == 0 ? Ink : Dim);
+                }
+                else if (!string.IsNullOrEmpty(l.b) && Known(l.b))
+                {
+                    int sx = gx + l.c * cw + cw / 2, sy = gy + l.r * ch - 6;
+                    if (l.kind == "out") { for (int k = 0; k < 3; k++) cv.Rect(sx - 2 + k, sy + 1 + k, 5 - 2 * k, 1, Ink); }
+                    else for (int k = 0; k < 3; k++) cv.Rect(sx - 3 + k, sy + k, 7 - 2 * k, 1, k % 2 == 0 ? Ink : Dim);
+                }
             }
             if (fx >= 0) HereFlame(fx, fy, false);
-            if (!scroll)
-            {
-                string none = forked && Fork.Owns(dungeon.name) ? "The rooms you have walked, and what the fork has found." : "Only the rooms you have walked.";
-                f.DrawString(cv, ix + ox + (IW - f.Measure(none)) / 2, iy + IH - 11, none, Faint, Sh);
-            }
+            string foot = !scroll ? (forked && Fork.Owns(dungeon.name) ? "The rooms you have walked, and what the fork has found." : "Only the rooms you have walked.") : null;
+            if (foot != null) f.DrawString(cv, ix + ox + (IW - f.Measure(foot)) / 2, iy + IH - 11, foot, Faint, Sh);
+        }
+
+        /// <summary>A line of the fork's colour just inside the edge of a room's shape.</summary>
+        void PaintRing(RectInt box, Color32 col)
+        {
+            for (int y = box.y; y < box.yMax; y++)
+                for (int x = box.x; x < box.xMax; x++)
+                {
+                    if (!InPlan(x, y)) continue;
+                    bool rim = !InPlan(x - 1, y) || !InPlan(x + 1, y) || !InPlan(x, y - 1) || !InPlan(x, y + 1);
+                    if (rim) continue;
+                    bool inner = !InPlan(x - 2, y) || !InPlan(x + 2, y) || !InPlan(x, y - 2) || !InPlan(x, y + 2);
+                    if (inner) cv.Set(x, y, col);
+                }
         }
 
         void Arrow(int x, int y, bool up)

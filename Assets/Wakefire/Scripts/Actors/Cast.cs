@@ -538,6 +538,31 @@ namespace Wakefire
             shield = new Color(0.62f, 0.38f, 0.27f), hasCape = false, hasBlade = false, hasLantern = false, hasSpear = true, hasShield = true,
         });
 
+        /// <summary>The clay armies of the Generals' Barrow: the king's guard's cousins, in their general's
+        /// colour. Ushur's (0) carry a spear and a red shield; Baltu's (1) carry nothing you can see, and
+        /// throw it.</summary>
+        public static Action<ModelActor> ClayOf(int side) => m => Soldier(m, new Look
+        {
+            plateSkin = true, metal = 0f, skin = new Color(0.66f, 0.40f, 0.28f), bronze = new Color(0.70f, 0.44f, 0.30f),
+            tunic = side == 0 ? new Color(0.62f, 0.17f, 0.15f) : new Color(0.20f, 0.30f, 0.62f),
+            tunicFold = side == 0 ? new Color(0.46f, 0.11f, 0.12f) : new Color(0.13f, 0.21f, 0.46f),
+            trim = side == 0 ? new Color(0.93f, 0.72f, 0.26f) : new Color(0.88f, 0.88f, 0.92f),
+            leather = new Color(0.42f, 0.24f, 0.18f), crest = side == 0 ? new Color(0.80f, 0.20f, 0.16f) : new Color(0.26f, 0.38f, 0.78f), crestHeight = 0.10f,
+            eyes = new Color(0.45f, 1.0f, 0.86f), shield = side == 0 ? new Color(0.62f, 0.17f, 0.15f) : new Color(0.20f, 0.30f, 0.62f),
+            hasCape = false, hasBlade = false, hasLantern = false, hasSpear = side == 0, hasShield = side == 0,
+        });
+
+        /// <summary>The Last Piece: the one both generals claim. Ushur's red on its body, Baltu's blue down its
+        /// back, a gold crest neither of them paid for, and a shield as wide as a door.</summary>
+        public static void Piece(ModelActor m) => Soldier(m, new Look
+        {
+            plateSkin = true, metal = 0f, skin = new Color(0.62f, 0.37f, 0.26f), bronze = new Color(0.66f, 0.41f, 0.28f),
+            tunic = new Color(0.60f, 0.16f, 0.15f), tunicFold = new Color(0.44f, 0.10f, 0.11f), trim = new Color(0.93f, 0.72f, 0.26f),
+            leather = new Color(0.40f, 0.22f, 0.17f), crest = new Color(0.93f, 0.72f, 0.26f), crestHeight = 0.2f, eyes = new Color(1.0f, 0.86f, 0.5f),
+            cape = new Color(0.18f, 0.28f, 0.62f), shield = new Color(0.70f, 0.46f, 0.26f),
+            hasCape = true, hasBlade = false, hasLantern = false, hasSpear = false, hasShield = true,
+        });
+
         /// <summary>The two generals at their game: armour they were buried in, each his own side's colour.</summary>
         public static Action<ModelActor> General(int side) => m => Soldier(m, new Look
         {

@@ -8,6 +8,10 @@ namespace Wakefire
 {
     public class Hud : MonoBehaviour
     {
+        static float pulse;
+        /// <summary>The item box swells for a moment: what is in it has changed.</summary>
+        public static void Pulse() => pulse = 1f;
+
         public static Hud I;
         RectTransform root;
         Image meterFill;
@@ -157,6 +161,12 @@ namespace Wakefire
             bool lamp = p.hasLantern;
             if (meterBox.activeSelf != lamp) { meterBox.SetActive(lamp); meterFill.gameObject.SetActive(lamp); itemBox.SetActive(lamp); }
             if (item.gameObject.activeSelf != (cur != null)) item.gameObject.SetActive(cur != null);
+            if (pulse > 0)
+            {
+                // something has just gone into the box, or come out of it
+                pulse = Mathf.Max(0, pulse - Time.unscaledDeltaTime * 2.6f);
+                item.rectTransform.localScale = Vector3.one * (1f + 0.7f * pulse * pulse);
+            }
             var act = p.state == Player.State.Free || p.state == Player.State.Guard ? p.Action : Player.Act.None;
             if (act != shownAct)
             {

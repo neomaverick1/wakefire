@@ -225,6 +225,7 @@ namespace Wakefire
         void Update()
         {
             HillUpdate();
+            BarrowUpdate();
             // the yard's old drawbridge: once Azar stands on the far side, he can kick it down
             var m = Map.Current;
             if (m && m == yardMap && !Has("yard_bridge") && !Running && Player.I && Player.I.state == Player.State.Free)

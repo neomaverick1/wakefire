@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image
 from scipy import ndimage
 
-OUT = '/srv/Wakefire/Assets/Wakefire/Resources/UI/Touch'
+OUT = os.environ.get('WF_TOUCH_OUT', '/srv/Wakefire/Assets/Wakefire/Resources/UI/Touch')     # (a staging folder, if one is named)
 DENSITY = 6            # texture pixels per game pixel
 SS = 3                 # each texture pixel is worked out from SS x SS samples
 
@@ -197,6 +197,23 @@ def fork(X, Y):
     return np.minimum.reduce([tines, yoke, stem, circle(X, Y, 0, 0.60, 0.12)]), None
 
 
+def pouch(X, Y):
+    """Nod's Pocket: a soldier's belt pouch, its two loops, the edge of its flap and the toggle."""
+    bag = np.maximum(circle(X, Y, 0, 0.02, 0.58), -(Y + 0.30))
+    band = box(X, Y, 0, -0.27, 0.52, 0.10, 0.08)
+    loops = np.minimum(box(X, Y, -0.25, -0.54, 0.07, 0.15, 0.03), box(X, Y, 0.25, -0.54, 0.07, 0.15, 0.03))
+    flap = fine(X, Y, [(-0.47, -0.14), (-0.2, 0.08), (0.0, 0.17), (0.2, 0.08), (0.47, -0.14)], [0.028, 0.032, 0.034, 0.032, 0.028])
+    return np.minimum.reduce([bag, band, loops]), np.minimum(flap, circle(X, Y, 0, 0.30, 0.075))
+
+
+def take(X, Y):
+    """Taking: the pouch, and something small on its way in."""
+    k = 1.32
+    d, cuts = pouch(X * k, (Y - 0.26) * k)
+    thing = polygon(X, Y, [(0, -0.80), (0.16, -0.62), (0, -0.44), (-0.16, -0.62)])
+    return np.minimum(d / k, thing), cuts / k
+
+
 def rosette(X, Y):
     """The eight-petalled flower the old cities put on everything."""
     d = circle(X, Y, 0, 0, 0.15)
@@ -321,7 +338,7 @@ def save(name, rgba):
 
 
 SIZES = {'attack': 40, 'nod': 30, 'item': 30, 'talk': 30, 'roll': 30, 'pause': 20, 'stick_base': 62, 'stick_knob': 28,
-         'act_open': 30, 'act_look': 30, 'act_guard': 30, 'item_wheel': 30, 'item_fork': 30}
+         'act_open': 30, 'act_look': 30, 'act_guard': 30, 'item_wheel': 30, 'item_fork': 30, 'act_take': 30, 'item_pocket': 30}
 
 if __name__ == '__main__':
     made = {}
@@ -336,6 +353,8 @@ if __name__ == '__main__':
     made['act_guard'] = relief(SIZES['act_guard'] * DENSITY, shield, sign_scale=0.66)
     made['item_wheel'] = relief(SIZES['item_wheel'] * DENSITY, wheel, sign_scale=0.70)
     made['item_fork'] = relief(SIZES['item_fork'] * DENSITY, fork, sign_scale=0.70)
+    made['act_take'] = relief(SIZES['act_take'] * DENSITY, take, sign_scale=0.68)
+    made['item_pocket'] = relief(SIZES['item_pocket'] * DENSITY, pouch, sign_scale=0.68)
     made['pause'] = relief(SIZES['pause'] * DENSITY, bars, rim=0.17, beads=0, sign_scale=0.62)
     made['stick_base'] = ring(SIZES['stick_base'] * DENSITY)
     made['stick_knob'] = knob(SIZES['stick_knob'] * DENSITY)
@@ -352,7 +371,7 @@ if __name__ == '__main__':
                 d.rectangle([i + (j // 40 % 2) * 40, j, i + (j // 40 % 2) * 40 + 76, j + 36], fill=(96 + (i * 7 + j * 3) % 24, 88 + (i * 5 + j) % 20, 92))
         d.rectangle([0, 280, W, H], fill=(150, 120, 84))
         x = 20
-        for k in ('attack', 'nod', 'item', 'talk', 'roll', 'act_open', 'act_look', 'act_guard', 'item_wheel', 'item_fork', 'pause'):
+        for k in ('attack', 'nod', 'item', 'talk', 'roll', 'act_open', 'act_look', 'act_guard', 'act_take', 'item_wheel', 'item_fork', 'item_pocket', 'pause'):
             im = ims[k]; s = SIZES[k] * 5                 # 1080p: five screen pixels to the game pixel
             sm = im.resize((s, s), Image.LANCZOS)
             a = sm.split()[3].point(lambda v: int(v * 0.94))

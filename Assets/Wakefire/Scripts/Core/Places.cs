@@ -16,6 +16,7 @@ namespace Wakefire
             "zig_2" => "The Ziggurat: Halls of the Bull",
             "zig_hi" => "The Ziggurat: High Halls",
             "zig_3" => "The Summit",
+            "barrow" => "The Generals' Barrow",
             "necro_road" => "The Road of the Dead",
             "necropolis" => "The Hill of Sleepers",
             "tomb_1" => "The Tomb: Hall of Servants",

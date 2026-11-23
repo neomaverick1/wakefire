@@ -9,7 +9,9 @@ namespace Wakefire
 {
     public static class Dungeons
     {
-        [Serializable] public class Room { public string id, name, mark; public int c, r, cw, ch; }
+        /// <summary>shape: where the room's floor is, when it is not the whole box: x0, y0, x1, y1 of each rectangle, as
+        /// fractions of the box (a passage, an L, a hall with its corners cut).</summary>
+        [Serializable] public class Room { public string id, name, mark; public int c, r, cw, ch; public float[] shape; public bool pass; }
         [Serializable] public class Link { public int c, r; public string side, kind, to, a, b, id; }
         [Serializable] public class Chest { public string id, room; public bool big; }
         [Serializable] public class Floor { public string map, label; public int order, cols, rows; public Room[] rooms; public Link[] links; public Chest[] chests; }
@@ -64,16 +66,33 @@ namespace Wakefire
             return n;
         }
 
-        /// <summary>The rooms a doorway joins this one to (never mind whether the door is open).</summary>
+        static bool Passage(Floor f, string room)
+        {
+            foreach (var r in f.rooms) if (r.id == room) return r.pass;
+            return false;
+        }
+
+        /// <summary>The rooms a doorway joins this one to (never mind whether the door is open). A passage
+        /// is a way between rooms, not a room: what lies at the far end of one is next door too.</summary>
         public static List<string> Next(Floor f, string room)
         {
             var next = new List<string>();
             if (f == null || f.links == null) return next;
-            foreach (var l in f.links)
+            var seen = new List<string> { room };
+            var from = new List<string> { room };
+            while (from.Count > 0)
             {
-                if (string.IsNullOrEmpty(l.a) || string.IsNullOrEmpty(l.b)) continue;
-                if (l.a == room && !next.Contains(l.b)) next.Add(l.b);
-                else if (l.b == room && !next.Contains(l.a)) next.Add(l.a);
+                string at = from[0];
+                from.RemoveAt(0);
+                foreach (var l in f.links)
+                {
+                    if (string.IsNullOrEmpty(l.a) || string.IsNullOrEmpty(l.b)) continue;
+                    string other = l.a == at ? l.b : l.b == at ? l.a : null;
+                    if (other == null || seen.Contains(other)) continue;
+                    seen.Add(other);
+                    next.Add(other);
+                    if (Passage(f, other)) from.Add(other);
+                }
             }
             return next;
         }

@@ -21,7 +21,9 @@ namespace Wakefire
             yield return new WaitForSeconds(0.5f);
             foreach (var e in Enemy.All.ToArray()) if (e) Object.Destroy(e.gameObject);
             var p = Player.I;
-            var arena = Map.ToWorld(256, 300);
+            // open floor in the first hall (wherever the hall is on the floor's plan)
+            var hall = Rooms.I.Find("hall");
+            var arena = new Vector2(hall.rect.xMin + 256 / 16f, hall.rect.yMax - 76 / 16f);
             foreach (var kind in new[] { "crab", "jackal", "moth", "sentinel", "jackal" })
             {
                 p.health.max = p.health.hp = 400;

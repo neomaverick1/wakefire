@@ -160,6 +160,9 @@ class Room:
         self.name, self.opts = name, opts
         self.ox, self.oy, self.w, self.h = c * CW, r * CH, cw * CW, ch * CH
         self.mark = ""                       # what the map scroll draws on it: 'boss', 'mini'
+        self.passage = False                 # a way between rooms rather than a room (a tuning fork listens through it)
+        self.floor = None                    # None: floor from wall to wall. Or [(x0, y0, x1, y1)...] in pixels from the
+                                             # room's corner: where there is floor (everything else in it is rock)
 
     # places inside the room, in pixels from its top-left corner
     def p(self, x, y):
@@ -204,6 +207,52 @@ class Floor:
                 self.cells[(c + i, r + j)] = rm
         return rm
 
+    def shape(self, rm, rects):
+        """Give a room a floor that is not a box: a union of rectangles (pixels from the room's corner,
+        inside its walls). Whatever they leave is solid rock. Doorways still go through the middle of a
+        cell's side, so a rectangle has to reach the wall wherever there is one. Call before lay()."""
+        x1m, y1m = rm.w - EW, rm.h - SW
+        rm.floor = [(max(EW, int(a)), max(NW, int(b)), min(x1m, int(c)), min(y1m, int(d))) for (a, b, c, d) in rects]
+        return rm
+
+    def corners(self, rm, n=32, which='nw ne sw se'):
+        """Cut a room's corners off (n pixels each way): an eight-sided hall instead of a box."""
+        x0, y0, x1, y1 = EW, NW, rm.w - EW, rm.h - SW
+        w = which.split()
+        rects = [(x0 + n, y0, x1 - n, y1), (x0, y0 + n, x1, y1 - n)]
+        if 'nw' not in w: rects.append((x0, y0, x0 + n, y0 + n))
+        if 'ne' not in w: rects.append((x1 - n, y0, x1, y0 + n))
+        if 'sw' not in w: rects.append((x0, y1 - n, x0 + n, y1))
+        if 'se' not in w: rects.append((x1 - n, y1 - n, x1, y1))
+        return self.shape(rm, rects)
+
+    def passage(self, rm, along='ew', wide=80, stubs=''):
+        """Make a one-cell room a passage: a strip of floor `wide` pixels across, running east-west through
+        the side doors or north-south through the end doors. stubs: sides ('n', 's', 'e', 'w') that
+        also have a doorway, reached by a short arm off the passage."""
+        x0, y0, x1, y1 = EW, NW, rm.w - EW, rm.h - SW
+        cx, cy = rm.w // 2, (SIDE0 + SIDE1) // 2
+        if along == 'ew':
+            rects = [(x0, cy - wide // 2, x1, cy + wide // 2)]
+        else:
+            rects = [(cx - wide // 2, y0, cx + wide // 2, y1)]
+        for sd in stubs.split():
+            if sd == 'n': rects.append((cx - 36, y0, cx + 36, cy))
+            if sd == 's': rects.append((cx - 36, cy, cx + 36, y1))
+            if sd == 'w': rects.append((x0, cy - 28, cx, cy + 28))
+            if sd == 'e': rects.append((cx, cy - 28, x1, cy + 28))
+        rm.passage = True
+        return self.shape(rm, rects)
+
+    def _floor_mask(self, rm):
+        fm = self.T.none()
+        for (x0, y0, x1, y1) in rm.floor:
+            fm |= self.T.rect(rm.ox + x0, rm.oy + y0, x1 - x0, y1 - y0)
+        return fm
+
+    def _covered(self, rm, x, y):
+        return any(x0 <= x < x1 and y0 <= y < y1 for (x0, y0, x1, y1) in rm.floor)
+
     def link(self, c, r, side, kind='open', **data):
         """A doorway in side 'n', 's', 'e' or 'w' of cell (c, r). kind: 'open', 'lock' (a small key),
         'big' (the big key), 'bars' (a grille that a flag lifts), 'stairs' (to=map, spawn=name: to
@@ -246,7 +295,16 @@ class Floor:
             sd = self.seed + 3 * k
             whole = T.rect(rm.ox, rm.oy, rm.w, rm.h)
             fx, fy, fw, fh = rm.fx0, rm.fy0, rm.w - 2 * EW, rm.h - NW - SW
-            if self.style == 'temple':
+            fm = self._floor_mask(rm) if rm.floor else None
+            if self.floor_look(T, rm, sd, whole, fx, fy, fw, fh):
+                pass
+            elif fm is not None and self.style == 'temple':
+                T.tiles(whole, seed=sd, size=16, ramp='tile', base=3.5, inlay='lapis', every=5)
+            elif fm is not None and self.style == 'crypt':
+                T.slabs(whole, seed=sd, rows=(14, 12, 15), wmin=14, wmax=26, ramp='flag', base=3.3, jitter=1.2, crack=0.22, whole=False, wear=0.7, moss=0.06)
+            elif fm is not None:
+                T.slabs(whole, seed=sd, rows=(16,), wmin=20, wmax=28, ramp='basalt', base=4.0, jitter=1.0, crack=0.14, whole=False, wear=0.6)
+            elif self.style == 'temple':
                 T.tiles(whole, seed=sd, size=16, ramp='tile', base=3.5, inlay='lapis', every=5)
                 band = T.rect(fx + 12, fy + 14, fw - 24, fh - 28) & ~T.rect(fx + 15, fy + 17, fw - 30, fh - 34)
                 T.put(band, 'lapis', np.full((H, W), 3.2) + ((T.xx + T.yy) % 6 < 3) * 0.8, 1.2)
@@ -271,8 +329,12 @@ class Floor:
                 gaps |= T.rect(rm.ox, l["r"] * CH + SIDE0, EW, SIDE1 - SIDE0)
             for l in self._east(rm):
                 gaps |= T.rect(rm.ox + rm.w - EW, l["r"] * CH + SIDE0, EW, SIDE1 - SIDE0)
+            if fm is not None:
+                tops = whole & ~fm                 # everything in the room that is not floor is the top of a wall
             tops &= ~gaps
-            if self.style == 'temple':
+            if self.tops_look(T, rm, sd, tops, gaps):
+                pass
+            elif self.style == 'temple':
                 T.slabs(gaps, seed=sd + 7, rows=(8,), wmin=20, wmax=20, ramp='pale', base=4.0, whole=False, crack=0)
                 T.walltop(tops, seed=sd + 1)
                 coping = (T.rect(rm.ox + EW - 2, rm.oy + NW, 2, rm.h - NW - SW) | T.rect(rm.ox + rm.w - EW, rm.oy + NW, 2, rm.h - NW - SW)
@@ -284,6 +346,16 @@ class Floor:
             else:
                 T.slabs(gaps, seed=sd + 7, rows=(8,), wmin=20, wmax=20, ramp='pale', base=3.2, whole=False, crack=0)
                 T.walltop(tops, seed=sd + 1, ramp='flag', base=3.6)
+            if fm is not None:
+                # an inlaid line round the edge of the rock, and its shade on the floor at the foot of every face
+                edge = tops & T.grow(fm, 2)
+                T.put(edge, 'gold' if self.style in ('temple', 'tomb') else 'flag', np.full((H, W), 3.4 if self.style in ('temple', 'tomb') else 2.2), 3.0)
+                for (x0, y0, x1, y1) in rm.floor:
+                    if not self._covered(rm, (x0 + x1) // 2, y0 - 2):
+                        T.contact(rm.ox + x0, rm.oy + y0 - 8, rm.ox + x1, rm.oy + y0, reach=7, strength=1.6)
+                    if not self._covered(rm, x0 - 2, (y0 + y1) // 2):
+                        T.contact(rm.ox + x0 - 8, rm.oy + y0, rm.ox + x0, rm.oy + y1, reach=5, strength=1.0)
+                continue
             # the north and west walls shade the floor at their feet
             T.contact(rm.ox, rm.oy, rm.ox + rm.w, rm.oy + NW, reach=7, strength=1.6)
             T.contact(rm.ox, rm.oy + NW, rm.ox + EW, rm.oy + rm.h - SW, reach=5, strength=1.0)
@@ -307,6 +379,18 @@ class Floor:
         T.slabs(mask, seed=seed, rows=(13,), wmin=16, wmax=16, ramp='pale', base=4.4 if self.style == 'temple' else 3.4, jitter=0.6, whole=False, crack=0.04)
         T.border(mask, 'gold', 3.6, 2, 1.5)
 
+    def wall_model(self, rm, length, doors):
+        """A room's north wall (a floor with a look of its own builds its own)."""
+        return wall(self.style, length, doors=doors)
+
+    def floor_look(self, T, rm, sd, whole, fx, fy, fw, fh):
+        """A floor with a look of its own paves a room here and returns True."""
+        return False
+
+    def tops_look(self, T, rm, sd, tops, gaps):
+        """...and gives its wall tops and doorway sills their own stone."""
+        return False
+
     # ---- walls, doors and everything that stands, after the bake
     def bake(self):
         m = self.m
@@ -314,7 +398,11 @@ class Floor:
         for rm in self.rooms.values():
             north = self._north(rm)
             holes = [l for l in north if l["kind"] != 'wall']
-            m.set_into_ground(wall(self.style, rm.w / 16.0, doors=[(self.door_x(l) - rm.ox) / 16.0 for l in holes]), rm.ox, rm.oy + NW)
+            if rm.floor:
+                self._bake_shaped(rm, holes)
+                m.marker("room", rm.ox, rm.oy, w=rm.w, h=rm.h, id=rm.id, who=rm.opts, text=rm.name)
+                continue
+            m.set_into_ground(self.wall_model(rm, rm.w / 16.0, [(self.door_x(l) - rm.ox) / 16.0 for l in holes]), rm.ox, rm.oy + NW)
             G.cobweb(g, rm.ox + EW + 2, rm.oy + NW + 4); G.cobweb(g, rm.ox + rm.w - EW - 3, rm.oy + NW + 4, flip=True)
             # the north wall, solid but for its doorways (a stair is climbed to its foot, not walked through)
             x = rm.ox
@@ -344,6 +432,75 @@ class Floor:
         for i, l in enumerate(self.links):
             self._door(i, l)
         return g
+
+    def _bake_shaped(self, rm, holes):
+        """The walls of a room whose floor is a union of rectangles: a wall's face along every stretch
+        where rock stands north of floor (its doorways, where that stretch is the room's own north
+        wall), and everything that is not floor or a doorway made solid."""
+        m = self.m
+        faces = []
+        for (x0, y0, x1, y1) in rm.floor:
+            # the parts of this rectangle's top edge that have rock above them
+            xs = [x0, x1]
+            for (a0, b0, a1, b1) in rm.floor:
+                if b0 <= y0 - 1 < b1:
+                    xs += [max(x0, min(x1, a0)), max(x0, min(x1, a1))]
+            xs = sorted(set(xs))
+            run = None
+            for xa, xb in zip(xs, xs[1:]):
+                rock = not self._covered(rm, (xa + xb) // 2, y0 - 1)
+                if rock and run is not None and run[1] == xa:
+                    run[1] = xb
+                elif rock:
+                    run = [xa, xb]; faces.append((y0, run))
+        for y0, (xa, xb) in sorted(faces, key=lambda q: q[0]):
+            if xb - xa < 8:
+                continue
+            if xa <= EW: xa = 0
+            if xb >= rm.w - EW: xb = rm.w
+            doors = [(self.door_x(l) - rm.ox - xa) / 16.0 for l in holes if y0 <= NW and xa <= self.door_x(l) - rm.ox <= xb]
+            m.set_into_ground(self.wall_model(rm, (xb - xa) / 16.0, doors), rm.ox + xa, rm.oy + y0)
+            for l in holes:
+                if y0 <= NW and xa <= self.door_x(l) - rm.ox <= xb:
+                    l["_faced"] = True
+        for l in holes:
+            if not l.pop("_faced", False):
+                print(f"  !! {self.name}/{rm.id}: the doorway in its north wall at x={self.door_x(l) - rm.ox} has no floor under it")
+        # where a man may stand: the floor (a little under the foot of each face, as under the north wall), and the doorways
+        free = np.zeros((rm.h, rm.w), bool)
+        for (x0, y0, x1, y1) in rm.floor:
+            free[max(0, y0 - 4):min(rm.h, y1 + 2), x0:x1] = True
+        for l in holes:
+            if l["kind"] == 'stairs' or l["kind"] == 'out':
+                continue
+            dx = self.door_x(l) - rm.ox
+            free[0:NW, dx - 17:dx + 17] = True
+        for l in self._south(rm):
+            dx = self.door_x(l) - rm.ox
+            free[rm.h - SW - 2:rm.h, dx - 18:dx + 18] = True
+        for l in self._west(rm):
+            gy = l["r"] * CH - rm.oy
+            free[gy + SIDE0:gy + SIDE1, 0:EW] = True
+        for l in self._east(rm):
+            gy = l["r"] * CH - rm.oy
+            free[gy + SIDE0:gy + SIDE1, rm.w - EW:rm.w] = True
+        # rock, as few boxes as will do: runs along each row, stacked while they stay the same
+        open_runs = {}
+        for y in range(rm.h):
+            row = ~free[y]
+            edges = np.flatnonzero(np.diff(np.concatenate(([0], row.view(np.int8), [0]))))
+            runs = [(int(a), int(b)) for a, b in zip(edges[::2], edges[1::2])]
+            nxt = {}
+            for run in runs:
+                if run in open_runs:
+                    nxt[run] = open_runs.pop(run)
+                else:
+                    nxt[run] = y
+            for (a, b), y_from in open_runs.items():
+                m.solid(rm.ox + a, rm.oy + y_from, rm.ox + b, rm.oy + y)
+            open_runs = nxt
+        for (a, b), y_from in open_runs.items():
+            m.solid(rm.ox + a, rm.oy + y_from, rm.ox + b, rm.oy + rm.h)
 
     def _overlay(self, key, x0, y0, x1, y1, base_y):
         """What stands over a doorway (its lintel, the wall top beside a side door) as a prop of its
@@ -401,6 +558,10 @@ class Floor:
                 if l.get("say"):
                     data["say"] = l["say"]
                 m.model("bars_door", town.bars(2.5, 2.0), dx, y + NW + 3, box=(-20, -7, 20, 0), kind="bars", data=data)
+                far = l.get("far")
+                if far:
+                    # 'far': what the grille on the upper room's side answers to, when it is not the same thing
+                    data = {"id": far["id"], "text": far.get("when", ""), "who": far.get("opts", "")}
                 m.model("bars_gap", town.bars(2.5, 1.2), dx, y - 3, box=(-20, -11, 20, 0), kind="bars", data=data)
         else:
             bx, gy = l["c"] * CW, l["r"] * CH
@@ -588,9 +749,11 @@ class Floor:
             m.set_into_ground(build((y1 - y0) / 16.0, h=h), rm.ox + x, rm.oy + y1, seed=self.seed + x)
         m.solid(rm.ox + x, rm.oy + y0, rm.ox + x + 8, rm.oy + y1, layer)
 
-    def pit(self, rm, x0, y0, x1, y1, bridges=(), seed=5):
+    def pit(self, rm, x0, y0, x1, y1, bridges=(), seed=5, planks=()):
         """A drop inside a room (pixels from its corner). bridges: polylines of (x, y) that are roads
-        of moonlight: there in the dream, a fall when awake."""
+        of moonlight: there in the dream, a fall when awake. planks: (a, b) spans along x (or
+        ('y', a, b) along y) whose part of the drop is boxed on its own, so a plank laid there
+        (Floor.plank) can switch exactly that much of it off."""
         m, g = self.m, self.g
         X0, Y0 = rm.p(x0, y0); w, h = x1 - x0, y1 - y0
         G.chasm(g, X0, Y0, w, h, seed=seed)
@@ -611,7 +774,16 @@ class Floor:
             def draw(cv, ax, ay, fi, pts=pts, bx0=bx0, by0=by0):
                 G.moon_bridge(cv, [(q[0] - bx0, q[1] - by0) for q in pts], 16, fi)
             m.prop(f"{self.name}_{rm.id}_moon_{bi}", draw, rm.ox + bx0, rm.oy + by0, layer=2, size=(bx1 - bx0, by1 - by0), anchor=(0, 0), pad=0)
-        for layer, mask in ((0, ~road), (1, road)):
+        strip = np.zeros((rows, cols), bool)
+        for pk in planks:
+            along_y = pk[0] == 'y'
+            a, b = pk[-2], pk[-1]
+            for r_ in range(rows):
+                for c_ in range(cols):
+                    q = (y0 + r_ * PIT + PIT // 2) if along_y else (x0 + c_ * PIT + PIT // 2)
+                    if a <= q < b:
+                        strip[r_, c_] = True
+        for layer, mask in ((0, ~road & ~strip), (1, road & ~strip), (0, strip)):
             for r_ in range(rows):
                 c_ = 0
                 while c_ < cols:
@@ -623,13 +795,64 @@ class Floor:
                     else:
                         c_ += 1
 
+    # ---- Nod's Pocket: what only the dream has, and what in the waking world it is for
+    def dreamthing(self, rm, x, y, uid, what, key, build, box=None, source=False, frames=None, wall=False):
+        """Something only the dream has, small enough to pocket (what = the Pocket's name for it: key,
+        plank, flame...). source: there is always another. wall: it hangs on the north wall at x."""
+        X, Y = rm.p(x, NW + 1) if wall else rm.p(x, y)
+        data = {"id": uid, "text": what}
+        if source:
+            data["who"] = "source"
+        return self.m.model(key, build, X, Y, box=box, layer=2, kind="dreamthing", data=data, frames=frames, lights=False, shadow=False)
+
+    def dreamlock(self, rm, x, y, uid, w=3.0):
+        """A grille across part of a room whose lock only a key out of a dream fits (its middle at (x, y))."""
+        import bprops
+        X, Y = rm.p(x, y)
+        self.m.model(f"lockgrille_{int(w * 16)}", bprops.lock_grille(w), X, Y, box=(-int(w * 8), -6, int(w * 8), 0), kind="dreamlock", data={"id": uid})
+
+    def bluelamp(self, rm, x, y, uid):
+        """A cold lamp of the dead: only a flame out of a dream lights it (then lit:uid holds)."""
+        import bprops
+        X, Y = rm.p(x, y)
+        self.m.model("bluelamp", lambda fi: bprops.blue_lamp(fi), X, Y, box=(-4, -5, 4, 0), frames=4,
+                     names=["bluelamp", "bluelamp_lit_0", "bluelamp_lit_1", "bluelamp_lit_2"], still=True, kind="bluelamp", data={"id": uid}, lights=False)
+
+    def plank(self, rm, x, y0, y1, uid, half=12):
+        """Two brackets either side of a drop that lies between y0 and y1, at x: where a plank of moonlight
+        can be laid. The pit must have been made with planks=[(x - half, x + half)]."""
+        import bprops
+        m = self.m
+        X, Yn = rm.p(x, y0)
+        _, Ys = rm.p(x, y1)
+        m.model("brackets", bprops.brackets(), X, Ys + 4, box=None, kind="plankgap", data={"id": uid}, shadow=False)
+        m.model("brackets", bprops.brackets(), X, Yn - 2, box=None, kind="plankgap", data={"id": uid}, shadow=False)
+        m.model(f"moonplank_{y1 - y0}", bprops.moon_plank((y1 - y0 + 10) / 16.0, half / 16.0 - 0.1), X, Yn - 5, box=None, kind="plank",
+                data={"id": uid, "text": f"{X - half},{Yn},{X + half},{Ys}"}, lights=False, shadow=False)
+
+    def standard(self, rm, x, y, side, uid):
+        """A general's standard: hauled down with the action button (flag = uid)."""
+        import bprops
+        X, Y = rm.p(x, y)
+        self.m.model(f"standard_{side}", lambda fi: bprops.standard(side, fi == 1), X, Y, box=(-4, -6, 4, 0), frames=2,
+                     names=[f"standard_{side}", f"standard_{side}_down"], still=True, kind="standard", data={"id": uid, "text": side}, lights=False)
+
     # ---- out
     def save(self):
         self.m.save()
         os.makedirs(f"{mapkit.RES}/Menu", exist_ok=True)
         path = f"{mapkit.RES}/Menu/dungeon_{self.dungeon}.json"
         data = json.load(open(path)) if os.path.exists(path) else {"floors": []}
-        rooms = [{"id": rm.id, "c": rm.c, "r": rm.r, "cw": rm.cw, "ch": rm.ch, "name": rm.name, "mark": rm.mark} for rm in self.rooms.values()]
+        rooms = []
+        for rm in self.rooms.values():
+            q = {"id": rm.id, "c": rm.c, "r": rm.r, "cw": rm.cw, "ch": rm.ch, "name": rm.name, "mark": rm.mark}
+            if rm.passage:
+                q["pass"] = True
+            if rm.floor:
+                # each rectangle of its floor as fractions of the space inside the room's walls, for the map page: x0, y0, x1, y1, ...
+                iw, ih = rm.w - 2 * EW, rm.h - NW - SW
+                q["shape"] = [round(v, 3) for (x0, y0, x1, y1) in rm.floor for v in ((x0 - EW) / iw, (y0 - NW) / ih, (x1 - EW) / iw, (y1 - NW) / ih)]
+            rooms.append(q)
         links = []
         for i, l in enumerate(self.links):
             lower = self.cells.get((l["c"], l["r"]))

@@ -16,13 +16,15 @@ namespace Wakefire
             var pad = InputSystem.AddDevice<Gamepad>();
             DialogueBox.AutoAdvance = 0.4f;
             var rng = new System.Random(3);
-            string[] maps = { "ashkel", "lowtown", "cliffs", "terraces", "crypt", "temple_yard", "zig_1", "zig_2", "zig_hi", "zig_3" };
+            string[] maps = { "ashkel", "lowtown", "cliffs", "terraces", "crypt", "temple_yard", "zig_1", "zig_2", "zig_hi", "zig_3", "barrow" };
             foreach (var m in maps)
             {
                 Game.I.EnterMap(m);
                 Fade.Set(0);
                 Story.Set("item_shield");
                 Story.Set("item_oil");
+                // in the barrow he has Nod's Pocket, with something in it to let out at whatever is about
+                if (m == "barrow") { Story.Set("item_pocket"); Story.Set("pocket_snore"); }
                 Story.I.ApplyItems();
                 Player.I.health.hp = Player.I.health.max;
                 float until = Time.time + 22f;

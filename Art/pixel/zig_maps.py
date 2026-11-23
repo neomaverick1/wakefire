@@ -23,24 +23,45 @@ def gong(F, rm, x, uid):
 
 
 def zig_1():
-    F = Floor("zig_1", 3, 2, 'temple', dungeon='zig', label='1F', order=1, music='dungeon', seed=81)
-    hall = F.room("hall", 1, 1, name="The First Hall")
-    west = F.room("west", 0, 1, name="The Weighing Room")
-    east = F.room("east", 2, 1, name="The Wall That Isn't")
-    stair = F.room("stair", 1, 0, name="The Stair Hall")
+    # (not a block of rooms: the first hall with a wing either side, a processional way north to the stair hall, and from
+    #  the stair hall a low passage west to the broken floor and a barred door east to the vault)
+    F = Floor("zig_1", 4, 3, 'temple', dungeon='zig', label='1F', order=1, music='dungeon', seed=81)
+    hall = F.room("hall", 2, 2, name="The First Hall")
+    west = F.room("west", 1, 2, name="The Weighing Room")
+    east = F.room("east", 3, 2, name="The Wall That Isn't")
+    proc = F.room("proc", 2, 1, name="The Processional")
+    stair = F.room("stair", 2, 0, name="The Stair Hall")
+    low = F.room("low", 1, 0, name="The Low Passage")
     gap = F.room("gap", 0, 0, name="The Broken Floor")
-    vault = F.room("vault", 2, 0, name="The Vessel Vault")
-    F.link(1, 1, 's', 'out', to="temple_yard", spawn="door", name="south")
-    F.link(1, 1, 'w'); F.link(1, 1, 'e')
-    F.link(1, 1, 'n', 'lock', id="z1_door")
-    F.link(1, 0, 'n', 'stairs', to="zig_2", spawn="south", name="top")
+    vault = F.room("vault", 3, 0, name="The Vessel Vault")
+    F.link(2, 2, 's', 'out', to="temple_yard", spawn="door", name="south")
+    F.link(2, 2, 'w'); F.link(2, 2, 'e')
+    F.link(2, 2, 'n', 'lock', id="z1_door")
+    F.link(2, 1, 'n')
+    F.link(2, 0, 'n', 'stairs', to="zig_2", spawn="south", name="top")
+    F.link(2, 0, 'w')
     F.link(1, 0, 'w')
-    F.link(1, 0, 'e', 'bars', id="z1_vault", when="disc:z1_disc", say="The disc takes the light and holds it.^To the east, bars lift.")
+    F.link(2, 0, 'e', 'bars', id="z1_vault", when="disc:z1_disc", say="The disc takes the light and holds it.^To the east, bars lift.")
+    F.corners(hall, 32)
+    proc.passage = True
+    F.shape(proc, [(160, 48, 256, 208), (112, 92, 160, 148), (256, 92, 304, 148)])
+    low.passage = True
+    F.shape(low, [(16, 96, 400, 160)])
+    F.corners(vault, 32)
     F.lay()
     F.carpet(hall, 196, 60, 24, 148, seed=1)
     F.carpet(stair, 196, 86, 24, 122, seed=2)
+    F.carpet(proc, 196, 48, 24, 160, seed=4)
     F.dais(vault, 168, 96, 80, 52, seed=92)
     F.bake()
+    # the processional: the way the bulls were brought up, a niche either side for whoever had to stand and watch
+    F.torch(proc, 172, 84); F.torch(proc, 244, 84)
+    for (x, y) in ((126, 140), (290, 140)):
+        kit.pot(F.m, *proc.p(x, y), big=True)
+    F.enemy(proc, "moth", 208, 150, "z1_m4")
+    # the low passage: four tiles of headroom, and something that likes it that way
+    F.torch(low, 60, 104); F.torch(low, 356, 104)
+    F.enemy(low, "moth", 150, 128, "z1_m5"); F.enemy(low, "moth", 270, 128, "z1_m6")
     # the first hall
     for (x, y) in ((120, 112), (296, 112), (120, 184), (296, 184)):
         F.pillar(hall, x, y)
@@ -89,39 +110,61 @@ def zig_1():
 def zig_2():
     """2F, the Halls of the Bull: the walk of fire, the counting room, the store, the Herdsman and
     what he keeps, and the bull's head that shuts the stair to anyone without a mirror."""
-    F = Floor("zig_2", 3, 2, 'temple', dungeon='zig', label='2F', order=2, music='dungeon', seed=91)
-    land = F.room("landing", 1, 1, name="The Landing")
-    walk = F.room("walk", 0, 1, name="The Bull Walk")
-    store = F.room("store", 2, 1, name="The Feed Store")
-    count = F.room("count", 0, 0, name="The Counting Room")
-    herd = F.room("herd", 1, 0, name="The Herdsman's Hall")
-    gate = F.room("gate", 2, 0, name="The Bull's Gate")
+    # (the bull walk is twice the length of any other hall; the Herdsman is up a stair of his own; the feed way runs east
+    #  to the store, and the bull's gate sits on top of that)
+    F = Floor("zig_2", 5, 3, 'temple', dungeon='zig', label='2F', order=2, music='dungeon', seed=91)
+    land = F.room("landing", 2, 2, name="The Landing")
+    walk = F.room("walk", 0, 2, 2, 1, name="The Bull Walk")
+    feed = F.room("feed", 3, 2, name="The Feed Way")
+    store = F.room("store", 4, 2, name="The Feed Store")
+    count = F.room("count", 1, 1, name="The Counting Room")
+    climb = F.room("climb", 2, 1, name="The Herdsman's Stair")
+    herd = F.room("herd", 2, 0, name="The Herdsman's Hall")
+    gate = F.room("gate", 4, 1, name="The Bull's Gate")
     herd.mark = "mini"
-    F.link(1, 1, 's', 'stairs', to="zig_1", spawn="top", name="south")
-    F.link(1, 1, 'w'); F.link(1, 1, 'e')
-    F.link(1, 1, 'n', 'lock', id="z2_door")
-    F.link(0, 1, 'n')
-    F.link(2, 1, 'n', 'bars', id="z2_gate", when="flag:dead_z2_herdsman")
-    F.link(2, 0, 'n', 'stairs', to="zig_hi", spawn="south", name="top")
+    F.link(2, 2, 's', 'stairs', to="zig_1", spawn="top", name="south")
+    F.link(2, 2, 'w'); F.link(2, 2, 'e')
+    F.link(3, 2, 'e')
+    F.link(2, 2, 'n', 'lock', id="z2_door")
+    F.link(2, 1, 'n')
+    F.link(1, 2, 'n')
+    F.link(4, 2, 'n', 'bars', id="z2_gate", when="flag:dead_z2_herdsman")
+    F.link(4, 1, 'n', 'stairs', to="zig_hi", spawn="south", name="top")
+    F.corners(land, 32)
+    F.corners(count, 32)
+    climb.passage = True
+    F.shape(climb, [(160, 48, 256, 208)])
+    feed.passage = True
+    F.shape(feed, [(16, 88, 400, 168), (150, 168, 266, 208)])
     F.lay()
     F.carpet(land, 196, 60, 24, 148, seed=1)
     F.carpet(herd, 196, 150, 24, 58, seed=2)
     F.dais(herd, 164, 52, 88, 50, seed=92)
     F.carpet(gate, 196, 152, 24, 56, seed=3)
+    F.carpet(climb, 196, 48, 24, 160, seed=5)
     F.bake()
     m = F.m
+    # the Herdsman's stair: his own way up, and his own opinion of visitors cut over the door at the top
+    F.torch(climb, 172, 120); F.torch(climb, 244, 120)
+    F.look("stele_herd", town.stele(1.3, 2), climb, 240, 190, (-5, -5, 5, 0),
+           "{g}'ABOVE: THE HERDSMAN. HE DOES NOT RECEIVE.'{/}^{g}'HE HAS NOT RECEIVED SINCE THE BULLS WERE CAST. HE HAS BEEN TOLD THIS IS NOT THE SAME AS RECEIVING NOBODY.'{/}")
+    # the feed way: jars down one side of it, in a bay of their own, and what lives on what is in them
+    for (x, y) in ((166, 196), (184, 200), (202, 196), (220, 200), (238, 196), (252, 200)):
+        kit.pot(m, *feed.p(x, y), big=(x % 36 == 22))
+    F.torch(feed, 60, 96); F.torch(feed, 356, 96)
+    F.enemy(feed, "moth", 120, 128, "z2_m4"); F.enemy(feed, "moth", 300, 128, "z2_m5")
     # the landing
     for (x, y) in ((120, 112), (296, 112), (120, 184), (296, 184)):
         F.pillar(land, x, y)
     F.torch(land, 44, 84); F.torch(land, 372, 84)
     F.plaque(land, 110, "{g}'THE BULLS OF NINHAL ARE WALKED AT DUSK, FED AT MIDNIGHT, AND NEVER, EVER PATTED.'{/}^Underneath, in a different hand: {g}'see the Herdsman about your fingers.'{/}")
-    F.plaque(land, 30, "{g}'WEST, THE BULL WALK. WALK THE BULLS IN ORDER: THEY BREATHE IN ORDER.'{/}^{g}'A HERDSMAN COUNTS. A HERDSMAN WHO DOES NOT COUNT IS A SMELL.'{/}")
+    F.plaque(land, 306, "{g}'WEST, THE BULL WALK. WALK THE BULLS IN ORDER: THEY BREATHE IN ORDER.'{/}^{g}'A HERDSMAN COUNTS. A HERDSMAN WHO DOES NOT COUNT IS A SMELL.'{/}")
     F.enemy(land, "moth", 150, 150, "z2_m0"); F.enemy(land, "moth", 270, 140, "z2_m1")
     # the bull walk: four mouths in the north wall, breathing in turn, and the key at the far end
-    for k, x in enumerate((336, 272, 144, 80)):
+    for k, x in enumerate((752, 688, 560, 496, 336, 272, 144, 80)):
         F.bullhead(walk, x, 56, f"z2_h{k + 1}", straight=True, phase=0.6 * k)
     F.chest(walk, 40, 136, "z2_key", "key")
-    F.torch(walk, 372, 196); F.torch(walk, 36, 196)
+    F.torch(walk, 372, 196); F.torch(walk, 36, 196); F.torch(walk, 460, 196); F.torch(walk, 788, 196)
     # the counting room, off the walk: what the temple was owed, and two things to stop you taking it
     F.chest(count, 208, 96, "z2_coins", "shekels:50")
     for (x, y) in ((120, 110), (296, 110)):
@@ -161,26 +204,47 @@ def zig_2():
 def zig_hi():
     """3F, the High Halls: two sun discs for the door of the last hall, three mouths for the Bull
     Key, and the great door under the summit."""
-    F = Floor("zig_hi", 3, 2, 'temple', dungeon='zig', label='3F', order=3, music='dungeon', seed=101)
-    land = F.room("landing", 1, 1, name="The High Landing")
-    west = F.room("west", 0, 1, name="The West Light")
-    moon = F.room("moon", 0, 0, name="The Moon Room")
-    door = F.room("door", 1, 0, name="The Great Door")
-    mouths = F.room("mouths", 2, 1, name="The Three Mouths")
-    keyr = F.room("key", 2, 0, name="The Key Room")
+    # (smaller than the floors under it, as the ziggurat is: a long wing west to the two lights, a short one east to the
+    #  mouths and the key over them, and the last stair straight up the middle)
+    F = Floor("zig_hi", 4, 3, 'temple', dungeon='zig', label='3F', order=3, music='dungeon', seed=101)
+    land = F.room("landing", 2, 2, name="The High Landing")
+    lamp = F.room("lamp", 1, 2, name="The Lamp Way")
+    west = F.room("west", 0, 2, name="The West Light")
+    moon = F.room("moon", 0, 1, name="The Moon Room")
+    last = F.room("last", 2, 1, name="The Last Stair")
+    door = F.room("door", 2, 0, name="The Great Door")
+    mouths = F.room("mouths", 3, 2, name="The Three Mouths")
+    keyr = F.room("key", 3, 1, name="The Key Room")
     door.mark = "boss"
-    F.link(1, 1, 's', 'stairs', to="zig_2", spawn="top", name="south")
-    F.link(1, 1, 'w'); F.link(1, 1, 'e')
-    F.link(1, 1, 'n', 'bars', id="zh_bars", when="disc:zh_d1;disc:zh_d2", say="Both discs burn. The bars of the last hall lift.")
-    F.link(0, 1, 'n')
-    F.link(2, 1, 'n', 'bars', id="zh_keybars", when="flag:zh_h1;flag:zh_h2;flag:zh_h3", say="The third mouth breaks. Above it, bars lift.")
-    F.link(1, 0, 'n', 'stairs', to="zig_3", spawn="south", name="top", door='big', id="z2_bigdoor", need="door_z2_bigdoor")
+    F.link(2, 2, 's', 'stairs', to="zig_2", spawn="top", name="south")
+    F.link(2, 2, 'w'); F.link(2, 2, 'e')
+    F.link(1, 2, 'w')
+    F.link(2, 2, 'n', 'bars', id="zh_bars", when="disc:zh_d1;disc:zh_d2", say="Both discs burn. The bars of the last hall lift.")
+    F.link(2, 1, 'n')
+    F.link(0, 2, 'n')
+    F.link(3, 2, 'n', 'bars', id="zh_keybars", when="flag:zh_h1;flag:zh_h2;flag:zh_h3", say="The third mouth breaks. Above it, bars lift.")
+    F.link(2, 0, 'n', 'stairs', to="zig_3", spawn="south", name="top", door='big', id="z2_bigdoor", need="door_z2_bigdoor")
+    F.corners(land, 32)
+    F.corners(keyr, 32)
+    F.corners(door, 32)
+    last.passage = True
+    F.shape(last, [(144, 48, 272, 208)])
+    lamp.passage = True
+    F.shape(lamp, [(16, 100, 230, 156), (186, 60, 230, 156), (186, 60, 400, 104), (354, 60, 400, 156)])
     F.lay()
     F.carpet(land, 196, 60, 24, 148, seed=1)
     F.carpet(door, 196, 86, 24, 122, seed=2)
     F.dais(keyr, 168, 96, 80, 52, seed=102)
+    F.carpet(last, 196, 48, 24, 160, seed=6)
     F.bake()
     m = F.m
+    # the last stair: broad, carpeted, a pillar either side, and nobody on it but what was left to mind it
+    for (x, y) in ((160, 110), (256, 110), (160, 176), (256, 176)):
+        F.pillar(last, x, y)
+    F.torch(last, 156, 84); F.torch(last, 260, 84)
+    # the lamp way: it steps up and over, the way the wall behind it does
+    F.torch(lamp, 60, 108); F.torch(lamp, 300, 68)
+    F.enemy(lamp, "moth", 120, 128, "zh_m3"); F.enemy(lamp, "moth", 290, 84, "zh_m4")
     # the landing
     for (x, y) in ((120, 112), (296, 112), (120, 184), (296, 184)):
         F.pillar(land, x, y)

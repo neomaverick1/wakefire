@@ -131,11 +131,17 @@ namespace Wakefire
                 "unremembered" => Shade.Spawn(at),
                 "ushabti" => Ushabti.Spawn(at),
                 "scarab" => Scarab.Spawn(at),
+                "clay_red" => Spearman.Spawn(at),
+                "clay_blue" => Slinger.Spawn(at),
+                "last_piece" => LastPiece.Spawn(at),
                 _ => null,
             };
             if (!e) return null;
             e.markerId = mk.id;
             if (!string.IsNullOrEmpty(mk.text) && mk.text.StartsWith("once")) e.spawnId = mk.id;
+            // "hold:FLAG": a clay soldier that stands like the statue it is until the story has that flag
+            if (e is ClaySoldier cs && !string.IsNullOrEmpty(mk.text) && mk.text.Contains("hold:"))
+                cs.holdFlag = mk.text.Substring(mk.text.IndexOf("hold:") + 5).Split(' ')[0];
             return e;
         }
 
@@ -198,6 +204,14 @@ namespace Wakefire
                     Story.Set("door_" + p.data.id);
                     p.Open();
                     Sfx.Play("unlock");
+                    return true;
+                case "dreamthing":
+                case "dreamlock":
+                case "plankgap":
+                case "bluelamp":
+                    return Pocket.Look(p);
+                case "standard":
+                    Story.Run(Story.I.LowerStandard(p));
                     return true;
                 case "bigdoor":
                     if (!Story.Has("bigkey")) { Story.Run(Story.Narrate("A great door with a lock shaped like a bull's head.^It wants a bigger key than yours.")); return true; }

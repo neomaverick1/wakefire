@@ -49,6 +49,20 @@ namespace Wakefire
             while (p.state != Player.State.Free && t < 2f) { t += Time.deltaTime; yield return null; }
         }
 
+        /// <summary>Put him at a place in a room of a floor of rooms (pixels from the room's corner), and let the
+        /// picture slide to it before he is asked to do anything.</summary>
+        static IEnumerator InRoom(Player p, string id, float x, float y)
+        {
+            var r = Rooms.I.Find(id);
+            var at = new Vector2(r.rect.xMin + x / 16f, r.rect.yMax - y / 16f);
+            p.pos = at;
+            yield return null; yield return null;
+            for (float s = 0; s < 3f && (Rooms.Sliding || Game.Busy || (Story.I && Story.I.Running)); s += Time.deltaTime) yield return null;
+            p.pos = at;
+            p.SetState(Player.State.Free, "idle");
+            yield return new WaitForSeconds(0.15f);
+        }
+
         static IEnumerator Run(AutoTest t)
         {
             DialogueBox.AutoAdvance = 0.3f;
@@ -103,18 +117,22 @@ namespace Wakefire
             // 4. the block and the plate
             yield return Enter("zig_1", "south");
             foreach (var e in Enemy.All.ToArray()) if (e) Object.Destroy(e.gameObject);
-            p.pos = Map.ToWorld(196, 290);
-            yield return WalkPath(p, Px(190, 290));
+            // (the weighing room, west of the first hall: he leans on the stone from its east side)
+            yield return InRoom(p, "west", 258, 150);
+            p.Face(Facing.Left);
             Controls.Fake = Vector2.left;
-            yield return new WaitForSeconds(2.2f);
+            yield return new WaitForSeconds(2.6f);
             Controls.Fake = Vector2.zero;
             var blk = Map.Current.Find("z1_block");
-            t.Note($"block at {blk.basePos * 16} bars={Story.Has("bars_z1")}");
+            var plate = Map.Current.Find("z1_plate");
+            t.Note($"block {(blk.basePos - plate.basePos).magnitude:0.0} tiles from the plate, plate pressed={Story.Has("on_z1_plate")}");
             yield return t.Shot("04-plate", 1.0f);
-            // 5. through the dream wall to the key
-            p.pos = Map.ToWorld(372, 280);
+            // 5. through the dream wall to the key (the room east of the first hall)
+            yield return InRoom(p, "east", 220, 128);
             yield return NodAndWait(p);
-            yield return WalkPath(p, Px(430, 280, 450, 296));
+            Controls.Fake = Vector2.right;
+            yield return new WaitForSeconds(0.9f);
+            Controls.Fake = Vector2.zero;
             t.Note($"dream wall: at {p.pos * 16}");
             yield return t.Shot("05-dreamwall", 0.3f);
             Dream.I.SetInstant(false);
@@ -124,14 +142,9 @@ namespace Wakefire
             Story.Set("item_shield");
             Story.I.ApplyItems();
             // (the bull's gate: north-east room of the floor; its head stands in the gap of the wall across it)
-            p.pos = Map.ToWorld(1040, 196);
-            p.Face(Facing.Up);
-            yield return null; yield return null;
-            for (float s = 0; s < 3f && (Rooms.Sliding || Game.Busy || (Story.I && Story.I.Running)); s += Time.deltaTime) yield return null;
+            yield return InRoom(p, "gate", 208, 196);
             foreach (var e in Enemy.All.ToArray()) if (e) Object.Destroy(e.gameObject);
-            p.pos = Map.ToWorld(1040, 196);
             p.Face(Facing.Up);
-            p.SetState(Player.State.Free, "idle");
             // the shield has to be held up now: the action button, with nothing in front of him
             Controls.FakeHold = Controls.Interact;
             for (float held = 0; held < 7f && !Story.Has("z2_bull"); held += Time.deltaTime)

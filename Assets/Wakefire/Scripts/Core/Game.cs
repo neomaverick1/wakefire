@@ -77,6 +77,8 @@ namespace Wakefire
             Rooms.Setup(m, at);
             Populate(m);
             Mech.Setup(m);
+            Pocket.Setup(m);
+            Board.Setup(m);
             Story.Ensure().Setup(map, m);
             Music.Play(m.data.music);
             return p;

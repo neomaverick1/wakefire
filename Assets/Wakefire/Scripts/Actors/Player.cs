@@ -13,7 +13,7 @@ namespace Wakefire
         public static Player I;
         public enum State { Free, Attack, Roll, Nod, Use, Hurt, Dead, Talk, Cutscene, ItemGet, Guard, Throw }
         /// <summary>What the action button would do this moment.</summary>
-        public enum Act { None, Talk, Open, Read, Look, Guard }
+        public enum Act { None, Talk, Open, Read, Look, Guard, Take, Lower }
         public Act Action { get; private set; }
         public bool Guarding => state == State.Guard;
 
@@ -117,7 +117,7 @@ namespace Wakefire
             return sr;
         }
 
-        Vector2 Dir => facing == Facing.Down ? Vector2.down : facing == Facing.Up ? Vector2.up : facing == Facing.Left ? Vector2.left : Vector2.right;
+        public Vector2 Dir => facing == Facing.Down ? Vector2.down : facing == Facing.Up ? Vector2.up : facing == Facing.Left ? Vector2.left : Vector2.right;
 
         static Facing FacingOf(Vector2 v, Facing current)
         {
@@ -307,6 +307,7 @@ namespace Wakefire
             {
                 case "wheel": if (Thrown.Out("wheel") == 0) StartThrow("wheel"); else Sfx.Play("deny", 0.5f); break;
                 case "fork": StartFork(); break;
+                case "pocket": if (Pocket.Reach(this)) StartPocket(); break;
                 default: StartUse(); break;
             }
         }
@@ -353,13 +354,16 @@ namespace Wakefire
         }
 
         static bool Acts(Prop p) => p.Kind == "sign" || p.Kind == "well" || p.Kind == "gate" || p.Kind == "npc" || p.Kind == "pot" || p.Kind == "roots" ||
-                                    p.Kind == "chest" || p.Kind == "bigchest" || p.Kind == "lockdoor" || p.Kind == "bigdoor" || p.Kind == "look" || p.Kind == "stairs";
+                                    p.Kind == "chest" || p.Kind == "bigchest" || p.Kind == "lockdoor" || p.Kind == "bigdoor" || p.Kind == "look" || p.Kind == "stairs" ||
+                                    p.Kind == "dreamlock" || p.Kind == "plankgap" || p.Kind == "bluelamp" || p.Kind == "standard" || (p.Kind == "dreamthing" && Pocket.There(p));
 
         Act WhatNow()
         {
             var n = NpcInFront();
             if (n != null && n.talk != null) return Act.Talk;
             var pr = PropInFront(0.6f, Acts);
+            if (pr != null && pr.Kind == "dreamthing") return Act.Take;
+            if (pr != null && pr.Kind == "standard" && !Story.Has(pr.data.id)) return Act.Lower;
             if (pr != null)
                 return pr.Kind == "chest" || pr.Kind == "bigchest" || pr.Kind == "lockdoor" || pr.Kind == "bigdoor" || pr.Kind == "gate" ? Act.Open
                      : pr.Kind == "sign" ? Act.Read : pr.Kind == "npc" ? Act.Talk : Act.Look;
@@ -507,9 +511,21 @@ namespace Wakefire
             anim.Play(d.Dreaming ? "wake" : "nod", facing == Facing.Up ? Facing.Down : facing, true);
         }
 
+        /// <summary>He reaches into Nod's Pocket and holds out what is in it.</summary>
+        void StartPocket()
+        {
+            StartUse();
+            pocketing = true;
+        }
+        bool pocketing;
+
+        /// <summary>What is in front of him, for anything that is used on it.</summary>
+        public Prop InFront(float reach, Func<Prop, bool> filter) => PropInFront(reach, filter);
+
         void StartUse()
         {
             state = State.Use;
+            pocketing = false;
             striking = false;
             stateClock = 0;
             anim.Play("use", facing, true);
@@ -523,7 +539,7 @@ namespace Wakefire
             if (a.StartsWith("attack") && f == (a == "attack3" ? (anim.model ? ChopHit : 3) : 2)) Strike(a == "attack3");
             if (a == "nod" && f == 2) { Dream.I.Flip(pos, true); Sfx.Play("dream_in"); }
             if (a == "wake" && f == 1) { Dream.I.Flip(pos, false); Sfx.Play("dream_out"); }
-            if (a == "use" && f == 1) UseLantern();
+            if (a == "use" && f == 1) { if (pocketing) Pocket.Apply(this); else UseLantern(); }
             if (a == "throw" && f == ThrowFrame) { Thrown.Launch(throwing, this, Dir); }
         }
 
@@ -599,7 +615,14 @@ namespace Wakefire
                 Fx.Embers(b.basePos + new Vector2(0, 1f), 10);
                 Interacted?.Invoke(b);
             }
-            else Sfx.Play("lantern");
+            else
+            {
+                Sfx.Play("lantern");
+                // the cold lamps of the dead will not take it
+                var cold = PropInFront(0.7f, p => p.Kind == "bluelamp" && !p.lit);
+                if (cold != null && Story.I && !Story.I.Running && Story.Bump("wakefire_cold") % 3 == 0)
+                    Story.Run(Story.Narrate("The Wakefire leans away from the cold lamp.^It is not being rude. It was simply never taught to burn blue."));
+            }
         }
 
         /// <summary>Sandals on grass, sand, planks, stone; in the dream, over water, on moonlight.</summary>

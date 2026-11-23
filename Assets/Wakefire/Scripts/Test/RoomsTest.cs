@@ -47,7 +47,7 @@ namespace Wakefire
             var p = Player.I;
             p.SetState(Player.State.Free, "idle");
             yield return new WaitForSeconds(0.5f);
-            Check($"the floor has rooms ({(Rooms.I ? Rooms.I.all.Count : 0)}) and he starts in the hall ({Rooms.I?.current?.id})", Rooms.I && Rooms.I.all.Count == 6 && Rooms.I.current.id == "hall");
+            Check($"the floor has rooms ({(Rooms.I ? Rooms.I.all.Count : 0)}) and he starts in the hall ({Rooms.I?.current?.id})", Rooms.I && Rooms.I.all.Count == 8 && Rooms.I.current.id == "hall");
             Check($"only the hall's own are out (hall {Count("hall")}, west {Count("west")}, stair {Count("stair")})", Count("hall") == 2 && Count("west") == 0 && Count("stair") == 0);
             yield return t.Shot("r1-hall", 0.2f);
             // west, through the side doorway
@@ -93,7 +93,12 @@ namespace Wakefire
             yield return new WaitForSeconds(0.75f);
             Controls.Fake = Vector2.zero;
             yield return new WaitForSeconds(0.8f);
-            Check($"through the doorway into '{Rooms.I.current.id}' ({Count("stair")} sentinels)", Rooms.I.current.id == "stair" && Count("stair") == 2);
+            Check($"through the doorway into '{Rooms.I.current.id}'", Rooms.I.current.id == "proc");
+            // up the processional to the stair hall
+            foreach (var e in Enemy.All.ToArray()) if (e) Object.Destroy(e.gameObject);
+            p.pos = InRoom("proc", 208, 64);
+            yield return Walk(Vector2.up, 1.3f);
+            Check($"and up the processional into '{Rooms.I.current.id}' ({Count("stair")} sentinels)", Rooms.I.current.id == "stair" && Count("stair") == 2);
             yield return t.Shot("r6-stair-hall", 0.2f);
             // the sun disc, lit off the mirror shield from the pool of moonlight, lifts the bars of the vault
             foreach (var e in Enemy.All.ToArray()) if (e) Object.Destroy(e.gameObject);
@@ -133,7 +138,7 @@ namespace Wakefire
             Controls.Fake = Vector2.zero;
             yield return new WaitForSeconds(0.8f);
             Check($"south through the door: '{Rooms.I.current.id}', standing clear of the wall (y {p.pos.y - Rooms.I.current.rect.yMax:0.0} below the room's top)",
-                Rooms.I.current.id == "hall" && p.pos.y < Rooms.I.current.rect.yMax - 3f);
+                Rooms.I.current.id == "proc" && p.pos.y < Rooms.I.current.rect.yMax - 3f);
             yield return t.Shot("r9-hall-again", 0.2f);
             Check($"rooms walked are remembered for the map ({Story.Has(Rooms.VisitedFlag("zig_1", "vault"))})", Story.Has(Rooms.VisitedFlag("zig_1", "vault")));
             t.Note(bad == 0 ? "ROOMS OK" : $"ROOMS: {bad} FAILED");

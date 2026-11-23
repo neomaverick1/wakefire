@@ -395,6 +395,10 @@ namespace Wakefire
         IEnumerator TalkGenerals()
         {
             const string a = "General Ushur", b = "General Baltu";
+            // their barrow, their quartermaster, their piece: when there is news of those, that comes first
+            bool news = false;
+            yield return GeneralsAboutTheBarrow(v => news = v);
+            if (news) yield break;
             int n = Bump("generals");
             if (n == 0)
             {
@@ -627,7 +631,9 @@ namespace Wakefire
                             else Run(Narrate("A standing stone under the dead trees. It is too dark here to read what is cut in it.^Two fire altars stand beside it, cold."));
                             break;
                         case "game_board":
-                            Run(Narrate("The game of twenty squares. One piece has not moved in three hundred and ninety-one years.^It is a good piece. You can see why he is attached to it."));
+                            Run(Narrate(Has("dead_bw_piece")
+                                ? "The game of twenty squares. The piece that had not moved in three hundred and ninety-one years is gone.^Baltu is thinking about that, too."
+                                : "The game of twenty squares. One piece has not moved in three hundred and ninety-one years.^It is a good piece. You can see why he is attached to it."));
                             break;
                         case "lyre":
                             Run(Lyre());

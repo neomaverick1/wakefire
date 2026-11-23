@@ -73,6 +73,11 @@ namespace Wakefire
             yield return null;
         }
 
-        public void Note(string s) => log.Add(s);
+        /// <summary>A line of the run's log. It is also written out at once, so a run that hangs still says how far it got.</summary>
+        public void Note(string s)
+        {
+            log.Add(s);
+            try { File.AppendAllText(Path.Combine(dir, "live.txt"), s + "\n"); } catch (Exception) { }
+        }
     }
 }

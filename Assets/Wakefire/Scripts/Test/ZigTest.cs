@@ -156,7 +156,7 @@ namespace Wakefire
             p.SetState(Player.State.Free, "idle");
             yield return new WaitForSeconds(0.5f);
             Check($"the second floor has rooms ({(Rooms.I ? Rooms.I.all.Count : 0)}), and he is on the landing ({Rooms.I?.current?.id}) with no shield ({p.hasShield})",
-                Rooms.I && Rooms.I.all.Count == 6 && Rooms.I.current.id == "landing" && !p.hasShield);
+                Rooms.I && Rooms.I.all.Count == 8 && Rooms.I.current.id == "landing" && !p.hasShield);
             yield return t.Shot("z01-landing", 0.2f);
             yield return Stand("landing", 208, 60, Facing.Up);
             yield return Walk(Vector2.up, 0.5f);
@@ -169,11 +169,12 @@ namespace Wakefire
             yield return Scene();
             int straight = 0;
             foreach (var h in Object.FindObjectsByType<BullHead>(FindObjectsSortMode.None)) if (h.straight && Rooms.Of(h.prop.basePos + new Vector2(0, -1f)) == Rooms.I.current) straight++;
-            Check($"four heads breathe down it in turn ({straight})", straight == 4);
+            Check($"eight heads breathe down it in turn ({straight}), and it is two halls long ({Rooms.I.current.rect.width:0} tiles)", straight == 8 && Rooms.I.current.rect.width > 50f);
             yield return t.Shot("z02-bull-walk", 1.2f);
             yield return Stand("walk", 336, 150, Facing.Up);
             int hp0 = p.health.hp;
-            yield return new WaitForSeconds(3.4f);
+            // (the fifth head of eight: it first breathes 4.8 s after the hall wakes, and the fire is 1.2 s coming down)
+            for (float w = 0; w < 8f && p.health.hp >= hp0; w += Time.deltaTime) yield return null;
             Check($"standing in a lane gets him burnt ({hp0} -> {p.health.hp})", p.health.hp < hp0);
             p.health.Heal(99);
             // between the lanes nothing reaches him
@@ -185,7 +186,7 @@ namespace Wakefire
             yield return Open("z2_key");
             Check($"the key is at the far end ({p.keys})", p.keys == keys0 + 1);
             // ------------------------------------------------ the counting room
-            yield return Stand("walk", 208, 62, Facing.Up);
+            yield return Stand("walk", 624, 62, Facing.Up);
             yield return Walk(Vector2.up, 1.2f);
             Check($"north of the walk is the counting room ({Rooms.I.current.id}), with {Count<Sentinel>()} sentinels", Rooms.I.current.id == "count" && Count<Sentinel>() == 2);
             KillAll();
@@ -198,7 +199,10 @@ namespace Wakefire
             yield return Press(Controls.Interact, 0.5f);
             Check($"the key opens the landing's north door ({Story.Has("door_z2_door")})", Story.Has("door_z2_door") && p.keys == keys0);
             yield return Walk(Vector2.up, 1.3f, 0.5f);
-            Check($"north is the Herdsman's hall ({Rooms.I.current.id}), and he is in ({Count<Herdsman>()})", Rooms.I.current.id == "herd" && Count<Herdsman>() == 1);
+            Check($"north is the Herdsman's own stair ({Rooms.I.current.id})", Rooms.I.current.id == "climb");
+            yield return Stand("climb", 208, 62, Facing.Up);
+            yield return Walk(Vector2.up, 1.3f, 0.5f);
+            Check($"and at the top of it his hall ({Rooms.I.current.id}), and he is in ({Count<Herdsman>()})", Rooms.I.current.id == "herd" && Count<Herdsman>() == 1);
             yield return Scene();
             var cage = Map.Current.Find("z2_cage");
             Check("the shield's cage is shut", cage && cage.solid != null);
@@ -250,7 +254,11 @@ namespace Wakefire
             // ------------------------------------------------ the feed store, the gate, the stair
             yield return Stand("landing", 390, 130, Facing.Right);
             yield return Walk(Vector2.right, 0.8f);
-            Check($"east is the feed store ({Rooms.I.current.id})", Rooms.I.current.id == "store");
+            Check($"east is the feed way ({Rooms.I.current.id})", Rooms.I.current.id == "feed");
+            KillAll();
+            yield return Stand("feed", 390, 128, Facing.Right);
+            yield return Walk(Vector2.right, 0.8f);
+            Check($"and at the end of it the feed store ({Rooms.I.current.id})", Rooms.I.current.id == "store");
             KillAll();
             yield return new WaitForSeconds(0.5f);
             var gateBars = Map.Current.Find("z2_gate");
@@ -275,14 +283,18 @@ namespace Wakefire
             // ------------------------------------------------ the high halls
             Fade.Set(0);
             yield return Scene();
-            Check($"the third floor has rooms ({Rooms.I.all.Count})", Rooms.I.all.Count == 6);
+            Check($"the third floor has rooms ({Rooms.I.all.Count})", Rooms.I.all.Count == 8);
             var last = Map.Current.Find("zh_bars");
             Check("the last hall is barred", last && last.solid != null);
             yield return t.Shot("z07-high-landing", 0.2f);
             KillAll();
             yield return Stand("landing", 30, 130, Facing.Left);
             yield return Walk(Vector2.left, 0.8f);
-            Check($"west is the west light ({Rooms.I.current.id})", Rooms.I.current.id == "west");
+            Check($"west is the lamp way ({Rooms.I.current.id})", Rooms.I.current.id == "lamp");
+            KillAll();
+            yield return Stand("lamp", 30, 128, Facing.Left);
+            yield return Walk(Vector2.left, 0.8f);
+            Check($"and beyond it the west light ({Rooms.I.current.id})", Rooms.I.current.id == "west");
             KillAll();
             yield return new WaitForSeconds(0.5f);
             yield return Stand("west", 120, 152, Facing.Up);
@@ -300,7 +312,8 @@ namespace Wakefire
             yield return Press(Controls.Nod, 0.1f);
             ww = 0;
             while (!Dream.I.Dreaming && ww < 4f) { ww += Time.deltaTime; yield return null; }
-            yield return Walk(Vector2.left, 1.25f, 0.1f);
+            // (well clear of the edge: a man who wakes with a heel still over the drop goes down it)
+            yield return Walk(Vector2.left, 1.5f, 0.1f);
             Check($"asleep he crosses it ({(p.pos.x - moon.rect.xMin) * 16:0} px from the west wall, dreaming {Dream.I.Dreaming})", (p.pos.x - moon.rect.xMin) * 16 < 96);
             ww = 0;
             while (Dream.I.Dreaming && ww < 20f) { ww += Time.deltaTime; yield return null; }
@@ -339,7 +352,10 @@ namespace Wakefire
             // ------------------------------------------------ the great door
             yield return Stand("landing", 208, 62, Facing.Up);
             yield return Walk(Vector2.up, 1.3f);
-            Check($"north of the landing is the great door's hall ({Rooms.I.current.id})", Rooms.I.current.id == "door");
+            Check($"north of the landing is the last stair ({Rooms.I.current.id})", Rooms.I.current.id == "last");
+            yield return Stand("last", 208, 62, Facing.Up);
+            yield return Walk(Vector2.up, 1.3f);
+            Check($"and at the top of it the great door's hall ({Rooms.I.current.id})", Rooms.I.current.id == "door");
             KillAll();
             yield return new WaitForSeconds(0.5f);
             var great = Map.Current.Find("z2_bigdoor");

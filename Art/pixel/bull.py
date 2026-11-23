@@ -9,7 +9,7 @@ from underneath. Tones are quantised to a short bronze ramp with no dithering, t
 silhouette gets the game's dark outline.
 
     python3 bull.py            export Resources/Sprites/bull.png/.json
-    python3 bull.py preview    an INTERNAL TEST sheet in the scratchpad
+    python3 bull.py preview    an INTERNAL TEST sheet in the preview folder
 """
 import sys, math, json
 import numpy as np

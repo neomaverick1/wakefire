@@ -12,6 +12,7 @@ import region_art as G
 import town
 import necro
 import kit
+import bprops
 from mapkit import MapBuilder
 
 C = 8
@@ -272,10 +273,15 @@ def necropolis():
     for (x, y, w, h, sd) in ((56, 372, 84, 78, 46), (612, 500, 98, 62, 47), (420, 214, 66, 58, 48)):
         plot(T, x, y, w, h, sd)
     TOMBS = [('flat', 190, 338, 6.5, 3.0, 1.8, 11, True), ('vault', 176, 482, 6.0, 2.8, 1.7, 12, False), ('step', 300, 612, 4.5, 2.8, 1.4, 14, False),
-             ('vault', 566, 612, 6.0, 2.8, 1.7, 15, True), ('step', 690, 448, 4.5, 2.8, 1.4, 17, False), ('flat', 480, 330, 5.0, 2.6, 1.6, 16, False)]
+             ('vault', 566, 612, 6.0, 2.8, 1.7, 15, True), None, ('flat', 480, 330, 5.0, 2.6, 1.6, 16, False)]
+    # (the gap in the list is where a stepped tomb stood before the Generals' Barrow was dug out: the others keep their doors' words)
+    GB = (676, 474, 3.0)                                 # the Generals' Barrow: the mouth of its passage, and how big it is
     BARROWS = [(150, 598, 2.4, 13, True), (276, 440, 1.8, 18, True)]
-    for (st, x, y, w, d, h, sd, lamp) in TOMBS:
+    for tb in TOMBS:
+        if tb is None: continue
+        (st, x, y, w, d, h, sd, lamp) = tb
         T.contact(x - w * 8, y - d * 16, x + w * 8, y, reach=5, strength=1.4)
+    T.contact(GB[0] - GB[2] * 14, GB[1] - GB[2] * 30, GB[0] + GB[2] * 14, GB[1] - 4, reach=7, strength=1.4)
     for (x, y, r, sd, lamp) in BARROWS:
         T.contact(x - r * 14, y - r * 30, x + r * 14, y - 4, reach=6, strength=1.3)
     T.contact(0, 0, W, 108, reach=9, strength=1.7)
@@ -317,8 +323,21 @@ def necropolis():
     m.model("np_wall_w", town.drystone((336 - 44) / 16.0, h=0.9, seed=21), 44, H - 2, box=None)
     m.model("np_wall_e", town.drystone((W - 44 - 432) / 16.0, h=0.9, seed=22), 432, H - 2, box=None)
     m.solid(0, H - 12, 360, H); m.solid(408, H - 12, W, H)
-    for i, (st, x, y, w, d, h, sd, lamp) in enumerate(TOMBS):
+    for i, tb in enumerate(TOMBS):
+        if tb is None: continue
+        (st, x, y, w, d, h, sd, lamp) = tb
         kit.tomb(m, x, y, w, d, h, sd, st, lamp, text=door(i + 5))
+    # the Generals' Barrow: the biggest mound on the hill, one door, and a standard either side that neither army will take down first
+    gx, gy, gr = GB
+    m.model("great_barrow", bprops.great_barrow(gr, 5), gx, gy, box=None, lights=False)
+    hw, up = int(gr * 16) - 6, int(gr * 32) - 8
+    m.solid(gx - hw, gy - up, gx - 12, gy - 5); m.solid(gx + 12, gy - up, gx + hw, gy - 5); m.solid(gx - 12, gy - up, gx + 12, gy - 24)
+    m.model("standard_red_hill", bprops.standard('red'), gx - 34, gy + 4, box=(-4, -6, 4, 0), lights=False)
+    m.model("standard_blue_hill", bprops.standard('blue'), gx + 34, gy + 4, box=(-4, -6, 4, 0), lights=False)
+    kit.stele(m, gx - 52, gy + 18, 3, text="{g}'USHUR AND BALTU, GENERALS. THEY KILLED EACH OTHER IN THE SAME BATTLE AT THE SAME MOMENT.'{/}^"
+                                              "{g}'ONE BARROW. ONE DOOR. THE CITY WAS NOT MADE OF MONEY.'{/}~~"
+                                              "In the dream the door of the barrow stands open, as it does awake.^Nobody on this hill locks anything. Nobody is expected to leave.")
+    m.light(gx, gy - 14, 2.6, (1.0, 0.70, 0.36), 0.4, h=0.8)
     for i, (x, y, r, sd, lamp) in enumerate(BARROWS):
         kit.tumulus(m, x, y, r, sd, lamp, text=barrow(i + 2))
     # the garden of the dead: bare trees, two fire altars that have gone out, and the stone they used to light
@@ -350,7 +369,7 @@ def necropolis():
         kit.dead_tree(m, x, y, i)
     for i, (x, y) in enumerate(((240, 290), (104, 470), (520, 250), (620, 380), (230, 560), (470, 590), (86, 300), (590, 200))):
         kit.thorn(m, x, y, i)
-    for i, (x, y) in enumerate(((236, 346), (120, 492), (444, 344), (620, 624), (340, 624), (724, 460), (512, 512))):
+    for i, (x, y) in enumerate(((236, 346), (120, 492), (444, 344), (620, 624), (340, 624), (712, 500), (512, 512))):
         kit.urn(m, x, y, i)
     for i, (x, y) in enumerate(((300, 270), (580, 340), (90, 470))):
         kit.bones(m, x, y, i)
@@ -365,6 +384,8 @@ def necropolis():
         m.enemy("scarab", x, y, f"np_s{i}")
     m.spawn("south", 384, H - 30, "up")
     m.spawn("door", 384, 138, "down")
+    m.spawn("barrow", GB[0], GB[1] + 16, "down")
+    m.exit(GB[0] - 10, GB[1] - 22, GB[0] + 10, GB[1] - 9, "barrow", "south")
     m.exit(360, H - 8, 408, H, "necro_road", "north")
     m.exit(366, 88, 402, 106, "tomb_1", "south", need="king_door")
     m.save()

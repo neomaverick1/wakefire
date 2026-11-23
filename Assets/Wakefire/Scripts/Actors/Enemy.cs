@@ -61,6 +61,12 @@ namespace Wakefire
             return e;
         }
 
+        /// <summary>Seconds of sleep left (Nod's snore): it stands where it is and does nothing, and a blow wakes it.</summary>
+        public float asleep;
+        float zed;
+        public virtual bool Sleeps => true;
+        public void Sleep(float seconds) { asleep = seconds; zed = 0; vel = Vector2.zero; }
+
         protected virtual void Init() { }
         protected abstract void Think(float dt, Player p);
         protected virtual void OnHurt(HitInfo h) { }
@@ -83,6 +89,7 @@ namespace Wakefire
             if (!Present || health.Dead) return false;
             if (!Accepts(h)) { Sfx.Play("clank"); Fx.Sparks(pos + new Vector2(0, 0.5f), new Color(1f, 0.85f, 0.5f), 4); return true; }
             if (!health.Take(h)) return false;
+            asleep = 0;
             flash = 0.18f;
             health.invulnerable = 0.25f;
             var away = (pos - (Vector2)h.from).normalized;
@@ -132,9 +139,15 @@ namespace Wakefire
                 pos = Solids.Move(pos, knockVel * dt, half, this);
                 knockVel *= Mathf.Exp(-9f * dt);          // the same slide to a stop at any frame rate
             }
+            else if (asleep > 0)
+            {
+                asleep -= dt;
+                anim.Play("idle", facing);
+                if ((zed -= dt) <= 0) { zed = 0.8f; Zed.Spawn(pos + new Vector2(0.25f, 1.5f), layer == WorldLayer.Both ? WorldLayer.Waking : layer); }
+            }
             else if (p && p.state != Player.State.Dead && !(Story.I && Story.I.Running)) Think(dt, p);
             // touching hurts (only in the world we share)
-            if (here && p && !health.Dead && touchDamage > 0 && Vector2.Distance(pos, p.pos) < half.x + 0.38f &&
+            if (here && p && !health.Dead && touchDamage > 0 && asleep <= 0 && Vector2.Distance(pos, p.pos) < half.x + 0.38f &&
                 Mathf.Abs(pos.y - p.pos.y) < 0.5f && Dream.I.IsDreamAt(p.pos) == Dream.I.IsDreamAt(pos))
                 p.Hurt(new HitInfo { damage = touchDamage, from = pos, knockback = 6f, kind = HitKind.Slash, source = gameObject });
             if (flash > 0) flash -= dt;

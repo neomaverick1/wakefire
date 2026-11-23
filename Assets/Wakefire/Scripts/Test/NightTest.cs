@@ -123,7 +123,7 @@ namespace Wakefire
             Check("and the crypt has something to say about its lamps", Story.I.Running);
             yield return Scene();
             Check($"the crypt has rooms ({(Rooms.I ? Rooms.I.all.Count : 0)}), he is on the stair ({Rooms.I?.current?.id}), and it is dim (light {PixelView.I.ambient.r:0.00})",
-                Rooms.I && Rooms.I.all.Count == 5 && Rooms.I.current.id == "stair" && PixelView.I.ambient.r < 0.5f);
+                Rooms.I && Rooms.I.all.Count == 7 && Rooms.I.current.id == "stair" && PixelView.I.ambient.r < 0.5f);
             Check($"its music is its own ({Map.Current.data.music})", Map.Current.data.music == "crypt" && Resources.Load<AudioClip>("Music/crypt") && Resources.Load<AudioClip>("Music/crypt_dream"));
             yield return t.Shot("n05-stair", 0.3f);
             yield return Pack(t, "n05a-pack-empty", Pause.ItemPage);
@@ -146,7 +146,7 @@ namespace Wakefire
             p.pos = InRoom("stair", 390, 130);
             yield return Walk(Vector2.right, 0.8f);
             yield return Scene();
-            Check($"east is the dormitory ({Rooms.I.current.id}), with {Count<Jackal>()} jackals in it", Rooms.I.current.id == "beds" && Count<Jackal>() == 3);
+            Check($"east is the dormitory ({Rooms.I.current.id}), with {Count<Jackal>()} jackals in it", Rooms.I.current.id == "beds" && Count<Jackal>() == 5);
             var roots = Map.Current.Find("crypt_roots");
             Check("roots are grown across the way", roots && roots.solid != null);
             var beds = Rooms.I.Find("beds");
@@ -169,7 +169,10 @@ namespace Wakefire
             yield return Scene();
             p.pos = InRoom("stair", 30, 130);
             yield return Walk(Vector2.left, 0.8f);
-            Check($"west is the armoury ({Rooms.I.current.id})", Rooms.I.current.id == "arms");
+            Check($"west is the watch walk ({Rooms.I.current.id})", Rooms.I.current.id == "walk");
+            p.pos = InRoom("walk", 30, 130);
+            yield return Walk(Vector2.left, 0.8f);
+            Check($"and at the end of it the armoury ({Rooms.I.current.id})", Rooms.I.current.id == "arms");
             var block = Map.Current.Find("crypt_block");
             var chest = Map.Current.Find("crypt_sword");
             Check("a stone stands in the gap, and the great chest behind it", block && chest);
@@ -249,7 +252,12 @@ namespace Wakefire
             Check("the Wakefire's cage is shut", cage && cage.solid != null);
             p.pos = InRoom("lamps", 30, 130);
             yield return Walk(Vector2.left, 0.8f, 0.6f);
-            Check($"west is the den ({Rooms.I.current.id}), and its mother is in ({Count<DenMother>()})", Rooms.I.current.id == "den" && Count<DenMother>() == 1);
+            Check($"west is the jackals' run ({Rooms.I.current.id}), with {Count<Jackal>()} of them in it", Rooms.I.current.id == "run" && Count<Jackal>() == 2);
+            foreach (var e in Enemy.All.ToArray()) if (e is Jackal) Object.Destroy(e.gameObject);
+            p.health.hp = p.health.max;
+            p.pos = InRoom("run", 30, 128);
+            yield return Walk(Vector2.left, 0.8f, 0.6f);
+            Check($"and at the end of it the den ({Rooms.I.current.id}), and its mother is in ({Count<DenMother>()})", Rooms.I.current.id == "den" && Count<DenMother>() == 1);
             yield return Scene();
             yield return t.Shot("n13-den", 0.5f);
             var shut = Map.Current.Find("crypt_shut");

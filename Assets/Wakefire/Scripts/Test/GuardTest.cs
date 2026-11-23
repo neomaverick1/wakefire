@@ -73,7 +73,8 @@ namespace Wakefire
             // the shield, in the first hall of the ziggurat (the middle of its floor, clear of the pillars)
             yield return Enter("zig_1", "south");
             Story.Set("item_shield"); Story.I.ApplyItems();
-            p.pos = Map.ToWorld(624, 352); p.Face(Facing.Right);
+            var hall = Rooms.I.Find("hall");
+            p.pos = new Vector2(hall.rect.xMin + 208 / 16f, hall.rect.yMax - 128 / 16f); p.Face(Facing.Right);
             yield return new WaitForSeconds(0.2f);
             Check($"with the shield and nothing in front: {p.Action}", p.Action == Player.Act.Guard);
             Controls.FakeHold = Controls.Interact; Controls.FakePress = Controls.Interact;

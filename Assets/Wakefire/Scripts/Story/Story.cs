@@ -34,6 +34,7 @@ namespace Wakefire
                 case "ashkel": SetupAshkel(m); break;
                 case "crypt": SetupRegion(map, m); SetupCrypt(m); break;
                 case "zig_2": case "zig_hi": SetupRegion(map, m); SetupZig(m); break;
+                case "barrow": SetupRegion(map, m); SetupBarrow(m); break;
                 case "necro_road": case "necropolis": case "tomb_1": case "tomb_2": case "tomb_3": SetupHill(map, m); break;
                 default: SetupRegion(map, m); break;
             }
@@ -126,6 +127,15 @@ namespace Wakefire
                     Set("item_fork_tomb");
                     yield return ItemGet("fork_tomb", "You got the {g}CARNELIAN FORK{/}!^The king's own, the red of old blood. It listens for his chests the way the lapis one listens for the temple's.| He had it made to keep count of what he was buried with.^He was buried with it, which nobody thought through.| Like the other, it stays in its own house.");
                     break;
+                case "pocket":
+                    Set("item_pocket"); I.ApplyItems();
+                    Items.Chosen = "pocket";
+                    yield return MainItemGet("pocket", PocketText);
+                    break;
+                case "map_barrow":
+                    Set("item_map_barrow");
+                    yield return ItemGet("scroll", "You got the {g}BARROW ROLL{/}!^A plan of the barrow, drawn up for the funeral.| Both generals have corrected it. In ink. Over each other.^Open your pack and turn to the map: every room is on it.");
+                    break;
                 case "map_crypt":
                     Set("item_map_crypt");
                     yield return ItemGet("scroll", "You got the {g}WATCH ROLL{/}!^A plan of the crypt, kept up by four hundred years of sergeants.| One of them drew a goat in the margin.^Open your pack and turn to the map: every room is on it.");
@@ -193,6 +203,11 @@ namespace Wakefire
 
         /// <summary>What the mirror shield says when Azar lifts it out of its chest.</summary>
         public static string ShieldText => "You got the {g}BRONZE MIRROR SHIELD{/}!^Polished so bright you can see how tired you look.^With nothing in front of you, hold " + ActName + " to raise it.^A blow from the front glances off it. And fire goes back where it came from.";
+
+        public static string PocketText => "You got {g}NOD'S POCKET{/}!^A soldier's belt pouch, worn soft. Whatever is in it is, at the moment, asleep.| "
+            + "One thing you pick up in a dream comes back with you when you wake.^In a dream, face something small and press " + ActName + " to pocket it. Awake, " + ItemName + " uses it.| "
+            + "It holds one thing at a time. Take a second, and the first goes back where you dreamed it.^"
+            + "Nod was the best they ever had. He was always finding useful things in his dreams.| The only problem was, they always caught him sleeping on the job.";
 
         public static Story Ensure()
         {

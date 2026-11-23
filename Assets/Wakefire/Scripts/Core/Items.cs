@@ -14,6 +14,9 @@ namespace Wakefire
             /// <summary>For the few things whose picture depends on where he is (a tuning fork is the colour of its house).</summary>
             public Func<string> artNow;
             public string Art => artNow != null ? artNow() : art;
+            /// <summary>...and whose words do (the Pocket says what is in it).</summary>
+            public Func<string> aboutNow;
+            public string About => aboutNow != null ? aboutNow() : about;
         }
 
         /// <summary>The ones that go on the item button, in the order the item page shows them.</summary>
@@ -24,6 +27,8 @@ namespace Wakefire
             // (a fork is in the pack only inside the dungeon it was made for)
             new Def { id = "fork", name = "Tuning Fork", art = "fork_zig", artNow = () => "fork_" + (Fork.Here ?? "zig"), have = () => Fork.Here != null,
                       about = "Strike it and listen. The nearer a chest nobody has opened, the higher it hums, and the room goes on the plan.|It stays in the house it was made for. Outside, it is not in your pack." },
+            new Def { id = "pocket", name = "Nod's Pocket", art = "pocket", artNow = () => Pocket.Art, aboutNow = () => Pocket.About, have = () => Pocket.Have,
+                      about = "One thing you pick up in a dream comes back with you when you wake." },
             new Def { id = "wheel", name = "The Sun Wheel", art = "sun_wheel", have = () => Story.Has("item_wheel"),
                       about = "A bronze disc with an edge of gold, made for a king who missed the sun.|Thrown, it banks off walls and comes back to the hand." },
         };

@@ -48,6 +48,15 @@ namespace Wakefire
             Run(clay, 1.46f, 5.6f).With(Gesture.Level);
             Add("ushabti", clay);
 
+            // the two clay armies of the Generals' Barrow, and the piece on the board
+            var red = Human(1.5f, Cast.ClayOf(0));
+            Run(red, 1.5f, 5.9f).With(Gesture.Level);
+            Add("clay_red", red);
+            Add("clay_blue", Human(1.42f, Cast.ClayOf(1)));
+            var piece = Human(2.35f, Cast.Piece);
+            piece.span = 2;
+            Add("last_piece", piece);
+
             // Kurashtar
             var king = Dead(1.80f, Cast.King);
             var stride = king.Fit("walk", "Walk_Formal_Loop", loop: true, fade: 0.16f);

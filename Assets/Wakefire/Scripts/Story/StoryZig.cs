@@ -23,7 +23,7 @@ namespace Wakefire
             // anywhere else on the floor, the floor's own music (he may have backed out of the hall)
             Music.Play(Map.Current.data.music);
             if (map == "zig_2" && r.id == "walk" && Bump("walk_seen") == 0)
-                RunWhenFree(One(Narrate("Four bulls' heads in the wall, breathing in turn.^It is the most regular thing left in Ashkel. You could set a water-clock by it, if you could get near the water-clock.")));
+                RunWhenFree(One(Narrate("Eight bulls' heads in the wall, breathing in turn, down a hall twice as long as it has any need to be.^It is the most regular thing left in Ashkel. You could set a water-clock by it, if you could get near the water-clock.")));
             else if (map == "zig_2" && r.id == "gate" && !Has("z2_bull") && Bump("gate_seen") == 0)
                 RunWhenFree(One(Narrate(Has("item_shield") ? "The bull over the stair looks at you the way a door looks at a man with no key.^You have a mirror. It has not thought about mirrors."
                                                            : "The bull over the stair looks at you the way a door looks at a man with no key.")));
