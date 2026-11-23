@@ -11,11 +11,39 @@ namespace Wakefire
     public class Player : MonoBehaviour
     {
         public static Player I;
-        public enum State { Free, Attack, Roll, Nod, Use, Hurt, Dead, Talk, Cutscene, ItemGet, Guard, Throw }
+        public enum State { Free, Attack, Roll, Nod, Use, Hurt, Dead, Talk, Cutscene, ItemGet, Guard, Throw, Stone }
         /// <summary>What the action button would do this moment.</summary>
         public enum Act { None, Talk, Open, Read, Look, Guard, Take, Lower }
         public Act Action { get; private set; }
         public bool Guarding => state == State.Guard;
+        /// <summary>Stone, for as long as the Wakefire takes to burn it off him.</summary>
+        public bool Stoned => state == State.Stone;
+        float stoneLeft, stoneShown;
+
+        /// <summary>He met a Medusa's eyes. True if it took (not if he is already stone, down, or being told a story).</summary>
+        public bool Petrify(float seconds)
+        {
+            if (state == State.Stone || state == State.Dead || state == State.Cutscene || state == State.Talk || state == State.ItemGet || state == State.Roll) return false;
+            if (health.invulnerable > 0) return false;
+            state = State.Stone;
+            stateClock = 0;
+            stoneLeft = seconds;
+            vel = Vector2.zero; knock = Vector2.zero;
+            anim.fps = 0;                                   // exactly as he stood
+            Sfx.Play("piece_down", 0.8f, 0.06f);
+            PixelView.I.Shake(1, 0.2f);
+            return true;
+        }
+
+        void Unstone()
+        {
+            for (int i = 0; i < 12; i++)
+                Fx.Spawn(pos + new Vector2(UnityEngine.Random.Range(-0.3f, 0.3f), UnityEngine.Random.Range(0.3f, 1.3f)), UnityEngine.Random.insideUnitCircle * 2.4f, 0.5f,
+                    UnityEngine.Random.Range(2f, 5f), UnityEngine.Random.Range(0.3f, 0.6f), new Color(0.70f, 0.72f, 0.78f), new Color(0.30f, 0.32f, 0.38f), 16f, 1);
+            Sfx.Play("pot_break", 0.5f, 0.1f);
+            health.invulnerable = Mathf.Max(health.invulnerable, 0.5f);
+            ToFree();
+        }
 
         public State state = State.Free;
         public Vector2 pos;
@@ -174,6 +202,13 @@ namespace Wakefire
                     vel = Vector2.zero;
                     if (striking ? stateClock > 0.95f : anim.Done) { striking = false; ToFree(); }
                     break;
+                case State.Stone:
+                    // nothing to do but wait for the flame to burn it off; struggling helps, a little
+                    vel = Vector2.zero;
+                    stoneLeft -= dt;
+                    if (Controls.Down(Controls.Attack) || Controls.Down(Controls.Interact) || Controls.Down(Controls.Roll) || Controls.Down(Controls.Item)) stoneLeft -= 0.14f;
+                    if (stoneLeft <= 0) Unstone();
+                    break;
                 case State.Hurt:
                     vel = knock;
                     knock = Vector2.Lerp(knock, Vector2.zero, dt * 10f);
@@ -230,6 +265,9 @@ namespace Wakefire
             anim.Tick(dt);
             Place();
 
+            if (anim.model) anim.model.frozen = state == State.Stone;
+            float stoneWant = state == State.Stone ? 1f : 0f;
+            if (stoneShown != stoneWant) { stoneShown = Mathf.MoveTowards(stoneShown, stoneWant, dt * 7f); anim.sr.sharedMaterial.SetFloat("_Stone", stoneShown); }
             if (hurtFlash > 0)
             {
                 hurtFlash -= dt;

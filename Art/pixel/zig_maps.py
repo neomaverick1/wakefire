@@ -104,6 +104,8 @@ def zig_1():
     for (x, y) in ((120, 110), (296, 110)):
         F.pillar(vault, x, y)
     F.torch(vault, 60, 180); F.torch(vault, 356, 180)
+    # (the vault only opens to whoever carries the mirror, and whoever carries the mirror can deal with its doorkeeper)
+    F.enemy(vault, "medusa", 208, 84, "z1_med", once=True)
     F.save()
 
 
@@ -198,6 +200,8 @@ def zig_2():
     F.bullhead(gate, 208, 150, "z2_bull")
     F.torch(gate, 60, 196); F.torch(gate, 356, 196)
     F.torch(gate, 150, 84); F.torch(gate, 266, 84)
+    # (north of the head, where only somebody with the shield gets to: a thurifer on his round)
+    F.enemy(gate, "thurifer", 118, 96, "z2_th1", once=True)
     F.save()
 
 
@@ -242,9 +246,12 @@ def zig_hi():
     for (x, y) in ((160, 110), (256, 110), (160, 176), (256, 176)):
         F.pillar(last, x, y)
     F.torch(last, 156, 84); F.torch(last, 260, 84)
+    F.enemy(last, "medusa", 208, 84, "zh_med1", once=True)
     # the lamp way: it steps up and over, the way the wall behind it does
     F.torch(lamp, 60, 108); F.torch(lamp, 300, 68)
     F.enemy(lamp, "moth", 120, 128, "zh_m3"); F.enemy(lamp, "moth", 290, 84, "zh_m4")
+    # (and the glass they lit the lamps with, at the far end of it, looking down the whole length)
+    F.enemy(lamp, "glass", 58, 114, "zh_glass1", once=True)
     # the landing
     for (x, y) in ((120, 112), (296, 112), (120, 184), (296, 184)):
         F.pillar(land, x, y)
@@ -257,6 +264,7 @@ def zig_hi():
     F.torch(west, 372, 196); F.torch(west, 36, 196)
     F.enemy(west, "moth", 240, 150, "zh_m0"); F.enemy(west, "moth", 300, 100, "zh_m1")
     F.enemy(west, "sentinel", 280, 160, "zh_s2", once=True)
+    F.enemy(west, "thurifer", 330, 104, "zh_th1", once=True)
     # the moon room: the pool is across a drop that only a dreamer's road crosses
     F.pit(moon, 96, 48, 176, 208, bridges=[[(182, 128), (90, 128)]], seed=61)
     F.disc(moon, 56, "zh_d2")
@@ -275,12 +283,14 @@ def zig_hi():
     for (x, y) in ((120, 110), (296, 110)):
         F.pillar(keyr, x, y)
     F.torch(keyr, 60, 180); F.torch(keyr, 356, 180)
+    F.enemy(keyr, "medusa", 208, 80, "zh_med2", once=True)
     # the great door
     for (x, y) in ((120, 150), (296, 150)):
         F.pillar(door, x, y)
     F.torch(door, 150, 84); F.torch(door, 266, 84)
     F.enemy(door, "sentinel", 70, 110, "zh_s3", once=True)
     F.enemy(door, "sentinel", 346, 110, "zh_s4", once=True)
+    F.enemy(door, "thurifer", 208, 104, "zh_th2", once=True)
     F.save()
 
 

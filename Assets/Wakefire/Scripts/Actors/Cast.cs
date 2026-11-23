@@ -624,6 +624,140 @@ namespace Wakefire
             m.marks["mace"] = (hand, hand.InverseTransformPoint(t.rig.TransformPoint(t.FromTailor(head))));
         }
 
+        /// <summary>A thurifer: a censer-bearer's saffron robe gone grey to the knee with forty nights of his own
+        /// smoke, arms bare for the work, a shaved head, and a cloth over his nose and mouth (he has met incense).</summary>
+        public static void Thurifer(ModelActor m)
+        {
+            var look = new Folk
+            {
+                skin = Tan, hair = new Color(0.14f, 0.10f, 0.10f), tunic = new Color(0.88f, 0.60f, 0.16f), fold = new Color(0.66f, 0.42f, 0.12f),
+                sash = new Color(0.52f, 0.10f, 0.10f), shoe = new Color(0.30f, 0.18f, 0.12f), top = "bald", sleeves = false, hem = 0.82f, build = 1.1f,
+            };
+            var f = Clothe(m, look);
+            var ck = new Kit(f.t);
+            ck.On("Head").Paint(new Color(0.26f, 0.22f, 0.22f)).Egg(f.hc + new Vector3(0, -f.hr.y * 0.44f, f.hr.z * 0.30f), new Vector3(f.hr.x * 0.98f, f.hr.y * 0.44f, f.hr.z * 0.84f), 10, 6);
+            // a band of red at the brow, and the soot that has settled on his shoulders
+            ck.Paint(new Color(0.60f, 0.12f, 0.10f)).Turned(new Vector3(0, 0, f.hc.z), new[] { (f.hr.x + 0.012f, f.hc.y + 0.05f), (f.hr.x + 0.014f, f.hc.y + 0.085f) }, 12, f.hr.z / f.hr.x);
+            ck.On("spine_03").Paint(new Color(0.34f, 0.30f, 0.28f)).Turned(new Vector3(0, 0, f.trunk.z), new[] { (0.09f, f.neck.y - 0.015f), (f.chestX + 0.052f, f.neck.y - 0.06f), (f.chestX + 0.056f, f.neck.y - 0.10f) }, 14, f.deepChest);
+            ck.Wear("Cloth");
+        }
+
+        /// <summary>A Medusa: a doorkeeper's gown the green of deep water with a gold hem, a gold collar and
+        /// gold on her bare arms, a face the colour of old bronze, and the hair. The hair is eleven snakes.
+        /// They hang about her head while she is at them with the comb, and stand up when she looks.</summary>
+        public static void Medusa(ModelActor m)
+        {
+            Color gold = new Color(0.96f, 0.76f, 0.28f), pallor = new Color(0.58f, 0.68f, 0.54f);
+            var look = new Folk
+            {
+                skin = pallor, hair = new Color(0.10f, 0.20f, 0.14f), tunic = new Color(0.09f, 0.31f, 0.27f), fold = new Color(0.05f, 0.20f, 0.19f),
+                sash = gold, shoe = new Color(0.20f, 0.14f, 0.10f), top = "bald", sleeves = false, gold = true, hem = 0.97f, build = 0.96f, headScale = 1.14f,
+            };
+            var f = Clothe(m, look);
+            var t = f.t;
+            float k = look.headScale;
+            // ---- gold: a broad collar, a band on each arm and each wrist
+            var jk = new Kit(t);
+            jk.On("spine_03").Paint(gold, 1).Turned(new Vector3(0, 0, f.trunk.z), new[] { (0.085f, f.neck.y - 0.02f), (0.15f, f.neck.y - 0.05f), (0.185f, f.neck.y - 0.085f) }, 14, f.deepChest);
+            foreach (string side in new[] { "_l", "_r" })
+            {
+                Vector3 sh = t.At("upperarm" + side), el = t.At("lowerarm" + side), wr = t.At("hand" + side);
+                jk.On("upperarm" + side).Paint(gold, 1).Egg(Vector3.Lerp(sh, el, 0.52f), new Vector3(0.030f, 0.076f, 0.080f), 8, 6);
+                jk.On("lowerarm" + side).Paint(gold, 1).Egg(Vector3.Lerp(el, wr, 0.82f), new Vector3(0.026f, 0.062f, 0.064f), 8, 6);
+            }
+            jk.Wear("Gold");
+            // ---- her eyes with the light in them: only there while she looks
+            var gk = new Kit(t);
+            gk.On("Head").Paint(new Color(0.74f, 1f, 0.62f), 0, 2.4f);
+            foreach (int s in new[] { -1, 1 })
+            {
+                var d = new Vector3(0.36f * s, 0.10f, 0.93f).normalized;
+                var c = f.hc + Vector3.Scale(d, f.hr) + new Vector3(0, 0, 0.010f);
+                gk.Face(c + new Vector3(-0.027f, -0.022f, 0), c + new Vector3(0.027f, -0.022f, 0), c + new Vector3(0.027f, 0.022f, 0), c + new Vector3(-0.027f, 0.022f, 0), Vector3.forward);
+            }
+            var glare = gk.Wear("Glare");
+            glare.enabled = false;
+            // ---- the hair: each snake is two bones of its own on her head, so it can hang, sway and stand
+            var headBone = m.Bone("Head");
+            Vector3 OnHead(Vector3 p) => f.head + (p - f.head) * k;          // (her head is drawn a little large, and they grow from it as drawn)
+            var plan = new (float az, float el, float len)[]
+            {
+                (0, 84, 0.25f), (-28, 60, 0.26f), (28, 60, 0.26f), (-64, 40, 0.31f), (64, 40, 0.31f), (-102, 32, 0.35f), (102, 32, 0.35f),
+                (-140, 36, 0.35f), (140, 36, 0.35f), (-172, 44, 0.32f), (172, 44, 0.32f),
+            };
+            int n = plan.Length;
+            var roots = new Transform[n];
+            var tips = new Transform[n];
+            var rear = new float[n];
+            var bones = new System.Collections.Generic.List<Transform>();
+            var origin = new Vector3[n];
+            var ax = new Vector3[n]; var ay = new Vector3[n]; var az = new Vector3[n];
+            Quaternion World(Vector3 y, Vector3 z) => Quaternion.LookRotation(t.rig.TransformDirection(t.FromTailor(z)), t.rig.TransformDirection(t.FromTailor(y)));
+            for (int i = 0; i < n; i++)
+            {
+                float a = plan[i].az * Mathf.Deg2Rad, e = plan[i].el * Mathf.Deg2Rad;
+                var d = new Vector3(Mathf.Sin(a) * Mathf.Cos(e), Mathf.Sin(e), Mathf.Cos(a) * Mathf.Cos(e));
+                origin[i] = OnHead(f.hc + Vector3.Scale(d, f.hr) * 0.9f);
+                // at rest: the ones on top lie forward and up, the rest hang out and down about her head
+                Vector3 dir = i == 0 ? new Vector3(0, 0.75f, -0.5f) : i < 3 ? new Vector3(d.x * 0.9f, 0.45f, 0.65f) : new Vector3(d.x, d.y * 0.2f - 0.42f, d.z);
+                ay[i] = dir.normalized;
+                ax[i] = Vector3.Cross(Vector3.up, ay[i]);
+                ax[i] = ax[i].sqrMagnitude < 0.001f ? Vector3.right : ax[i].normalized;
+                az[i] = Vector3.Cross(ax[i], ay[i]);
+                float fromUp = Vector3.Angle(ay[i], Vector3.up);
+                rear[i] = Mathf.Max(0f, fromUp - (24f + 30f * ((i * 37) % 10) / 10f));
+                roots[i] = new GameObject("sn" + i + "a").transform;
+                roots[i].SetParent(headBone, false);
+                roots[i].position = t.rig.TransformPoint(t.FromTailor(origin[i]));
+                roots[i].rotation = World(ay[i], az[i]);
+                tips[i] = new GameObject("sn" + i + "b").transform;
+                tips[i].SetParent(roots[i], false);
+                tips[i].position = t.rig.TransformPoint(t.FromTailor(origin[i] + ay[i] * plan[i].len * 0.5f * k));
+                tips[i].rotation = roots[i].rotation;
+                bones.Add(roots[i]); bones.Add(tips[i]);
+            }
+            var sk = new Kit(m, t.rig, bones.ToArray());
+            for (int i = 0; i < n; i++)
+            {
+                float len = plan[i].len * k, half = len * 0.5f;
+                Color body = i % 2 == 0 ? new Color(0.22f, 0.58f, 0.22f) : new Color(0.10f, 0.36f, 0.24f), band = new Color(0.05f, 0.17f, 0.10f);
+                Color snout = i % 2 == 0 ? new Color(0.62f, 0.86f, 0.36f) : new Color(0.40f, 0.70f, 0.40f);
+                Vector3 o = t.FromTailor(origin[i]), x = t.FromTailor(ax[i]), y = t.FromTailor(ay[i]), z = t.FromTailor(az[i]);
+                sk.Frame(o, x, y, z);
+                sk.Stain(p => Mathf.FloorToInt(Vector3.Dot(p - o, y) / 0.045f + 20f) % 3 == 0 ? band : (Color?)null);
+                sk.On("sn" + i + "a").Paint(body).Tube(new[] { new Vector3(0, -0.03f, 0), new Vector3(0, half * 0.5f, 0), new Vector3(0, half + 0.01f, 0) }, new[] { 0.047f, 0.043f, 0.038f }, 6);
+                // the far half turns up at the end, and has the head on it
+                var up1 = new Vector3(0, half + half * 0.5f, -half * 0.16f);
+                var up2 = new Vector3(0, half + half * 0.92f, -half * 0.5f);
+                sk.On("sn" + i + "b").Paint(body).Tube(new[] { new Vector3(0, half - 0.01f, 0), up1, up2 }, new[] { 0.038f, 0.034f, 0.030f }, 6);
+                sk.Stain(null);
+                sk.Paint(snout).Egg(up2 + new Vector3(0, 0.024f, -0.016f), new Vector3(0.046f, 0.052f, 0.046f), 6, 4);
+                sk.Paint(new Color(1f, 0.25f, 0.10f), 0, 1.6f).Egg(up2 + new Vector3(0, 0.05f, -0.04f), Vector3.one * 0.016f, 4, 3);       // (a tongue, or an eye: at this distance, a warning)
+            }
+            sk.Frame();
+            sk.Wear("Hair");
+            var restA = new Quaternion[n];
+            var restB = new Quaternion[n];
+            for (int i = 0; i < n; i++) { restA[i] = roots[i].localRotation; restB[i] = tips[i].localRotation; }
+            Wakefire.Medusa who = null;
+            bool looked = false;
+            m.Posed += (a, dt) =>
+            {
+                if (!looked) { looked = true; who = a.sr ? a.sr.GetComponentInParent<Wakefire.Medusa>() : null; }
+                float r = who ? who.Reared : a.anim == "stare" ? 1f : 0f;
+                if (glare) glare.enabled = r > 0.35f;
+                float time = a.life;
+                for (int i = 0; i < n; i++)
+                {
+                    float ph = i * 1.7f;
+                    float lift = -r * rear[i] + Mathf.Sin(time * (1.6f + r * 3.2f) + ph) * (5f + 7f * r);
+                    float wig = Mathf.Sin(time * (2.1f + r * 4f) + ph * 1.3f) * (7f + 6f * r);
+                    roots[i].localRotation = restA[i] * Quaternion.Euler(lift, 0, wig * 0.6f);
+                    tips[i].localRotation = restB[i] * Quaternion.Euler(-r * 16f + Mathf.Sin(time * (2.4f + r * 4f) + ph + 1.1f) * (11f + 9f * r), 0, wig);
+                }
+            };
+        }
+
         /// <summary>Where a closed fist holds a handle: the middle of the grip, the direction the fingers
         /// reach, the direction across the knuckles (little finger to forefinger), and the palm's facing.</summary>
         static void Grip(Tailor t, string side, out Vector3 grip, out Vector3 fingers, out Vector3 across, out Vector3 palm)
@@ -696,6 +830,25 @@ namespace Wakefire
         };
 
         public static Action<ModelActor, float> Point => (m, n) => { m.Bend("upperarm_r", -82f * Ease(n * 3f), -8f); };
+
+        /// <summary>A censer going round overhead: the right arm up, the wrist doing the work.</summary>
+        public static Action<ModelActor, float> Swing => (m, n) =>
+        {
+            float t = m.life * 4.6f;
+            m.Bend("upperarm_r", -152f + Mathf.Sin(t) * 9f, 0, 10f + Mathf.Cos(t) * 9f);
+            m.Bend("lowerarm_r", Mathf.Sin(t) * 22f - 10f, 0, Mathf.Cos(t) * 22f);
+            m.Bend("spine_02", 0, Mathf.Sin(t) * 4f, 0);
+        };
+
+        /// <summary>Bent over with both hands at his throat, coughing.</summary>
+        public static Action<ModelActor, float> Cough => (m, n) =>
+        {
+            float k = Mathf.Abs(Mathf.Sin(m.life * 8.5f));
+            m.Bend("spine_02", 16f + k * 12f);
+            m.Bend("upperarm_l", -64f, 22f); m.Bend("upperarm_r", -64f, -22f);
+            m.Bend("lowerarm_l", -96f); m.Bend("lowerarm_r", -96f);
+            Droop(m, 0.5f + k * 0.4f);
+        };
 
         public static Action<ModelActor, float> Shrug => (m, n) =>
         {

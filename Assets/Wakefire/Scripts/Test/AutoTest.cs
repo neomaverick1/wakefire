@@ -57,6 +57,7 @@ namespace Wakefire
             };
             yield return null;
             Story.GiveKit();                    // the blade and the flame: only the first night is played without them
+            Story.HallsQuiet = scene != "halls" && scene != "zoo";      // (the staff of the high halls introduce themselves in their own test)
             if (Scenes.TryGetValue(scene, out var run)) yield return StartCoroutine(run(this));
             else log.Add("unknown test scene " + scene);
             File.WriteAllText(Path.Combine(dir, "log.txt"), string.Join("\n\n", log));

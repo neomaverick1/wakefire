@@ -411,6 +411,8 @@ def tomb_hi():
     for i, (x, y) in enumerate(((60, 120), (350, 150))):
         kit.urn(m, *head.p(x, y), i)
     F.enemy(head, "scarab", 150, 110, "t3_s0"); F.enemy(head, "scarab", 290, 120, "t3_s1"); F.enemy(head, "scarab", 300, 180, "t3_s2")
+    # (the thieves carried a burning glass up from the temple to open the king's door with, and could not get it to stop)
+    F.enemy(head, "glass", 322, 82, "t3_glass", once=True)
 
     # ---------------------------------------------------------------- the clerks' passage
     F.look("stele_t3", town.stele(1.25, 1), wpass, 360, 150, (-5, -5, 5, 0),
@@ -461,6 +463,8 @@ def tomb_hi():
         m.model("sentinel_niche", necro.sentinel_niche(), Xn, Yn + 4, box=None)
     F.enemy(thr, "ushabti", 90, 130, "t3_g1", once=True)
     F.enemy(thr, "ushabti", 326, 130, "t3_g2", once=True)
+    # (the king's own doorkeeper: he had her sent up from the temple)
+    F.enemy(thr, "medusa", 208, 84, "t3_med", once=True)
     heap(F, thr, 70, 190, 2)
     heap(F, thr, 350, 186, 0)
 

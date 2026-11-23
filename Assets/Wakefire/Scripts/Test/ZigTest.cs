@@ -274,6 +274,7 @@ namespace Wakefire
             yield return t.Shot("z06-the-question", 1.6f);
             yield return Guard(() => Story.Has("z2_bull"), 9f);
             Check($"its own fire, handed back, breaks it ({Story.Has("z2_bull")}, life {p.health.hp}/{p.health.max})", Story.Has("z2_bull"));
+            KillAll();                                    // (the thurifer on his round north of the head has a test of his own)
             Controls.Fake = Vector2.up;
             float ww = 0;
             while (Game.I.CurrentMap == "zig_2" && ww < 4f) { ww += Time.deltaTime; yield return null; }

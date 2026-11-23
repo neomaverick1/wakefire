@@ -388,28 +388,162 @@ namespace Wakefire
     }
 
     // --------------------------------------------------------------------------------- jackal
+    /// <summary>The jackals of the olive terraces: the wolf's poor relations, and they know it. A deep chest
+    /// on long legs, a black saddle with the dust of the terraces under it, ears like two spearheads, a brush
+    /// with a black end to it, and eyes that give back the lantern from further off than the rest of them shows.</summary>
     public class JackalBeast : Beast
     {
         /// <summary>The Den Mother: the same animal grown old and heavy in the dark, grey down the back, one ear in ribbons.</summary>
         public static Shape Mother => new Shape
         {
-            coat = new Color(0.50f, 0.40f, 0.30f), belly = new Color(0.72f, 0.66f, 0.56f), dark = new Color(0.10f, 0.08f, 0.09f),
-            back = new Color(0.22f, 0.20f, 0.22f), muzzle = new Color(0.78f, 0.74f, 0.68f),
-            length = 0.74f, height = 0.52f, girth = 0.15f, chest = 0.185f, rump = 0.14f, legThick = 0.046f, stance = 0.11f,
-            neckLen = 0.21f, neckRise = 34f, neckThick = 0.09f, headLen = 0.29f, headThick = 0.092f, headTilt = 12f,
-            tailLen = 0.34f, tailRise = -34f, tailThick = 0.07f, earLen = 0.15f, earsUp = true, stride = 0.74f, stepHeight = 0.08f,
-            eye = new Color(1.0f, 0.62f, 0.20f), eyeGlow = 1.3f,
+            coat = new Color(0.46f, 0.42f, 0.42f), belly = new Color(0.80f, 0.78f, 0.74f), dark = new Color(0.06f, 0.05f, 0.07f),
+            back = new Color(0.15f, 0.14f, 0.18f), muzzle = new Color(0.84f, 0.83f, 0.82f), sock = new Color(0.60f, 0.56f, 0.54f),
+            hornColour = new Color(0.50f, 0.34f, 0.26f),
+            length = 0.76f, height = 0.48f, girth = 0.19f, chest = 0.23f, rump = 0.17f, legThick = 0.064f, stance = 0.125f,
+            neckLen = 0.21f, neckRise = 32f, neckThick = 0.118f, headLen = 0.37f, headThick = 0.118f, headTilt = 12f,
+            tailLen = 0.40f, tailRise = -34f, tailThick = 0.09f, earLen = 0.21f, earsUp = true, stride = 0.76f, stepHeight = 0.08f,
+            eye = new Color(1.0f, 0.60f, 0.18f), eyeGlow = 1.5f, skin = Hide, beard = true,
         };
 
         public static Shape Body => new Shape
         {
-            coat = new Color(0.74f, 0.56f, 0.34f), belly = new Color(0.90f, 0.80f, 0.60f), dark = new Color(0.15f, 0.11f, 0.10f),
-            back = new Color(0.30f, 0.24f, 0.22f), muzzle = new Color(0.90f, 0.80f, 0.60f),
-            length = 0.70f, height = 0.50f, girth = 0.125f, chest = 0.15f, rump = 0.125f, legThick = 0.038f, stance = 0.095f,
-            neckLen = 0.20f, neckRise = 38f, neckThick = 0.07f, headLen = 0.27f, headThick = 0.078f, headTilt = 10f,
-            tailLen = 0.36f, tailRise = -28f, tailThick = 0.062f, earLen = 0.17f, earsUp = true, stride = 0.70f, stepHeight = 0.08f,
-            eye = new Color(1.0f, 0.82f, 0.30f), eyeGlow = 1f,
+            coat = new Color(0.62f, 0.44f, 0.30f), belly = new Color(0.95f, 0.90f, 0.78f), dark = new Color(0.07f, 0.06f, 0.07f),
+            back = new Color(0.11f, 0.10f, 0.12f), muzzle = new Color(0.97f, 0.93f, 0.82f), sock = new Color(0.86f, 0.62f, 0.36f),
+            hornColour = new Color(0.80f, 0.36f, 0.14f),          // (the rust behind the ears and down the legs)
+            length = 0.72f, height = 0.46f, girth = 0.17f, chest = 0.21f, rump = 0.16f, legThick = 0.060f, stance = 0.115f,
+            neckLen = 0.20f, neckRise = 38f, neckThick = 0.105f, headLen = 0.36f, headThick = 0.112f, headTilt = 10f,
+            tailLen = 0.42f, tailRise = -30f, tailThick = 0.085f, earLen = 0.24f, earsUp = true, stride = 0.70f, stepHeight = 0.085f,
+            eye = new Color(1.0f, 0.82f, 0.24f), eyeGlow = 1.4f, skin = Hide,
         };
+
+        /// <summary>One hide for both: the body drawn through its sections (a keel of a chest, a waist tucked
+        /// up behind it), a wedge of a head, and legs that are thigh, shank and paw rather than sausages.
+        /// (s.beard marks the old one: a heavier ruff, and her left ear has been through something.)</summary>
+        static void Hide(Kit kit, Beast b)
+        {
+            var s = b.s;
+            bool old = s.beard;
+            var T = b.trunkAt;
+            Color coat = s.coat, belly = s.belly, saddle = s.back ?? s.dark, dark = s.dark, pale = s.muzzle ?? s.belly, sock = s.sock ?? s.coat;
+            Color silver = Color.Lerp(saddle, belly, 0.55f), fang = new Color(0.98f, 0.96f, 0.88f), gum = new Color(0.46f, 0.10f, 0.10f);
+            (Vector3, float, float) R(float z, float hw, float hh, float cy) => (new Vector3(0, cy, z), hw, hh);
+            float L = s.length, g = s.girth / 0.15f;
+            // ---- the trunk: rump, a waist tucked up, ribs, the deep chest, the point of the breast
+            Color rust = s.hornColour;
+            float bellyLine = T.y - 0.07f * g;
+            kit.On("trunk").Paint(coat).Stain(p =>
+            {
+                if (p.y < bellyLine) return belly;
+                // the saddle comes well down the shoulder and runs out along the back
+                float k = Mathf.InverseLerp(-L * 0.5f, L * 0.42f, p.z);
+                float edge = T.y + Mathf.Lerp(0.085f, -0.005f, k * k) * g;
+                if (p.z < L * 0.5f + 0.03f && p.y > edge) return p.y < edge + 0.026f ? silver : saddle;
+                if (p.z > L * 0.36f && p.y < T.y - 0.01f) return belly;                // the pale breast
+                return p.z < -L * 0.2f && p.y < T.y + 0.02f ? rust : (Color?)null;      // rust on the haunch
+            });
+            kit.Loft(new[]
+            {
+                R(-L * 0.5f - 0.09f, 0.045f * g, 0.05f * g, T.y + 0.035f), R(-L * 0.5f - 0.01f, 0.105f * g, 0.115f * g, T.y + 0.02f),
+                R(-L * 0.30f, 0.118f * g, 0.125f * g, T.y + 0.01f), R(-L * 0.05f, 0.104f * g, 0.110f * g, T.y + 0.024f),
+                R(L * 0.19f, 0.128f * g, 0.150f * g, T.y), R(L * 0.39f, 0.140f * g, 0.180f * g, T.y - 0.012f),
+                R(L * 0.53f, 0.110f * g, 0.140f * g, T.y + 0.02f), R(L * 0.5f + 0.08f, 0.06f * g, 0.08f * g, T.y + 0.05f),
+            }, 2.5f, 16);
+            kit.Stain(null);
+            // hackles: a ridge of stiff hair from the shoulders back, up when anything is near (it is always up)
+            {
+                int n = 7;
+                var foot = new Vector3[n];
+                var top = new Vector3[n];
+                for (int i = 0; i < n; i++)
+                {
+                    float z = Mathf.Lerp(L * 0.5f, -L * 0.18f, i / (float)(n - 1));
+                    float y = T.y + Mathf.Lerp(0.165f, 0.125f, i / (float)(n - 1)) * g;
+                    foot[i] = new Vector3(0, y - 0.02f, z);
+                    top[i] = new Vector3(0, y + (i % 2 == 0 ? 0.045f : 0.022f) * (old ? 1.35f : 1f), z - 0.012f);
+                }
+                kit.Paint(saddle).Fin(foot, top, 0.045f);
+            }
+            // ---- the neck, with a ruff where it leaves the shoulders and a pale bib under the throat
+            var nUp = Vector3.Cross(b.neckDir, Vector3.right);
+            float ruff = old ? 1.18f : 1.06f, nk = s.neckThick / 0.085f;
+            kit.On("neck").Frame(b.neckBase, Vector3.right, nUp, b.neckDir).Paint(coat);
+            kit.Stain(p => Vector3.Dot(p - b.neckBase, nUp) < -0.025f * nk ? pale : Vector3.Dot(p - b.neckBase, nUp) > 0.05f * nk ? saddle : rust);
+            kit.Loft(new[]
+            {
+                (new Vector3(0, -0.035f, -0.11f), 0.108f * nk * ruff, 0.128f * nk * ruff), (new Vector3(0, -0.02f, 0.02f), 0.092f * nk * ruff, 0.106f * nk * ruff),
+                (new Vector3(0, -0.006f, 0.13f), 0.076f * nk, 0.086f * nk), (new Vector3(0, 0, s.neckLen + 0.02f), 0.066f * nk, 0.070f * nk),
+            }, 2.3f, 12);
+            kit.Stain(null);
+            // ---- the head: broad between the ears, pinched before the eyes, a long muzzle
+            float hk = s.headThick / 0.09f, hl = s.headLen / 0.30f;
+            kit.On("head").Frame(b.headBase, Vector3.right, b.headUp, b.headDir).Paint(coat);
+            kit.Stain(p =>
+            {
+                var r = p - b.headBase;
+                float y = Vector3.Dot(r, b.headUp), z = Vector3.Dot(r, b.headDir);
+                if (y < -0.014f * hk || (z > 0.17f * hl && y < 0.012f * hk)) return pale;
+                if (z > 0.10f * hl && Mathf.Abs(r.x) < 0.016f) return saddle;           // the dark line down the nose
+                return (Color?)null;
+            });
+            kit.Loft(new[]
+            {
+                (new Vector3(0, 0, -0.05f * hl), 0.066f * hk, 0.062f * hk), (new Vector3(0, 0.008f, 0.03f * hl), 0.090f * hk, 0.080f * hk),
+                (new Vector3(0, 0, 0.12f * hl), 0.074f * hk, 0.064f * hk), (new Vector3(0, -0.012f, 0.19f * hl), 0.047f * hk, 0.043f * hk),
+                (new Vector3(0, -0.016f, 0.27f * hl), 0.037f * hk, 0.033f * hk), (new Vector3(0, -0.016f, 0.30f * hl), 0.024f * hk, 0.022f * hk),
+            }, 2.4f, 12);
+            kit.Stain(null);
+            kit.Paint(dark).Egg(new Vector3(0, -0.010f, 0.305f * hl), new Vector3(0.026f, 0.024f, 0.022f) * hk, 6, 4);          // the nose
+            foreach (int side in new[] { -1, 1 })
+            {
+                // an eye that gives the light back, under a dark brow
+                kit.Paint(s.eye, 0, s.eyeGlow).Egg(new Vector3(side * 0.071f * hk, 0.030f * hk, 0.088f * hl), new Vector3(0.017f, 0.021f, 0.030f) * hk, 6, 4);
+                kit.Paint(saddle).Egg(new Vector3(side * 0.066f * hk, 0.056f * hk, 0.085f * hl), new Vector3(0.026f, 0.012f, 0.040f) * hk, 6, 3);
+                // an ear like a spearhead: rust at the root, black at the point
+                float len = s.earLen * (old && side < 0 ? 0.55f : 1f);
+                var root = new Vector3(side * 0.050f * hk, 0.055f * hk, 0.0f);
+                var tip = root + new Vector3(side * 0.045f, len, -0.03f);
+                kit.Stain(p => Vector3.Dot(p - b.headBase, b.headUp) > 0.055f * hk + len * 0.55f ? dark : (Color?)null);
+                kit.Paint(rust).Tube(new[] { root, Vector3.Lerp(root, tip, 0.45f) + new Vector3(side * 0.014f, 0, 0), tip }, new[] { 0.046f * hk, 0.040f * hk, 0.004f }, 6);
+                kit.Stain(null);
+                if (old && side < 0) kit.Paint(dark).Egg(tip + new Vector3(side * 0.012f, -0.02f, 0), new Vector3(0.012f, 0.03f, 0.012f), 5, 3);     // what is left of it
+                // the upper fangs
+                kit.Paint(fang).Egg(new Vector3(side * 0.024f * hk, -0.052f * hk, 0.245f * hl), new Vector3(0.008f, 0.022f, 0.009f), 5, 3);
+            }
+            // ---- the jaw: it opens on a red mouth and the lower teeth
+            kit.On("jaw").Paint(pale);
+            kit.Loft(new[]
+            {
+                (new Vector3(0, -0.052f * hk, 0.05f * hl), 0.046f * hk, 0.018f), (new Vector3(0, -0.054f * hk, 0.16f * hl), 0.036f * hk, 0.016f),
+                (new Vector3(0, -0.052f * hk, 0.265f * hl), 0.022f * hk, 0.012f),
+            }, 2.2f, 8);
+            kit.Paint(gum).Box(new Vector3(0, -0.040f * hk, 0.16f * hl), new Vector3(0.050f * hk, 0.006f, 0.18f * hl));
+            foreach (int side in new[] { -1, 1 })
+                kit.Paint(fang).Egg(new Vector3(side * 0.018f * hk, -0.030f * hk, 0.235f * hl), new Vector3(0.007f, 0.016f, 0.008f), 5, 3);
+            // ---- the brush: thick in the middle, black at the end, carried low
+            var tUp = Vector3.Cross(Vector3.right, b.tailDir);
+            float tl = s.tailLen, tk = s.tailThick / 0.07f;
+            kit.On("tail").Frame(b.tailBase, Vector3.right, b.tailDir, tUp);
+            kit.Stain(p => Vector3.Dot(p - b.tailBase, b.tailDir) > tl * 0.68f ? dark : Vector3.Dot(p - b.tailBase, tUp) < -0.01f ? saddle : (Color?)null);
+            kit.Paint(coat).Tube(new[] { new Vector3(0, -0.04f, 0), new Vector3(0, tl * 0.2f, 0), new Vector3(0, tl * 0.5f, 0), new Vector3(0, tl * 0.8f, 0), new Vector3(0, tl * 1.02f, 0) },
+                new[] { 0.034f * tk, 0.058f * tk, 0.070f * tk, 0.056f * tk, 0.010f }, 8);
+            kit.Stain(null);
+            kit.Frame();
+            // ---- legs: a shoulder or a thigh with some meat on it, a lean shank, a dark paw
+            float half = b.halfLeg, lt = s.legThick / 0.045f;
+            for (int i = 0; i < 4; i++)
+            {
+                var hip = b.Hip(i);
+                bool front = i < 2;
+                var knee = hip + Vector3.down * half;
+                kit.On("ul" + i).Paint(coat);
+                if (front) kit.Tube(new[] { hip + new Vector3(0, 0.11f, -0.01f), hip + Vector3.down * half * 0.45f, knee }, new[] { 0.066f * lt, 0.046f * lt, 0.031f * lt }, 8);
+                else kit.Tube(new[] { hip + new Vector3(0, 0.09f, 0.02f), hip + new Vector3(0, -half * 0.42f, 0.025f), knee }, new[] { 0.080f * lt, 0.058f * lt, 0.032f * lt }, 8);
+                kit.On("ll" + i).Paint(sock).Stain(p => p.y < knee.y - half * 0.62f ? pale : (Color?)null);
+                kit.Tube(new[] { knee, knee + Vector3.down * half * 0.55f, knee + Vector3.down * (half - 0.04f) }, new[] { 0.031f * lt, 0.025f * lt, 0.027f * lt }, 7);
+                kit.Stain(null);
+                kit.Paint(dark).Egg(knee + Vector3.down * (half - 0.022f) + new Vector3(0, 0, 0.022f), new Vector3(0.038f * lt, 0.027f, 0.054f * lt), 7, 4);
+            }
+        }
 
         protected override void Style(ModelActor a, string anim, float n, float speed)
         {
@@ -650,11 +784,12 @@ namespace Wakefire
     }
 
     // ----------------------------------------------------------------------------------- crab
-    /// <summary>Brine crab: a flat shell on six legs that scuttle sideways, two claws that rise and snap.</summary>
+    /// <summary>Brine crab: a shell gone the green of old bronze on six legs that scuttle sideways, and two
+    /// claws that rise, open and snap. The right one is the bigger. It is always the right one.</summary>
     public class CrabBeast : IPoser
     {
         Transform shell;
-        readonly Transform[] upper = new Transform[6], lower = new Transform[6], arm = new Transform[2], claw = new Transform[2];
+        readonly Transform[] upper = new Transform[6], lower = new Transform[6], arm = new Transform[2], claw = new Transform[2], nip = new Transform[2];
         readonly Vector3[] hip = new Vector3[6], rest = new Vector3[6];
         Vector3 shellRest;
         float time, phase, moving, up, snap, flinch, over;
@@ -694,11 +829,15 @@ namespace Wakefire
                 int side = i == 0 ? -1 : 1;
                 c.arm[i] = Bone("arm" + i, c.shell, new Vector3(side * 0.17f, 0.0f, 0.15f));
                 c.claw[i] = Bone("claw" + i, c.arm[i], new Vector3(side * 0.10f, 0.03f, 0.17f));
+                float big = scarab ? 1f : side > 0 ? 1.28f : 0.95f;
+                c.nip[i] = Bone("nip" + i, c.claw[i], new Vector3(0, 0.034f * big, 0.085f * big));
                 bones.Add(c.arm[i]);
                 bones.Add(c.claw[i]);
+                bones.Add(c.nip[i]);
             }
             foreach (var t in bones) a.bones[t.name] = t;
             var kit = new Kit(a, rig, bones.ToArray());
+            if (!scarab) { Brine(kit, c); kit.Wear("Shell"); return c; }
             float line = c.shellRest.y - 0.02f;
             if (scarab)
             {
@@ -744,6 +883,87 @@ namespace Wakefire
             }
             kit.Wear("Shell");
             return c;
+        }
+
+        /// <summary>The brine crab's own shell: a carapace drawn through its sections with a bright rim and
+        /// a row of points down each shoulder, eyes on stalks, legs that end in a point, and claws with a
+        /// thumb that opens.</summary>
+        static void Brine(Kit kit, CrabBeast c)
+        {
+            Color shell = new Color(0.22f, 0.50f, 0.45f), deep = new Color(0.10f, 0.27f, 0.27f), rim = new Color(0.96f, 0.54f, 0.16f);
+            Color leg = new Color(0.90f, 0.42f, 0.14f), legDark = new Color(0.34f, 0.12f, 0.08f), under = new Color(0.95f, 0.86f, 0.66f);
+            Color clawTop = new Color(0.80f, 0.30f, 0.12f), tip = new Color(0.10f, 0.07f, 0.08f), spot = new Color(0.84f, 0.94f, 0.84f);
+            var S = c.shellRest + new Vector3(0, 0.012f, 0);
+            float line = S.y - 0.028f;
+            // ---- the carapace
+            kit.On("shell").Paint(shell, 0.35f).Stain(p =>
+            {
+                if (p.y < line) return under;
+                if (p.y < line + 0.03f) return rim;
+                float ax = Mathf.Abs(p.x);
+                if ((new Vector2(ax - 0.135f, p.z - 0.01f)).magnitude < 0.062f) return spot;            // two pale marks, like eyes on its back
+                if ((ax < 0.035f && Mathf.Abs(p.z + 0.01f) < 0.09f) || (Mathf.Abs(p.z - 0.07f) < 0.022f && ax < 0.10f)) return deep;
+                if (p.z < -0.11f) return deep;
+                return (Color?)null;
+            });
+            kit.Loft(new[]
+            {
+                (new Vector3(0, S.y - 0.01f, -0.20f), 0.10f, 0.030f), (new Vector3(0, S.y, -0.14f), 0.225f, 0.072f), (new Vector3(0, S.y + 0.004f, -0.03f), 0.305f, 0.100f),
+                (new Vector3(0, S.y + 0.002f, 0.07f), 0.295f, 0.092f), (new Vector3(0, S.y - 0.004f, 0.15f), 0.205f, 0.062f), (new Vector3(0, S.y - 0.008f, 0.195f), 0.12f, 0.036f),
+            }, 2.3f, 18);
+            kit.Stain(null);
+            foreach (int side in new[] { -1, 1 })
+            {
+                // points down each shoulder
+                var at = new[] { new Vector3(0.295f, 0, 0.065f), new Vector3(0.255f, 0, 0.125f), new Vector3(0.175f, 0, 0.175f) };
+                var dir = new[] { new Vector3(1f, 0.15f, 0.25f), new Vector3(0.8f, 0.15f, 0.6f), new Vector3(0.45f, 0.15f, 0.9f) };
+                for (int k = 0; k < 3; k++)
+                {
+                    var b0 = new Vector3(side * at[k].x, S.y - 0.012f, at[k].z);
+                    var d = new Vector3(side * dir[k].x, dir[k].y, dir[k].z).normalized;
+                    kit.Paint(rim, 0.2f).Tube(new[] { b0 - d * 0.02f, b0 + d * 0.075f }, new[] { 0.028f, 0.003f }, 5);
+                }
+                // an eye on a stalk
+                kit.Paint(leg).Tube(new[] { S + new Vector3(side * 0.07f, 0.03f, 0.165f), S + new Vector3(side * 0.085f, 0.135f, 0.19f) }, new[] { 0.017f, 0.013f }, 5);
+                kit.Paint(tip, 0.5f).Egg(S + new Vector3(side * 0.090f, 0.165f, 0.195f), Vector3.one * 0.044f, 7, 5);
+                kit.Paint(new Color(1f, 0.86f, 0.5f), 0, 1f).Egg(S + new Vector3(side * 0.097f, 0.180f, 0.228f), Vector3.one * 0.015f, 4, 3);
+            }
+            // ---- six legs: a banded thigh, a shank that ends in a point
+            for (int i = 0; i < 6; i++)
+            {
+                int side = i % 2 == 0 ? -1 : 1;
+                var h = c.shellRest + c.hip[i];
+                var knee = h + new Vector3(side * Half, 0, 0);
+                var foot = h + new Vector3(side * Half * 2f, 0, 0);
+                kit.On("cu" + i).Paint(leg).Stain(p => Mathf.Abs(p.x - h.x) > Half * 0.74f ? legDark : (Color?)null);
+                kit.Tube(new[] { h - new Vector3(side * 0.03f, 0, 0), Vector3.Lerp(h, knee, 0.5f), knee }, new[] { 0.034f, 0.036f, 0.030f }, 6);
+                kit.Stain(null);
+                kit.On("cl" + i).Paint(leg).Stain(p => Mathf.Abs(p.x - knee.x) > Half * 0.5f ? tip : (Color?)null);
+                kit.Tube(new[] { knee, Vector3.Lerp(knee, foot, 0.5f), foot }, new[] { 0.029f, 0.021f, 0.003f }, 6);
+                kit.Stain(null);
+            }
+            // ---- the claws: an arm, a fist, a finger it cannot move and a thumb it can
+            for (int i = 0; i < 2; i++)
+            {
+                int side = i == 0 ? -1 : 1;
+                float k = side > 0 ? 1.28f : 0.95f;
+                var armAt = c.shellRest + new Vector3(side * 0.17f, 0, 0.15f);
+                var clawAt = armAt + new Vector3(side * 0.10f, 0.03f, 0.17f);
+                kit.On("arm" + i).Paint(leg).Tube(new[] { armAt - new Vector3(side * 0.03f, 0, 0.04f), Vector3.Lerp(armAt, clawAt, 0.55f), clawAt }, new[] { 0.040f, 0.052f, 0.046f }, 7);
+                kit.On("claw" + i).Paint(clawTop).Stain(p => p.y < clawAt.y - 0.012f * k ? under : (Color?)null);
+                kit.Loft(new[]
+                {
+                    (clawAt + new Vector3(0, 0.004f, -0.03f * k), 0.050f * k, 0.046f * k), (clawAt + new Vector3(0, 0.012f, 0.045f * k), 0.082f * k, 0.070f * k),
+                    (clawAt + new Vector3(0, 0.008f, 0.115f * k), 0.070f * k, 0.058f * k), (clawAt + new Vector3(0, -0.006f, 0.165f * k), 0.045f * k, 0.032f * k),
+                }, 2.3f, 10);
+                kit.Stain(null);
+                var f0 = clawAt + new Vector3(0, -0.020f * k, 0.15f * k);
+                kit.Stain(p => p.z > f0.z + 0.075f * k ? tip : (Color?)null);
+                kit.Paint(under).Tube(new[] { f0, f0 + new Vector3(-side * 0.008f, 0.0f, 0.075f * k), f0 + new Vector3(-side * 0.012f, 0.012f * k, 0.150f * k) }, new[] { 0.034f * k, 0.024f * k, 0.004f }, 6);
+                var t0 = clawAt + new Vector3(0, 0.034f * k, 0.085f * k);
+                kit.On("nip" + i).Paint(clawTop).Tube(new[] { t0, t0 + new Vector3(-side * 0.006f, 0.022f * k, 0.085f * k), t0 + new Vector3(-side * 0.010f, 0.004f * k, 0.200f * k) }, new[] { 0.036f * k, 0.026f * k, 0.004f }, 6);
+                kit.Stain(null);
+            }
         }
 
         public void Pose(ModelActor a, string anim, float n, float dt)
@@ -807,6 +1027,9 @@ namespace Wakefire
                 int s = i == 0 ? -1 : 1;
                 arm[i].localRotation = Quaternion.Euler(-up * 62f, s * (-up * 14f + snap * 20f), 0);
                 claw[i].localRotation = Quaternion.Euler(-up * 24f + snap * 34f, 0, 0);
+                // the thumb: a little open at rest (it breathes), wide when the claws are up, shut on the snap
+                float open = Mathf.Clamp01(0.22f + Mathf.Sin(time * 2.3f + i * 1.9f) * 0.10f + up * 0.9f) * (1f - snap);
+                nip[i].localRotation = Quaternion.Euler(-open * 38f, 0, 0);
             }
         }
     }

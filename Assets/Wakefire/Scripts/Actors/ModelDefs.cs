@@ -125,6 +125,24 @@ namespace Wakefire
             var sentinel = Human(1.52f, Cast.Sentinel);
             Run(sentinel, 1.52f, 6.5f).With(Gesture.Level);
             Add("sentinel", sentinel);
+            // a Medusa: at her hair with her back to the room, then turning, then the look
+            var medusa = Human(1.46f, Cast.Medusa);
+            medusa.Own("comb", "Idle_TalkingPhone_Loop", fade: 0.25f);
+            medusa.Own("stare", "Spell_Simple_Idle_Loop", fade: 0.12f);
+            var glide = medusa.Fit("walk", "Walk_Formal_Loop", loop: true, fade: 0.16f);
+            glide.fps = 8f / 1.333f; glide.frames = 8; glide.stride = 0.95f * 1.46f; glide.paceMax = 3f;
+            Add("medusa", medusa);
+            // a thurifer: the arm stays up whatever the rest of him is doing
+            var thurifer = Human(1.40f, Cast.Thurifer);
+            thurifer.Own("swing", "Idle_Loop", fade: 0.15f).With(Gesture.Swing);
+            thurifer.Map("walk").pose = Gesture.Swing;
+            thurifer.Map("idle").pose = Gesture.Swing;
+            var fling = thurifer.Fit("cast", "OverhandThrow", 0f, 0.95f, warp: new[] { 0f, 0f, 0.30f, 0.36f, 1f, 1f }, fade: 0.06f);
+            fling.frames = 9; fling.fps = 14f;
+            thurifer.Own("cough", "Idle_Loop", fade: 0.12f).With(Gesture.Cough);
+            Add("thurifer", thurifer);
+            Add("censer", Built(1.55f, a => CenserProp.Make(a)));
+            Add("glass", Built(1.18f, a => GlassProp.Make(a)));
             // the Herdsman: half as tall again as the men he was cast to outlast
             var herd = Human(1.95f, Cast.Herdsman);
             herd.span = 2;
@@ -142,10 +160,10 @@ namespace Wakefire
             Add("god", god);
             Add("goat", Built(1.30f, a => Beast.Make<Goat>(a, Goat.Body)));
             Add("dog", Built(1.30f, a => Beast.Make<Dog>(a, Dog.Body)));
-            Add("jackal", Built(1.35f, a => Beast.Make<JackalBeast>(a, JackalBeast.Body)));
+            Add("jackal", Built(1.62f, a => Beast.Make<JackalBeast>(a, JackalBeast.Body)));
             Add("den_mother", Built(2.3f, a => Beast.Make<JackalBeast>(a, JackalBeast.Mother), 2));
             Add("bull", Built(1.60f, a => Beast.Make<BullBeast>(a, BullBeast.Body), 2));
-            Add("crab", Built(1.50f, a => CrabBeast.Make(a)));
+            Add("crab", Built(1.85f, a => CrabBeast.Make(a)));
             Add("moth", Built(1.60f, a => MothBeast.Make(a)));
             Hill();
         }

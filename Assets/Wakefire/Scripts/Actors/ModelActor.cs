@@ -202,9 +202,13 @@ namespace Wakefire
             dirty = true;
         }
 
+        /// <summary>Stone does not move: the pose it had stays exactly as it was until this is let go.</summary>
+        public bool frozen;
+
         /// <summary>One game frame: n is how far through the sprite's frames the actor is (0..1).</summary>
         public void Advance(float dt, float n)
         {
+            if (frozen) return;
             norm = n;
             life += dt;
             if (!ownVelocity && sr)

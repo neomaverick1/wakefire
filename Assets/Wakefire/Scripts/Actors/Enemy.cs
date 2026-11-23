@@ -74,7 +74,7 @@ namespace Wakefire
         protected abstract void Think(float dt, Player p);
         protected virtual void OnHurt(HitInfo h) { }
 
-        void OnDestroy() => All.Remove(this);
+        protected virtual void OnDestroy() => All.Remove(this);
 
         /// <summary>Is this creature in the world shown where it stands?</summary>
         public bool Present
@@ -196,7 +196,7 @@ namespace Wakefire
         float next;
         public static Crab Spawn(Vector2 at) => Make<Crab>("crab", "idle", at, WorldLayer.Waking, 3);
         protected override void Init() { speed = 2.9f; half = new Vector2(0.45f, 0.16f); }
-        protected override Color BurstColor => new Color(0.75f, 0.3f, 0.22f);
+        protected override Color BurstColor => new Color(0.24f, 0.52f, 0.47f);
 
         protected override void Think(float dt, Player p)
         {

@@ -138,6 +138,9 @@ namespace Wakefire
                 "warden" => Warden.Spawn(at),
                 "sun_roller" => SunRoller.Spawn(at),
                 "vulture" => Vulture.Spawn(at),
+                "medusa" => Medusa.Spawn(at),
+                "thurifer" => Thurifer.Spawn(at),
+                "glass" => BurningGlass.Spawn(at),
                 _ => null,
             };
             if (!e) return null;

@@ -16,6 +16,7 @@ Shader "Wakefire/Sprite"
         _Model ("Drawn from the model stage", Float) = 0
         _Cell ("Square of the model stage (uv origin, uv size)", Vector) = (0,0,0,0)
         _Sway ("Sway in the wind (trees, bushes)", Float) = 0
+        _Stone ("Turned to stone (0 = flesh)", Float) = 0
         _Ghost ("One of the dead: how much of its colour has gone cold (0 = alive)", Float) = 0
         _GhostFade ("A ghost thins to nothing between these heights of its picture", Vector) = (0.285, 0.40, 0, 0)
         _GhostGain ("How brightly a ghost holds what light it had", Float) = 1.1
@@ -53,6 +54,7 @@ Shader "Wakefire/Sprite"
                 float4 _Cell;
                 float _Sway;
                 float _HasNormal;
+                float _Stone;
                 float _Ghost;
                 float4 _GhostFade;
                 float _GhostGain;
@@ -185,6 +187,15 @@ Shader "Wakefire/Sprite"
                     float gold = smoothstep(0.38, 0.58, (c.g - c.b) / max(c.g, 0.02)) * (1.0 - edge) * _GhostGold;
                     col = lerp(dead, col * 1.12, gold);
                     col = lerp(col, float3(0.62, 0.96, 0.92), edge * _GhostRim);
+                }
+                if (_Stone > 0.01)
+                {
+                    // stone: the colour goes out of it, and what is left is the grey of the hill, pitted
+                    float l = dot(col, float3(0.30, 0.59, 0.11));
+                    float2 q = floor(i.world * 16.0);
+                    float pit = frac(sin(dot(q, float2(12.9898, 78.233))) * 43758.5453);
+                    float3 stone = float3(0.52, 0.53, 0.58) * (0.16 + pow(saturate(l), 1.25) * 1.05) * (0.86 + pit * 0.22);
+                    col = lerp(col, stone, saturate(_Stone));
                 }
                 if (_HasNormal > 0.5)
                 {
