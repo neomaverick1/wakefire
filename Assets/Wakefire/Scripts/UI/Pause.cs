@@ -38,6 +38,38 @@ namespace Wakefire
         [System.Serializable] class WorldInside { public string map, at; public int x, y; }
         [System.Serializable] class World { public int w, h, scale; public WorldPlace[] places; public WorldInside[] inside; }
 
+        // a dungeon's own plan (Art/pixel/dkit.py writes one for each): floors of rooms on a grid of cells
+        [System.Serializable] class DRoom { public string id, name, mark; public int c, r, cw, ch; }
+        [System.Serializable] class DLink { public int c, r; public string side, kind, to, a, b, id; }
+        [System.Serializable] class DChest { public string id, room; public bool big; }
+        [System.Serializable] class DFloor { public string map, label; public int order, cols, rows; public DRoom[] rooms; public DLink[] links; public DChest[] chests; }
+        [System.Serializable] class Dungeon { public DFloor[] floors; public string name; }
+        static readonly string[] DungeonNames = { "crypt", "zig", "barrow", "tomb" };
+        static readonly Dictionary<string, Dungeon> dungeons = new Dictionary<string, Dungeon>();
+        Dungeon dungeon;                        // map page: the dungeon Azar is in, if he is in one that has a plan
+
+        static Dungeon DungeonOf(string map)
+        {
+            foreach (var n in DungeonNames)
+            {
+                if (!dungeons.TryGetValue(n, out var d))
+                {
+                    var j = Resources.Load<TextAsset>("Menu/dungeon_" + n);
+                    d = j ? JsonUtility.FromJson<Dungeon>(j.text) : null;
+                    if (d != null) d.name = n;
+                    dungeons[n] = d;
+                }
+                if (d == null || d.floors == null) continue;
+                foreach (var f in d.floors) if (f.map == map) return d;
+            }
+            return null;
+        }
+
+        static string DungeonTitle(string name) => name switch
+        {
+            "crypt" => "THE CRYPT", "zig" => "THE ZIGGURAT", "barrow" => "THE BARROW", "tomb" => "THE KING'S TOMB", _ => "THE WORLD",
+        };
+
         static readonly Color32 Veil = new Color32(6, 4, 12, 170), Frame = new Color32(10, 6, 16, 255), Bronze = new Color32(188, 122, 52, 255),
             BronzeL = new Color32(255, 216, 138, 255), BronzeD = new Color32(106, 58, 24, 255), Fill = new Color32(22, 18, 40, 255), Fill2 = new Color32(29, 24, 52, 255),
             Well = new Color32(14, 11, 26, 255), WellOn = new Color32(40, 32, 66, 255), Gold = new Color32(246, 200, 90, 255), Ink = new Color32(244, 234, 216, 255),
@@ -74,8 +106,9 @@ namespace Wakefire
                 world = j ? JsonUtility.FromJson<World>(j.text) : new World { places = new WorldPlace[0], inside = new WorldInside[0], scale = 10 };
             }
             page = ItemPage; shown = ItemPage; said = null; ask = -1;
+            dungeon = DungeonOf(Game.I.CurrentMap);
             row = Save.Slot;
-            cell = System.Array.IndexOf(Items.Usable, Items.Current);
+            cell = Mathf.Max(0, System.Array.IndexOf(Items.Usable, Items.Current));
             Layout();
             CentreMap();
             Draw();
@@ -277,7 +310,7 @@ namespace Wakefire
                 cv.Set(cx, cy, BronzeL); cv.Set(cx + 1, cy, Bronze); cv.Set(cx, cy + 1, Bronze); cv.Set(cx + 1, cy + 1, BronzeD);
             }
             // the page's name, and the pages to either side of it
-            string title = page == SavePage ? "SAVE AND LOAD" : page == ItemPage ? "ITEMS" : "THE WORLD";
+            string title = page == SavePage ? "SAVE AND LOAD" : page == ItemPage ? "ITEMS" : dungeon != null ? DungeonTitle(dungeon.name) : "THE WORLD";
             f.DrawString(cv, (W - f.Measure(title)) / 2, py + 6, title, Gold, Sh);
             bool blink = ((int)(clock * 2.5f)) % 2 == 0;
             if (page > 0)
@@ -338,6 +371,11 @@ namespace Wakefire
                     if (row == 5) return "The game saves as you go.";
                     return Places.Name(Game.I.CurrentMap) + ", " + Save.Clock(Save.PlayTime);
                 default:
+                    if (dungeon != null)
+                    {
+                        string rn = Rooms.I && Rooms.I.current != null && !string.IsNullOrEmpty(Rooms.I.current.name) ? Rooms.I.current.name + "." : "";
+                        return Story.Has("item_map_" + dungeon.name) ? rn : rn.Length > 0 ? rn + " No plan of this place yet." : "No plan of this place yet.";
+                    }
                     return "You are in " + Places.Name(Game.I.CurrentMap) + ".";
             }
         }
@@ -417,9 +455,9 @@ namespace Wakefire
                     var pic = Pic.Get(c.def.art);
                     int sc = c.use ? 2 : 1;
                     if (pic != null) cv.Blit(pic, c.r.x + (c.r.width - pic.w * sc) / 2, c.r.y + (c.r.height - pic.h * sc) / 2, sc);
-                    if (c.def.id == "vessel")
+                    if (c.def.id == "vessel" || c.def.id == "scrolls")
                     {
-                        string n = Story.Count("vessels").ToString();
+                        string n = (c.def.id == "vessel" ? Story.Count("vessels") : Items.Scrolls).ToString();
                         f.DrawString(cv, c.r.xMax - 3 - f.Measure(n), c.r.yMax - 11, n, Ink, Sh);
                     }
                 }
@@ -456,6 +494,13 @@ namespace Wakefire
                         f.DrawString(cv, bx + 8, ly, line, Ink, Sh);
                         ly += 11;
                     }
+            }
+            else if (Items.Current == null && !Story.Has("item_sword"))
+            {
+                // the first night: a watchman's pockets
+                f.DrawString(cv, bx + 8, by + 6, "Nothing.", Faint, Sh);
+                f.DrawString(cv, bx + 8, by + 19, "The night watch is issued a rattle.", Faint, Sh);
+                f.DrawString(cv, bx + 8, by + 30, "You left yours with Captain Dur.", Faint, Sh);
             }
             else f.DrawString(cv, bx + 8, by + 6, cur.use ? "Nothing here yet." : "Not found yet.", Faint, Sh);
         }
@@ -658,6 +703,7 @@ namespace Wakefire
         bool MapControls(Vector2Int step, bool act)
         {
             if (step.x != 0) PageTo(page + step.x);
+            if (dungeon != null) return false;
             float v = Controls.MoveVector.y;
             if (Mathf.Abs(v) > 0.3f) pan = Mathf.Clamp(pan - v * 90f * Time.unscaledDeltaTime, 0, Mathf.Max(0, world.h - IH));
             return false;
@@ -667,6 +713,7 @@ namespace Wakefire
 
         void DrawMap(int ox)
         {
+            if (dungeon != null) { DrawDungeon(ox); return; }
             var f = PixelFont.Main;
             int mx = ix + ox + (IW - world.w) / 2, my = iy - Mathf.RoundToInt(pan);
             cv.Blit(Pic.Get("world_dark"), mx, my);
@@ -688,9 +735,17 @@ namespace Wakefire
                 cv.Rect(tx - 3, ty - 1, tw + 5, 11, Frame);
                 f.DrawString(cv, tx, ty, name, pl.map == Game.I.CurrentMap ? Gold : Ink);
             }
-            if (marked)
+            if (marked) HereFlame(hx, hy, true);
+            // more of the sheet above or below
+            if (pan > 1) Arrow(ix + ox + IW - 11, iy + 4, true);
+            if (pan < world.h - IH - 1) Arrow(ix + ox + IW - 11, iy + IH - 9, false);
+        }
+
+        /// <summary>A flame where he stands, and (on the world) a ring that opens round it so the eye finds it.</summary>
+        void HereFlame(int hx, int hy, bool ring)
+        {
+            if (ring)
             {
-                // a flame where he stands, and a ring that opens round it so the eye finds it
                 float beat = (clock * 1.1f) % 1f;
                 int rr = 4 + Mathf.RoundToInt(beat * 7f);
                 if (beat < 0.8f)
@@ -699,23 +754,107 @@ namespace Wakefire
                         float a = k / 40f * Mathf.PI * 2f;
                         cv.Set(hx + Mathf.RoundToInt(Mathf.Cos(a) * rr), hy - 1 + Mathf.RoundToInt(Mathf.Sin(a) * rr), beat < 0.45f ? Gold : BronzeD);
                     }
-                int lift = ((int)(clock * 4f)) % 2 == 0 ? 1 : 0;
-                for (int dy = -6; dy <= 3; dy++)
-                    for (int dx = -4; dx <= 4; dx++)
-                    {
-                        float r = Mathf.Abs(dx) + Mathf.Abs(dy + 1) * (dy < -1 ? 0.62f : 1.1f);
-                        if (r <= 3.4f) cv.Set(hx + dx, hy + dy - lift, Frame);
-                    }
-                for (int dy = -5; dy <= 2; dy++)
-                    for (int dx = -3; dx <= 3; dx++)
-                    {
-                        float r = Mathf.Abs(dx) + Mathf.Abs(dy + 1) * (dy < -1 ? 0.62f : 1.1f);
-                        if (r <= 2.4f) cv.Set(hx + dx, hy + dy - lift, r < 1.2f ? new Color32(255, 244, 190, 255) : Gold);
-                    }
             }
-            // more of the sheet above or below
-            if (pan > 1) Arrow(ix + ox + IW - 11, iy + 4, true);
-            if (pan < world.h - IH - 1) Arrow(ix + ox + IW - 11, iy + IH - 9, false);
+            int lift = ((int)(clock * 4f)) % 2 == 0 ? 1 : 0;
+            for (int dy = -6; dy <= 3; dy++)
+                for (int dx = -4; dx <= 4; dx++)
+                {
+                    float r = Mathf.Abs(dx) + Mathf.Abs(dy + 1) * (dy < -1 ? 0.62f : 1.1f);
+                    if (r <= 3.4f) cv.Set(hx + dx, hy + dy - lift, Frame);
+                }
+            for (int dy = -5; dy <= 2; dy++)
+                for (int dx = -3; dx <= 3; dx++)
+                {
+                    float r = Mathf.Abs(dx) + Mathf.Abs(dy + 1) * (dy < -1 ? 0.62f : 1.1f);
+                    if (r <= 2.4f) cv.Set(hx + dx, hy + dy - lift, r < 1.2f ? new Color32(255, 244, 190, 255) : Gold);
+                }
+        }
+
+        // ------------------------------------------------------------------------------ the plan of a dungeon
+        static readonly Color32 RoomLit = new Color32(122, 84, 50, 255), RoomOn = new Color32(176, 122, 62, 255), RoomEdge = new Color32(226, 176, 104, 255),
+            Blood = new Color32(204, 66, 70, 255);
+
+        /// <summary>Inside a dungeon the map page is the dungeon: its floors, top one first, each room a
+        /// box. The ones he has walked are lit; the place's scroll shows them all, with what is still
+        /// shut in them. Doors are notches between boxes, gold while they are locked.</summary>
+        void DrawDungeon(int ox)
+        {
+            var f = PixelFont.Main;
+            bool scroll = Story.Has("item_map_" + dungeon.name);
+            string here = Game.I.CurrentMap;
+            string room = Rooms.I && Rooms.I.current != null ? Rooms.I.current.id : null;
+            int rows = 0, cols = 1, nf = dungeon.floors.Length;
+            foreach (var fl in dungeon.floors) { rows += fl.rows; cols = Mathf.Max(cols, fl.cols); }
+            const int gap = 7;
+            int ch = Mathf.Clamp((IH - 8 - gap * (nf - 1)) / Mathf.Max(1, rows), 9, 26);
+            int cw = Mathf.Min(Mathf.RoundToInt(ch * 26f / 14f), (IW - 44) / cols);
+            int y = iy + (IH - (rows * ch + gap * (nf - 1))) / 2;
+            int fx = -1, fy = -1;
+            foreach (var fl in dungeon.floors)
+            {
+                int gx = ix + ox + (IW - fl.cols * cw) / 2 + 8, gy = y;
+                bool cur = fl.map == here;
+                bool Known(string id) => !string.IsNullOrEmpty(id) && (scroll || Story.Has(Rooms.VisitedFlag(fl.map, id)));
+                f.DrawString(cv, gx - 8 - f.Measure(fl.label), gy + (fl.rows * ch - 9) / 2, fl.label, cur ? Gold : Dim, Sh);
+                foreach (var rm in fl.rooms)
+                {
+                    bool seen = Story.Has(Rooms.VisitedFlag(fl.map, rm.id));
+                    if (!seen && !scroll) continue;
+                    int x0 = gx + rm.c * cw, y0 = gy + rm.r * ch, w = rm.cw * cw - 1, h = rm.ch * ch - 1;
+                    bool me = cur && rm.id == room;
+                    cv.Box(x0, y0, w, h, seen ? (me ? RoomOn : RoomLit) : Well, seen ? RoomEdge : Faint);
+                    if (me) { fx = x0 + w / 2; fy = y0 + h / 2 + 2; }
+                    if (!scroll) continue;
+                    // what the scroll knows about the room: whoever keeps it, and every chest not yet opened
+                    if (rm.mark == "mini" || rm.mark == "boss")
+                    {
+                        int k = rm.mark == "boss" ? 3 : 2, mx = x0 + w - 3 - k, my = y0 + 3 + k;
+                        for (int dy = -k; dy <= k; dy++)
+                            for (int dx = -k; dx <= k; dx++)
+                                if (Mathf.Abs(dx) + Mathf.Abs(dy) <= k) cv.Set(mx + dx, my + dy, Mathf.Abs(dx) + Mathf.Abs(dy) == k ? Frame : Blood);
+                    }
+                    int n = 0;
+                    foreach (var c in fl.chests)
+                    {
+                        if (c.room != rm.id || Story.Has("chest_" + c.id)) continue;
+                        int s = c.big ? 4 : 3, bx = x0 + 3 + n, by = y0 + h - 3 - s;
+                        cv.Box(bx, by, s, s, c.big ? Gold : BronzeL, Frame);
+                        n += s + 1;
+                    }
+                }
+                foreach (var l in fl.links)
+                {
+                    bool both = !string.IsNullOrEmpty(l.a) && !string.IsNullOrEmpty(l.b);
+                    if (both)
+                    {
+                        if (!Known(l.a) && !Known(l.b)) continue;
+                        bool locked = (l.kind == "lock" || l.kind == "big") && !Story.Has("door_" + l.id);
+                        var col = locked ? Gold : l.kind == "bars" ? Dim : RoomLit;
+                        if (l.side == "n") cv.Rect(gx + l.c * cw + cw / 2 - 2, gy + l.r * ch - 2, 4, 3, col);
+                        else cv.Rect(gx + l.c * cw - 2, gy + l.r * ch + ch / 2 - 2, 3, 4, col);
+                        continue;
+                    }
+                    // a way to another floor, or out: three steps at the head of the room, or a mark at its foot
+                    if (!string.IsNullOrEmpty(l.a) && Known(l.a))
+                    {
+                        int sx = gx + l.c * cw + cw / 2, sy = gy + l.r * ch + 2;
+                        for (int k = 0; k < 3; k++) cv.Rect(sx - 1 - k, sy + k, 3 + 2 * k, 1, k % 2 == 0 ? Ink : Dim);
+                    }
+                    else if (!string.IsNullOrEmpty(l.b) && Known(l.b))
+                    {
+                        int sx = gx + l.c * cw + cw / 2, sy = gy + l.r * ch - 6;
+                        if (l.kind == "out") { for (int k = 0; k < 3; k++) cv.Rect(sx - 2 + k, sy + 1 + k, 5 - 2 * k, 1, Ink); }
+                        else for (int k = 0; k < 3; k++) cv.Rect(sx - 3 + k, sy + k, 7 - 2 * k, 1, k % 2 == 0 ? Ink : Dim);
+                    }
+                }
+                y += fl.rows * ch + gap;
+            }
+            if (fx >= 0) HereFlame(fx, fy, false);
+            if (!scroll)
+            {
+                string none = "Only the rooms you have walked.";
+                f.DrawString(cv, ix + ox + (IW - f.Measure(none)) / 2, iy + IH - 11, none, Faint, Sh);
+            }
         }
 
         void Arrow(int x, int y, bool up)

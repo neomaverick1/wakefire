@@ -54,6 +54,7 @@ namespace Wakefire
             Save.Use(0);
             g.Begin(false);
             Story.Abort();
+            Story.GiveKit();
             var p = g.EnterMap("lowtown", "north");
             Fade.Set(0);
             p.SetState(Player.State.Free, "idle");

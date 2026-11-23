@@ -307,8 +307,9 @@ def necropolis():
     m.model("king_door", necro.king_door(), 384, 110, box=(-34, -8, 34, 0), kind="gate", data={"id": "king_door"}, shadow=False)
     m.model("king_door_open", necro.king_door(open_=True), -100, -100, box=None, lights=False, shadow=False)
     m.light(384, 92, 4.0, (1.0, 0.8, 0.42), 0.35, flicker=False, h=2.6)
-    m.model("lamassu_w", town.lamassu(False, 1.25), 252, 156, box=(-30, -20, 30, 0))
-    m.model("lamassu_e", town.lamassu(True, 1.25), 516, 156, box=(-30, -20, 30, 0))
+    # (their own names: the city's pair is bigger, and one name must always be one picture)
+    m.model("lamassu_hill_a", town.lamassu(False, 1.25), 252, 156, box=(-30, -20, 30, 0))
+    m.model("lamassu_hill_b", town.lamassu(True, 1.25), 516, 156, box=(-30, -20, 30, 0))
     kit.spirit_bowl(m, 316, 148); kit.spirit_bowl(m, 452, 148)
     kit.standard(m, 348, 200); kit.standard(m, 420, 200)
     # the gate from the road: two posts and a wall of field stone

@@ -1,6 +1,7 @@
 """The olive terraces west of town: hillside steps held up by dry-stone walls, olive trees in
-rows, stairs that climb through the walls, jackals that hunt in pairs, and at the top an old
-shrine whose offering only shows itself in the dream."""
+rows, stairs that climb through the walls, jackals that hunt in pairs, and at the top the old
+shrine of the First Watch: an altar whose offering only shows itself in the dream, and behind it
+the door in the rock that goes down to the watch's crypt."""
 import sys
 sys.path.insert(0, '/srv/Wakefire/Art/pixel')
 import numpy as np
@@ -8,12 +9,14 @@ from px import Canvas
 import town
 import necro
 import kit
+import dprops
 from mapkit import MapBuilder
 
 TW, TH = 52, 40
 W, H = TW * 16, TH * 16
 WALLS = [(520, 60, 104), (400, 100, 140), (280, 680, 720), (160, 360, 400)]   # (y, stair x0, stair x1)
 HILL = 700                               # where the gate to the Hill of Sleepers stands in the top cliff
+CRYPT = 420                              # and the door of the crypt, behind the shrine's altar
 CHEST = '/srv/Wakefire/Assets/Wakefire/Resources/Objects/chest.png'
 
 
@@ -35,7 +38,7 @@ def build():
     T.earth(paths, seed=3, base=4.1, ramp='dust', pebbles=0.01)
     # the shrine's old paving, grass thin and dry round it
     T.grass(T.ragged(T.disc(420, 70, 100, 30), 3, 8, seed=4) & ~paths, seed=5, ramp='dry', base=3.0, tufts=0.05)
-    T.slabs(T.ragged(T.disc(410, 82, 74, 22), 3, 7, seed=6), seed=7, rows=(10, 11), wmin=10, wmax=17, base=3.8, moss=0.25, crack=0.15)
+    T.slabs(T.ragged(T.disc(410, 82, 74, 22) | T.rect(CRYPT - 13, 26, 26, 44), 3, 7, seed=6), seed=7, rows=(10, 11), wmin=10, wmax=17, base=3.8, moss=0.25, crack=0.15)
     for (y, s0, s1) in WALLS:
         T.contact(0, y, s0, y + 20, reach=6, strength=1.4); T.contact(s1, y, W, y + 20, reach=6, strength=1.4)
     m.bake()
@@ -59,11 +62,15 @@ def build():
     # north: the hill goes on up as bare rock. West and east: cypress windbreaks, terrace by terrace.
     # South: the lowest terrace's own wall.
     m.set_into_ground(town.cliff(W / 16.0, h=1.6, seed=41), 0, 28, seed=41)
-    m.solid(0, 0, HILL - 14, 30); m.solid(HILL + 14, 0, W, 30); m.solid(HILL - 14, 0, HILL + 14, 12)
+    m.solid(0, 0, CRYPT - 12, 30); m.solid(CRYPT + 12, 0, HILL - 14, 30); m.solid(HILL + 14, 0, W, 30)
+    m.solid(HILL - 14, 0, HILL + 14, 12); m.solid(CRYPT - 12, 0, CRYPT + 12, 12)
     # the gate of the Hill of Sleepers, in the rock: shut until someone comes with the temple's key
     m.model("hill_gate", necro.hill_gate(False), HILL, 30, box=(-14, -6, 14, 0), kind="gate", data={"id": "hill_gate"}, shadow=False)
     m.model("hill_gate_open", necro.hill_gate(True), -100, -100, box=None, lights=False, shadow=False)
     kit.spirit_lamp(m, HILL - 30, 44, light=3.0); kit.spirit_lamp(m, HILL + 30, 44, light=3.0)
+    # the way down to the Crypt of the First Watch, in the rock behind the altar
+    m.model("crypt_door", dprops.crypt_door(), CRYPT, 30, box=None, shadow=False)
+    m.light(CRYPT, 8, 2.2, (1.0, 0.70, 0.36), 0.5, h=1.4)
     for i, (ya, yb) in enumerate(((46, 156), (196, 276), (316, 396), (436, 516), (556, 626))):
         kit.cypress_row(m, 8, ya, yb, seed=i)
         if ya == 316: kit.cypress_row(m, W - 8, 362, yb, seed=i + 2)
@@ -81,6 +88,8 @@ def build():
     m.marker("npc", 600, 330, who="goat_terrace")
     m.spawn("east", W - 22, 320, "left")
     m.spawn("hill", HILL, 52, "down")
+    m.spawn("crypt", CRYPT, 46, "down")
+    m.exit(CRYPT - 10, 14, CRYPT + 10, 26, "crypt", "south")
     m.exit(HILL - 12, 14, HILL + 12, 27, "necro_road", "south", need="hill_gate")
     m.exit(W - 8, 296, W, 344, "lowtown", "west")
     m.solid(W - 4, 0, W, 296); m.solid(W - 4, 344, W, H); m.solid(0, 0, 4, H); m.solid(0, 0, W, 4); m.solid(0, H - 4, W, H)

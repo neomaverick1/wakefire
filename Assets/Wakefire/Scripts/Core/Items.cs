@@ -16,17 +16,17 @@ namespace Wakefire
         /// <summary>The ones that go on the item button, in the order the item page shows them.</summary>
         public static readonly Def[] Usable =
         {
-            new Def { id = "wakefire", name = "The Wakefire", art = "wakefire", have = () => true,
-                      about = "The watch-flame of Ashkel, the last thing in the city still awake.|Hold it out to light what ought to be lit." },
-            new Def { id = "sling", name = "Herdsman's Sling", art = "sling", have = () => Story.Has("item_sling"),
-                      about = "A strip of leather and a good eye.|It throws a stone straight ahead: at gongs, at jars, at anything that has it coming." },
-            new Def { id = "stick", name = "Huntsman's Throwing Stick", art = "throwing_stick", have = () => Story.Has("item_stick"),
-                      about = "Curved cedar with gold at both ends.|It flies out, hits what it meets, and comes back, bringing small things with it." },
+            new Def { id = "wakefire", name = "The Wakefire", art = "wakefire", have = () => Story.Has("item_wakefire"),
+                      about = "The watch-flame of Ashkel. It never goes out.|Hold it out to light what ought to be lit. No sleep can keep the man who carries it." },
+            new Def { id = "wheel", name = "The Sun Wheel", art = "sun_wheel", have = () => Story.Has("item_wheel"),
+                      about = "A bronze disc with an edge of gold, made for a king who missed the sun.|Thrown, it banks off walls and comes back to the hand." },
         };
 
         /// <summary>Everything else worth showing.</summary>
         public static readonly Def[] Kept =
         {
+            new Def { id = "sword", name = "Khopesh of the Watch", art = "khopesh", have = () => Story.Has("item_sword"),
+                      about = "The first watchman's own blade, hooked like a sickle.|Three cuts, if you keep swinging." },
             new Def { id = "shield", name = "Bronze Mirror Shield", art = "mirror_shield", have = () => Story.Has("item_shield"),
                       about = "Hold the action button with nothing in front of you to raise it.|Blows from the front stop on it, and fire goes back where it came from." },
             new Def { id = "oil", name = "Night Oil", art = "night_oil", have = () => Story.Has("item_oil"),
@@ -43,11 +43,22 @@ namespace Wakefire
                       about = "Four hundred years late, for a widow in the Lower Town.|He would like her to know he is sorry about the wait." },
             new Def { id = "horn", name = "The Dawn Horn", art = "dawn_horn", have = () => Story.Has("item_horn"),
                       about = "The horn that wakes the sun.|It was buried with a king who did not want to get up." },
-            new Def { id = "map_zig", name = "Scroll of the Ziggurat", art = "scroll", have = () => Story.Has("item_map_zig"),
-                      about = "The builders' own drawing of the ziggurat, floor by floor." },
-            new Def { id = "map_tomb", name = "Scroll of the King's Tomb", art = "scroll", have = () => Story.Has("item_map_tomb"),
-                      about = "The tomb as its architect drew it, and as he was told to forget it." },
+            new Def { id = "scrolls", name = "Scrolls", art = "scroll", have = () => Scrolls > 0,
+                      about = "A plan of every place that had one to find. Inside that place, the map page shows it.|Somebody drew a goat on the crypt's. Nobody admits to the goat." },
         };
+
+        static readonly string[] ScrollFlags = { "item_map_crypt", "item_map_zig", "item_map_barrow", "item_map_tomb" };
+
+        /// <summary>How many places he has the plan of.</summary>
+        public static int Scrolls
+        {
+            get
+            {
+                int n = 0;
+                foreach (var f in ScrollFlags) if (Story.Has(f)) n++;
+                return n;
+            }
+        }
 
         /// <summary>The id of what is on the item button.</summary>
         public static string Chosen = "wakefire";
@@ -59,13 +70,16 @@ namespace Wakefire
             return null;
         }
 
-        /// <summary>What the item button does this moment (the Wakefire, if whatever was chosen is gone).</summary>
+        /// <summary>What the item button does this moment: what was chosen, or the first thing he has that
+        /// can go on it, or nothing at all (before the Wakefire is found).</summary>
         public static Def Current
         {
             get
             {
                 var d = Find(Chosen);
-                return d != null && d.have() && Array.IndexOf(Usable, d) >= 0 ? d : Usable[0];
+                if (d != null && d.have() && Array.IndexOf(Usable, d) >= 0) return d;
+                foreach (var u in Usable) if (u.have()) return u;
+                return null;
             }
         }
 

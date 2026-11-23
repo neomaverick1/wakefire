@@ -15,6 +15,10 @@ namespace Wakefire
         string current;
         float fadeIn = 1, fadeOut;
         public static float Volume = 0.65f;
+        static float duckTo = 1f, duckUntil, duckNow = 1f;
+
+        /// <summary>Pull the music down under a fanfare for a few seconds; it comes back by itself.</summary>
+        public static void Duck(float level, float seconds) { duckTo = level; duckUntil = Time.unscaledTime + seconds; }
 
         // loudness trims (dB) measured from the rendered tracks, so every place sits at the same level,
         // waking and dream versions match for the crossfade, and the boss hits a little harder
@@ -70,7 +74,7 @@ namespace Wakefire
         public static string AmbienceFor(string music) => music switch
         {
             "town" => "night", "title" => "night", "sea" => "sea", "hills" => "hills", "temple" => "temple",
-            "dungeon" => "dungeon", "summit" => "dungeon", "hill" => "wind", "tomb" => "dungeon", _ => null,
+            "dungeon" => "dungeon", "summit" => "dungeon", "hill" => "wind", "tomb" => "dungeon", "crypt" => "dungeon", _ => null,
         };
 
         public static void Play(string name, bool loop = true)
@@ -103,7 +107,8 @@ namespace Wakefire
             fadeOut = Mathf.MoveTowards(fadeOut, 0, dt / 0.7f);
             float amt = Dream.I ? Dream.I.Amount : 0;
             bool hasDream = dream.clip && dream.isPlaying;
-            float duck = DialogueBox.I && DialogueBox.I.Busy ? 0.8f : 1f;
+            duckNow = Mathf.MoveTowards(duckNow, Time.unscaledTime < duckUntil ? duckTo : 1f, dt / 0.35f);
+            float duck = (DialogueBox.I && DialogueBox.I.Busy ? 0.8f : 1f) * duckNow;
             // equal-power crossfade between the worlds, so there's no dip halfway through nodding off
             float wg = Mathf.Cos(amt * Mathf.PI * 0.5f), dg = Mathf.Sin(amt * Mathf.PI * 0.5f);
             wake.volume = Volume * Trim(wake) * fadeIn * duck * (hasDream ? wg : 1);

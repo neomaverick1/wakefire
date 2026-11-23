@@ -21,6 +21,12 @@ namespace Wakefire
         public int touchDamage = 1;
         public float speed = 2f;
         public string spawnId;
+        /// <summary>The map marker it was put down from (a room remembers which of its own have fallen).</summary>
+        public string markerId;
+        /// <summary>True for the few that are not held to the room they began in.</summary>
+        public bool roams;
+        /// <summary>While the picture slides from one room to the next, nothing in either moves.</summary>
+        public static bool Frozen;
         protected float stateClock, knockClock, flash;
         protected Vector2 knockVel, vel;
         protected SpriteRenderer shadow;
@@ -84,7 +90,7 @@ namespace Wakefire
             knockClock = 0.18f;
             OnHurt(h);
             Sfx.Play(HurtSound);
-            if (health.Dead) Die();
+            if (health.Dead) { Rooms.Slain(this); Die(); }
             return true;
         }
 
@@ -115,6 +121,7 @@ namespace Wakefire
         {
             if (Game.Paused) return;
             float dt = Time.deltaTime;
+            if (Frozen) { anim.Tick(dt); Place(); return; }
             stateClock += dt;
             var p = Player.I;
             bool here = Present;

@@ -47,11 +47,15 @@ namespace Wakefire
         public static void Boot() => Ensure();
 
         /// <summary>Walking into a place: its name comes up for a moment.</summary>
-        public static void Place(string map)
+        public static void Place(string map) => Banner(Places.Name(map));
+
+        /// <summary>The same banner for the turn of a chapter: "Chapter One: The Sleeping God".</summary>
+        public static void Chapter(string number, string name) => Banner(number + ": " + name);
+
+        static void Banner(string s)
         {
             var n = Ensure();
             var f = PixelFont.Main;
-            string s = Places.Name(map);
             int tw = f.Measure(s), w = tw + 56, h = f.Line + 6;
             n.place = new PixelCanvas(w, h);
             n.place.Clear(Clear);

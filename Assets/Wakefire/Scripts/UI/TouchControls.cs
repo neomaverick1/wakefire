@@ -64,6 +64,7 @@ namespace Wakefire
         }
 
         Image actImg, itemImg;
+        GameObject attackBtn, nodBtn;
         string actShown, itemShown;
         /// <summary>The face the action button is wearing ("talk", "act_open", "act_look", "act_guard").</summary>
         public static string ActFace => I ? I.actShown : null;
@@ -109,8 +110,8 @@ namespace Wakefire
             zgo.AddComponent<FloatStick>().Init(zone, ring, knob, 20 * u);
             // the buttons: the khopesh under the thumb, the rest in an arc around it
             var a = new Vector2(-40, 40);
-            Button("Attack", "attack", "<Gamepad>/buttonWest", a, 1.14f);
-            Button("Nod", "nod", "<Gamepad>/buttonNorth", a + Arc(90), 1.06f);
+            attackBtn = Button("Attack", "attack", "<Gamepad>/buttonWest", a, 1.14f).gameObject;
+            nodBtn = Button("Nod", "nod", "<Gamepad>/buttonNorth", a + Arc(90), 1.06f).gameObject;
             itemImg = Button("Item", "item", "<Gamepad>/rightShoulder", a + Arc(127), 1.06f);
             actImg = Button("Action", "talk", "<Gamepad>/buttonSouth", a + Arc(164), 1.06f);
             actShown = "talk"; itemShown = "item";
@@ -137,9 +138,14 @@ namespace Wakefire
             string act = !p ? "talk" : p.Action == Player.Act.Open ? "act_open" : p.Action == Player.Act.Read || p.Action == Player.Act.Look ? "act_look"
                        : p.Action == Player.Act.Guard ? "act_guard" : "talk";
             if (act != actShown && actImg) { actImg.sprite = Spr(act); actShown = act; }
-            string id = Items.Current.id;
-            string item = id == "sling" ? "item_sling" : id == "stick" ? "item_stick" : "item";
+            var cur = Items.Current;
+            string item = cur != null && cur.id == "wheel" ? "item_wheel" : "item";
             if (item != itemShown && itemImg) { itemImg.sprite = Spr(item); itemShown = item; }
+            // no blade button before there is a blade, no lamp or moon before there is a flame
+            bool sword = !p || p.hasSword, lamp = !p || p.hasLantern;
+            if (attackBtn && attackBtn.activeSelf != sword) attackBtn.SetActive(sword);
+            if (nodBtn && nodBtn.activeSelf != lamp) nodBtn.SetActive(lamp);
+            if (itemImg && itemImg.gameObject.activeSelf != (cur != null)) itemImg.gameObject.SetActive(cur != null);
         }
 
         /// <summary>True while the buttons are on screen and taking presses.</summary>

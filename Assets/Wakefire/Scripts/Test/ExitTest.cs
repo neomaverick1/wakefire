@@ -18,7 +18,7 @@ namespace Wakefire
                                       "bull_seen", "bull_dead", "chapter_done", "ch2", "item_hillkey", "hill_gate", "met_namtar", "queue_passed", "king_door",
                                       "door_t1_door", "door_t2_seal", "king_seen", "king_done", "item_horn", "chapter2_done" })
                 Story.Set(f);
-            string[] maps = { "ashkel", "lowtown", "cliffs", "terraces", "temple_yard", "zig_1", "zig_2", "zig_3", "necro_road", "necropolis", "tomb_1", "tomb_2", "tomb_3" };
+            string[] maps = { "ashkel", "lowtown", "cliffs", "terraces", "crypt", "temple_yard", "zig_1", "zig_2", "zig_3", "necro_road", "necropolis", "tomb_1", "tomb_2", "tomb_3" };
             int bad = 0, n = 0;
             foreach (var map in maps)
             {

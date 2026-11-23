@@ -167,6 +167,22 @@ namespace Wakefire
                 yield return Narrate("In the dream, the goat looks exactly the same.^The goat does not dream.");
                 yield break;
             }
+            if (FirstNight)
+            {
+                // the night it happened: the only other one awake, and no help at all
+                int k = Bump("goat_night");
+                if (k == 0) { goat.Play("bleat", true); Sfx.Play("goat"); }
+                string[] night =
+                {
+                    "A goat. It's awake.^Of everyone in Ashkel the god's sleep could have missed, it missed you and the goat.",
+                    "You get the feeling the goat was not asleep before, either.",
+                    "You ask the goat what happened.| The goat chews.| That is its statement.",
+                    "The goat has no rattle, no post and no captain, and it is having a better night than you are.",
+                };
+                yield return Narrate(night[Mathf.Min(k, night.Length - 1)]);
+                goat.SetIdle("stare");
+                yield break;
+            }
             int n = Bump("goat");
             if (n == 0) { goat.Play("bleat", true); Sfx.Play("goat"); }
             string[] lines =

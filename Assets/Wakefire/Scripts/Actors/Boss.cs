@@ -296,7 +296,11 @@ namespace Wakefire
     {
         public Prop prop;
         public string flag;
+        /// <summary>Breathes straight ahead on a beat of its own instead of at Azar (a row of them makes lanes of fire to cross).</summary>
+        public bool straight;
+        public float period = 2.4f, phase;
         float clock;
+        bool begun;
 
         public bool Hit(HitInfo h)
         {
@@ -318,8 +322,20 @@ namespace Wakefire
             if (Game.Paused || !prop) return;
             var p = Player.I;
             if (!p || (Story.I && Story.I.Running)) return;
+            if (!begun) { begun = true; clock = -phase; }
+            // only the heads of the room he is in are awake
+            if (Rooms.I && (Rooms.Sliding || Rooms.Of(prop.basePos + new Vector2(0, -1f)) != Rooms.I.current)) return;
             clock += Time.deltaTime;
             var d = p.pos - prop.basePos;
+            if (straight)
+            {
+                if (clock > period)
+                {
+                    clock = 0;
+                    Projectile.Fireball(prop.basePos + new Vector2(0, -0.4f), Vector2.down * 5.2f, gameObject);
+                }
+                return;
+            }
             if (d.y < -0.5f && Mathf.Abs(d.x) < 2.2f && d.magnitude < 9f && clock > 2.0f)
             {
                 clock = 0;

@@ -35,9 +35,12 @@ namespace Wakefire
             Save.ClearAll(); Save.Use(0);
             Game.I.Begin(false);
             Story.Abort();
+            Story.GiveKit();
             // what the game tells the player about the buttons fits its pages on an ordinary screen
             int lt = DialogueBox.PageCount(Story.Lesson(true)), lk = DialogueBox.PageCount(Story.Lesson(false)), sh = DialogueBox.PageCount(Story.ShieldText);
-            Check($"the first lesson is three pages for thumbs and for keys ({lt}, {lk}), the shield's four ({sh})", lt == 3 && lk == 3 && sh == 4);
+            int bt = DialogueBox.PageCount(Story.LessonBlade(true)), bk = DialogueBox.PageCount(Story.LessonBlade(false)), ft = DialogueBox.PageCount(Story.LessonFlame(true)), fk = DialogueBox.PageCount(Story.LessonFlame(false));
+            Check($"the lessons are short: walking {lt}/{lk} pages, the blade {bt}/{bk}, the flame {ft}/{fk}; the shield's is {sh}",
+                lt <= 2 && lk <= 2 && bt == 1 && bk == 1 && ft <= 2 && fk <= 2 && sh == 4);
             yield return Enter("lowtown", "north");
             var p = Player.I;
             p.pos = Map.ToWorld(480, 60);
@@ -59,15 +62,18 @@ namespace Wakefire
                 yield return new WaitForSeconds(0.2f);
                 Check($"a sign in front: {p.Action}", p.Action == Player.Act.Read);
             }
-            yield return Enter("zig_1", "south");
             var chest = Find("chest");
-            p.pos = chest.basePos + new Vector2(0, -0.75f); p.Face(Facing.Up);
-            yield return new WaitForSeconds(0.2f);
-            Check($"a chest in front: {p.Action}", p.Action == Player.Act.Open);
-
-            // the shield
+            if (chest)
+            {
+                p.pos = chest.basePos + new Vector2(0, -0.75f); p.Face(Facing.Up);
+                yield return new WaitForSeconds(0.2f);
+                Check($"a chest in front: {p.Action}", p.Action == Player.Act.Open);
+            }
+            else Check("the lower town has a chest to stand in front of", false);
+            // the shield, in the first hall of the ziggurat (the middle of its floor, clear of the pillars)
+            yield return Enter("zig_1", "south");
             Story.Set("item_shield"); Story.I.ApplyItems();
-            p.pos = Map.ToWorld(256, 300); p.Face(Facing.Right);
+            p.pos = Map.ToWorld(624, 352); p.Face(Facing.Right);
             yield return new WaitForSeconds(0.2f);
             Check($"with the shield and nothing in front: {p.Action}", p.Action == Player.Act.Guard);
             Controls.FakeHold = Controls.Interact; Controls.FakePress = Controls.Interact;

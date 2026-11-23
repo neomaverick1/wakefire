@@ -28,9 +28,11 @@ namespace Wakefire
             p.Fell -= OnFell;
             p.Fell += OnFell;
             propHandler = null;
+            if (map == "terraces" && FirstNight && Has("item_wakefire")) RunWhenFree(EndOfNight());
             switch (map)
             {
                 case "ashkel": SetupAshkel(m); break;
+                case "crypt": SetupRegion(map, m); SetupCrypt(m); break;
                 case "necro_road": case "necropolis": case "tomb_1": case "tomb_2": case "tomb_3": SetupHill(map, m); break;
                 default: SetupRegion(map, m); break;
             }
@@ -62,6 +64,8 @@ namespace Wakefire
                 var parts = pr.data.text.Split(new[] { "~~" }, System.StringSplitOptions.None);
                 bool dream = Dream.I && Dream.I.IsDreamAt(pr.basePos);
                 string say = dream && parts.Length > 1 && parts[1].Length > 0 ? parts[1] : parts.Length > 2 && Has("chapter2_done") ? parts[2] : parts[0];
+                // on the first night nothing has been lying about for forty of them yet
+                if (FirstNight && say.ToLowerInvariant().Contains("forty")) say = "Quiet. Everything in Ashkel is exactly where it was put down an hour ago.";
                 Run(Narrate(say));
                 return;
             }
@@ -74,6 +78,9 @@ namespace Wakefire
             var p = Player.I;
             if (!p) return;
             p.hasShield = Has("item_shield");
+            p.hasSword = Has("item_sword");
+            p.hasLantern = Has("item_wakefire");
+            if (Dream.I) Dream.I.Locked = !p.hasLantern;
             Dream.I.Seconds = Has("item_oil") ? 14f : 7f;
             int max = 6 + (Has("item_lamp") ? 2 : 0) + 2 * Count("vessels");
             if (p.health.max != max) { p.health.max = max; p.health.hp = Mathf.Min(max, Mathf.Max(p.health.hp, 1)); }
@@ -87,9 +94,32 @@ namespace Wakefire
         {
             switch (what)
             {
+                case "sword":
+                    Set("item_sword"); I.ApplyItems();
+                    yield return MainItemGet("khopesh", SwordText);
+                    yield return Narrate(LessonBlade(TouchControls.Wanted));
+                    break;
+                case "wakefire":
+                    Set("item_wakefire"); I.ApplyItems();
+                    Items.Chosen = "wakefire";
+                    yield return MainItemGet("wakefire", WakefireText);
+                    yield return I.TheFlameExplained();
+                    break;
                 case "shield":
                     Set("item_shield"); I.ApplyItems();
-                    yield return ItemGet("mirror_shield", ShieldText);
+                    yield return MainItemGet("mirror_shield", ShieldText);
+                    break;
+                case "map_zig":
+                    Set("item_map_zig");
+                    yield return ItemGet("scroll", "You got the {g}SCROLL OF THE ZIGGURAT{/}!^The builders' own drawing, floor by floor.| Open your pack and turn to the map: every room is on it.");
+                    break;
+                case "map_tomb":
+                    Set("item_map_tomb");
+                    yield return ItemGet("scroll", "You got the {g}SCROLL OF THE KING'S TOMB{/}!^The tomb as its architect drew it, and as he was told to forget it.| Every room is on the map page now.");
+                    break;
+                case "map_crypt":
+                    Set("item_map_crypt");
+                    yield return ItemGet("scroll", "You got the {g}WATCH ROLL{/}!^A plan of the crypt, kept up by four hundred years of sergeants.| One of them drew a goat in the margin.^Open your pack and turn to the map: every room is on it.");
                     break;
                 case "oil":
                     Set("item_oil"); I.ApplyItems();
@@ -133,31 +163,24 @@ namespace Wakefire
             Fade.Backdrop(null);
         }
 
-        public IEnumerator Intro()
-        {
-            var p = Player.I;
-            Fade.Set(1);
-            Music.Play("intro");
-            yield return Card("Ashkel. The fortieth night.",
-                "Forty nights ago, Ninhal, god of the sky,\nlay down on top of his ziggurat for a nap.",
-                "The city fell asleep with him.\nBakers. Priests. Soldiers. Babies. Dogs.",
-                "Everyone.",
-                "Almost everyone.");
-            Music.Play(Map.Current.data.music);
-            yield return Fade.In(1.2f);
-            yield return Wait(0.4f);
-            yield return AzarSays("Night forty. Still awake. Still on watch.| Still nobody to watch.");
-            Sfx.Play("goat");
-            yield return Wait(0.6f);
-            yield return AzarSays("...Almost nobody.");
-            yield return Narrate("The temple gate is locked, and Captain Dur has the key.");
-            yield return Narrate(Lesson(TouchControls.Wanted));
-        }
-
         /// <summary>The first lesson: what each button does, for thumbs or for keys.</summary>
         public static string Lesson(bool touch) => touch
-            ? "Put your thumb down anywhere on the left to {g}walk{/}. Swing the khopesh with the {g}blade{/}, roll with the {g}circle{/}.^The {g}action{/} button does whatever is in front of you: talk, open, read, look. The {g}lamp{/} holds out the {g}Wakefire{/}.^The button at the top opens your {g}pack{/}: what you carry, your journeys, the map.| And when you must, nod off with the {t}moon{/}."
-            : "Move with {g}WASD{/} or the arrows. Swing the khopesh with {g}J{/} or {g}Space{/}, roll with {g}K{/}.^{g}E{/} does whatever is in front of you: talk, open, read, look. {g}F{/} holds out the {g}Wakefire{/}.^{g}Esc{/} opens your {g}pack{/}: what you carry, your journeys, the map.| And when you must, nod off with {t}Q{/}.";
+            ? "Put your thumb down anywhere on the left to {g}walk{/}. The {g}action{/} button does whatever is in front of you: talk, open, read, look.^The button at the top opens your {g}pack{/}: what you carry, your journeys, the map."
+            : "Move with {g}WASD{/} or the arrows. {g}E{/} does whatever is in front of you: talk, open, read, look.^{g}Esc{/} opens your {g}pack{/}: what you carry, your journeys, the map.";
+
+        public static string SwordText => "You got the {g}KHOPESH OF THE WATCH{/}!^The first watchman's own blade, hooked like a sickle, and still sharp.^The night watch of Ashkel has not been trusted with one in living memory.| They get a rattle.";
+
+        /// <summary>The second lesson, when there is a blade to swing.</summary>
+        public static string LessonBlade(bool touch) => touch
+            ? "Swing it with the {g}blade{/} button: three cuts, if you keep swinging. Roll out of trouble with the {g}circle{/}."
+            : "Swing it with {g}J{/} or {g}Space{/}: three cuts, if you keep swinging. Roll out of trouble with {g}K{/}.";
+
+        public static string WakefireText => "You got the {g}WAKEFIRE{/}!^The watch-flame of Ashkel. The first watchman lit it from the sky god's own lamp, the night the city was founded.^He said: while this burns, someone is awake.| It has not gone out since.";
+
+        /// <summary>The third lesson, when there is a flame to carry and a sleep to dare.</summary>
+        public static string LessonFlame(bool touch) => touch
+            ? "Hold out the {g}Wakefire{/} with the {g}lamp{/} button. It lights what ought to be lit.^And nod off with the {t}moon{/}. You go where the whole city has gone, and the flame brings you back before long."
+            : "Hold out the {g}Wakefire{/} with {g}F{/}. It lights what ought to be lit.^And nod off with {t}Q{/}. You go where the whole city has gone, and the flame brings you back before long.";
 
         /// <summary>What the mirror shield says when Azar lifts it out of its chest.</summary>
         public static string ShieldText => "You got the {g}BRONZE MIRROR SHIELD{/}!^Polished so bright you can see how tired you look.^With nothing in front of you, hold " + ActName + " to raise it.^A blow from the front glances off it. And fire goes back where it came from.";
@@ -173,6 +196,14 @@ namespace Wakefire
 
         public static bool Has(string f) => Flags.Contains(f);
         public static void Set(string f) => Flags.Add(f);
+        public static void Clear(string f) => Flags.Remove(f);
+
+        /// <summary>For checks: everything Azar is carrying by the time chapter one begins.</summary>
+        public static void GiveKit()
+        {
+            Set("item_sword"); Set("item_wakefire"); Set("prequel_done");
+            if (I) I.ApplyItems();
+        }
         public static int Count(string key) => counts.TryGetValue(key, out var n) ? n : 0;
         /// <summary>Increments a counter and returns its value before the increment (0 the first time).</summary>
         public static int Bump(string key) { int n = Count(key); counts[key] = n + 1; return n; }
@@ -260,6 +291,44 @@ namespace Wakefire
         }
 
         /// <summary>Azar lifts a new item over his head while the fanfare plays.</summary>
+        /// <summary>One of the few things the whole game turns on, lifted out of a great chest: it rises
+        /// in its own light, the music stands aside for a fanfare, and only then does anyone speak.</summary>
+        public static IEnumerator MainItemGet(string itemSprite, string text)
+        {
+            var p = Player.I;
+            p.Face(Facing.Down);
+            p.SetState(Player.State.ItemGet, "itemget");
+            var go = new GameObject("ItemShown");
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sharedMaterial = Map.SpriteMat;
+            sr.sprite = Map.GetSprite("Items/" + itemSprite, 8, 16);
+            sr.sortingOrder = Map.Order(p.pos.y) + 4;
+            var glow = LightBlob.Create(go.transform, p.pos, 1.0f, new Color(1f, 0.86f, 0.5f), 0.9f, true);
+            glow.height = 2.4f;
+            Music.Duck(0.25f, 5.6f);
+            Sfx.Play("main_item", 1f, 0f);
+            Vector2 from = p.pos + new Vector2(0, 0.9f), to = p.pos + new Vector2(0, 2.75f);
+            for (float t = 0; t < 2.1f; t += Time.deltaTime)
+            {
+                float k = Mathf.SmoothStep(0, 1, t / 2.1f);
+                go.transform.position = Vector2.Lerp(from, to, k);
+                glow.radius = Mathf.Lerp(1.0f, 6.5f, k);
+                if (Random.value < 0.5f) Fx.Sparks((Vector2)go.transform.position + Random.insideUnitCircle * 0.35f, new Color(1f, 0.9f, 0.55f), 1);
+                yield return null;
+            }
+            PixelView.I.Shake(1, 0.25f);
+            for (int i = 0; i < 16; i++)
+            {
+                float a = i / 16f * Mathf.PI * 2f;
+                Fx.Spawn(to, new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * 3.4f, 0.2f, 1.5f, 0.7f, new Color(1f, 0.92f, 0.6f), new Color(0.9f, 0.5f, 0.15f), 0f, 1);
+            }
+            yield return Wait(1.3f);
+            yield return Narrate(text);
+            Destroy(go);
+            p.SetState(Player.State.Talk, "idle");
+            if (Game.I && Game.I.CurrentMap != null) Save.Write(Game.I.CurrentMap, Game.I.CurrentSpawn);
+        }
+
         public static IEnumerator ItemGet(string itemSprite, string text)
         {
             var p = Player.I;

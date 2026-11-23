@@ -22,6 +22,13 @@ namespace Wakefire
             if (pr == null) { t.Note($"{label}: MISSING prop {id}"); yield break; }
             p.pos = pr.basePos + new Vector2(0, -0.85f);
             p.Face(Facing.Up);
+            // on a floor of rooms the picture slides to the room he has turned up in: let it, then stand where he meant to
+            yield return null; yield return null;
+            for (float s = 0; s < 3f && (Rooms.Sliding || Game.Busy); s += Time.deltaTime) yield return null;
+            foreach (var e in Enemy.All.ToArray()) if (e) UnityEngine.Object.Destroy(e.gameObject);
+            p.pos = pr.basePos + new Vector2(0, -0.85f);
+            p.Face(Facing.Up);
+            p.SetState(Player.State.Free, "idle");
             if (dream) { Dream.I.Drowsiness = 1; Dream.I.Seconds = 9999; Dream.I.Flip(p.pos, true); yield return new WaitForSeconds(1.2f); }
             yield return new WaitForSeconds(0.2f);
             Controls.FakePress = Controls.Interact;

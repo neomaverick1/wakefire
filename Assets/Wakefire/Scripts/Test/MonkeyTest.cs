@@ -16,7 +16,7 @@ namespace Wakefire
             var pad = InputSystem.AddDevice<Gamepad>();
             DialogueBox.AutoAdvance = 0.4f;
             var rng = new System.Random(3);
-            string[] maps = { "ashkel", "lowtown", "cliffs", "terraces", "temple_yard", "zig_1", "zig_2", "zig_3" };
+            string[] maps = { "ashkel", "lowtown", "cliffs", "terraces", "crypt", "temple_yard", "zig_1", "zig_2", "zig_3" };
             foreach (var m in maps)
             {
                 Game.I.EnterMap(m);

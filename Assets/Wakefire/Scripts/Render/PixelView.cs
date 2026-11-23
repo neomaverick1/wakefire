@@ -256,6 +256,16 @@ namespace Wakefire
 
         public void SnapTo(Vector2 p) => focus = p;
 
+        /// <summary>Where the middle of the picture comes to rest when it follows a point inside a rectangle:
+        /// held inside it, or centred on it if the rectangle is smaller than the picture.</summary>
+        public Vector2 Clamp(Vector2 f, Rect b)
+        {
+            float halfW = width / (2f * PPU), halfH = Height / (2f * PPU);
+            f.x = b.width < halfW * 2 ? b.center.x : Mathf.Clamp(f.x, b.xMin + halfW, b.xMax - halfW);
+            f.y = b.height < halfH * 2 ? b.center.y : Mathf.Clamp(f.y, b.yMin + halfH, b.yMax - halfH);
+            return f;
+        }
+
         void LateUpdate()
         {
             if (Screen.width != lastW || Screen.height != lastH) Resize();
@@ -270,10 +280,7 @@ namespace Wakefire
             }
             if (bounds.HasValue)
             {
-                var b = bounds.Value;
-                float halfW = width / (2f * PPU), halfH = Height / (2f * PPU);
-                focus.x = b.width < halfW * 2 ? b.center.x : Mathf.Clamp(focus.x, b.xMin + halfW, b.xMax - halfW);
-                focus.y = b.height < halfH * 2 ? b.center.y : Mathf.Clamp(focus.y, b.yMin + halfH, b.yMax - halfH);
+                focus = Clamp(focus, bounds.Value);
             }
             if (shakeTime > 0)
             {

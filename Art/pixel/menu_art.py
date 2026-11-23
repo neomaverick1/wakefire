@@ -53,7 +53,8 @@ ROADS = [(('lowtown', (480, 0)), ('ashkel', (480, 480))), (('ashkel', (480, 30))
          (('lowtown', (0, 320)), ('terraces', (832, 320))), (('lowtown', (960, 320)), ('cliffs', (0, 320))),
          (('terraces', (700, 14)), ('necro_road', (320, 704))), (('necro_road', (320, 44)), ('necropolis', (384, 640)))]
 # places that are inside another: where their door is, in the outer place's own map pixels
-INSIDE = {'zig_1': ('temple_yard', 320, 70), 'zig_2': ('temple_yard', 320, 70), 'zig_3': ('temple_yard', 320, 70),
+INSIDE = {'zig_1': ('temple_yard', 320, 70), 'zig_2': ('temple_yard', 320, 70), 'zig_3': ('temple_yard', 320, 70), 'zig_hi': ('temple_yard', 320, 70),
+          'crypt': ('terraces', 420, 30),
           'tomb_1': ('necropolis', 384, 100), 'tomb_2': ('necropolis', 384, 100), 'tomb_3': ('necropolis', 384, 100)}
 W, H = 292, 218
 
@@ -131,7 +132,7 @@ def pictures():
             im = cv
         im.save(f'{OUT}/{name}.png')
     put(f'{RES}/UI/icon_lantern.png', 'wakefire', (16, 16))
-    for n in ('mirror_shield', 'night_oil', 'bronze_lamp', 'flame_vessel', 'big_key', 'hill_key', 'figs', 'dawn_horn', 'small_key', 'sling', 'throwing_stick', 'scroll'):
+    for n in ('mirror_shield', 'night_oil', 'bronze_lamp', 'flame_vessel', 'big_key', 'hill_key', 'figs', 'dawn_horn', 'small_key', 'khopesh', 'sun_wheel', 'scroll'):
         put(f'{RES}/Items/{n}.png', n)
     for n in ('life_full', 'life_half', 'life_empty', 'coin', 'key'):
         put(f'{RES}/UI/{n}.png', n)

@@ -11,6 +11,7 @@ namespace Wakefire
         public static Hud I;
         RectTransform root;
         Image meterFill;
+        GameObject meterBox, itemBox;
         readonly List<Image> flames = new List<Image>();
         Image[] coinDigits, keyDigits;
         Sprite[] digits;
@@ -65,7 +66,7 @@ namespace Wakefire
             flameFull = UISprite("life_full");
             flameEmpty = UISprite("life_empty");
             flameHalf = UISprite("life_half");
-            Pixel(root, UISprite("meter"), 7, 5, "meter");
+            meterBox = Pixel(root, UISprite("meter"), 7, 5, "meter").gameObject;
             var fillGo = new GameObject("fill", typeof(RectTransform));
             fillGo.layer = PixelView.PixelUILayer;
             fillGo.transform.SetParent(root, false);
@@ -76,9 +77,9 @@ namespace Wakefire
             frt.pivot = new Vector2(0, 0);
             frt.anchoredPosition = new Vector2(11, -35);
             frt.sizeDelta = new Vector2(4, 24);
-            Pixel(root, UISprite("itembox"), 22, 6, "itembox");
+            itemBox = Pixel(root, UISprite("itembox"), 22, 6, "itembox").gameObject;
             item = Pixel(root, Items.Icon(Items.Current) ?? UISprite("icon_lantern"), 25, 9, "item");
-            shownItem = Items.Current.id;
+            shownItem = Items.Current?.id;
             // what the action button would do this moment, as a word
             actCv = new PixelCanvas(44, 13);
             var ago = new GameObject("action", typeof(RectTransform));
@@ -144,12 +145,17 @@ namespace Wakefire
                 keyDigits[0].sprite = digits[k / 10]; keyDigits[1].sprite = digits[k % 10];
                 shownKeys = p.keys;
             }
-            if (Items.Current.id != shownItem)
+            var cur = Items.Current;
+            if (cur?.id != shownItem)
             {
-                shownItem = Items.Current.id;
-                var sp = Items.Icon(Items.Current);
+                shownItem = cur?.id;
+                var sp = Items.Icon(cur);
                 if (sp) { item.sprite = sp; item.rectTransform.sizeDelta = new Vector2(sp.rect.width, sp.rect.height); }
             }
+            // nothing to show for a flame he has not found yet, or a sleep he does not dare
+            bool lamp = p.hasLantern;
+            if (meterBox.activeSelf != lamp) { meterBox.SetActive(lamp); meterFill.gameObject.SetActive(lamp); itemBox.SetActive(lamp); }
+            if (item.gameObject.activeSelf != (cur != null)) item.gameObject.SetActive(cur != null);
             var act = p.state == Player.State.Free || p.state == Player.State.Guard ? p.Action : Player.Act.None;
             if (act != shownAct)
             {

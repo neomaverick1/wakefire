@@ -8,7 +8,7 @@ using UnityEngine;
 namespace Wakefire
 {
     [Serializable] public class MapJson { public string name, music; public int w, h; public string ground, normal; public PropJson[] objects; public BoxJson[] boxes; public LightJson[] lights; public MarkerJson[] markers; public string[] surface; public int cell; }
-    [Serializable] public class PropJson { public string s; public int x, y, px, py, w, h, layer; public string[] frames; public bool solid; public int bx0, by0, bx1, by1; public string kind, id, text, who; public int n; public string sh; public int shx, shy; }
+    [Serializable] public class PropJson { public string s; public int x, y, px, py, w, h, layer; public string[] frames; public bool solid; public int bx0, by0, bx1, by1; public string kind, id, text, who, say; public int n; public string sh; public int shx, shy; }
     [Serializable] public class BoxJson { public int x0, y0, x1, y1, layer; public string kind; }
     [Serializable] public class LightJson { public int x, y; public float r; public float[] c; public float i; public bool f; public string tag; public float h; }
     [Serializable] public class MarkerJson { public string kind; public int x, y, w, h; public string who, id, text; }
@@ -302,6 +302,18 @@ namespace Wakefire
 
         public Rect Bounds => solid != null ? solid.r : new Rect(basePos - new Vector2(0.4f, 0), new Vector2(0.8f, 0.5f));
 
+        Rect barRect;
+        bool barKnown;
+
+        /// <summary>A grille that can drop again: there and solid, or lifted out of the way.</summary>
+        public void Bar(bool on)
+        {
+            if (!barKnown) { barKnown = true; if (solid != null) barRect = solid.r; }
+            sr.enabled = on;
+            if (on && solid == null && barRect.width > 0) solid = Solids.Add(barRect, (WorldLayer)data.layer, this);
+            else if (!on && solid != null) { Solids.Remove(solid); solid = null; }
+        }
+
         /// <summary>Light a brazier with the Wakefire.</summary>
         public bool Ignite()
         {
@@ -371,7 +383,27 @@ namespace Wakefire
         public void Cut()
         {
             if (solid != null) Solids.Remove(solid);
-            Fx.Leaves(basePos + new Vector2(0, 0.4f));
+            if (Kind == "roots")
+            {
+                // wood, not leaves: chips and dust the length of what was cut
+                var b = Bounds;
+                for (int i = 0; i < 22; i++)
+                {
+                    var at = new Vector2(UnityEngine.Random.Range(b.xMin, b.xMax), UnityEngine.Random.Range(b.yMin, b.yMax));
+                    Fx.Spawn(at, UnityEngine.Random.insideUnitCircle * 3.4f, UnityEngine.Random.Range(0.3f, 1.3f), UnityEngine.Random.Range(2f, 6f), UnityEngine.Random.Range(0.4f, 0.9f),
+                        i % 3 == 0 ? new Color(0.62f, 0.47f, 0.36f) : new Color(0.36f, 0.25f, 0.24f), new Color(0.16f, 0.11f, 0.13f), 17f, i % 4 == 0 ? 2 : 1);
+                }
+                Fx.Dust(basePos, 6);
+                if (!string.IsNullOrEmpty(data.id)) Story.Set("cut_" + data.id);
+            }
+            else Fx.Leaves(basePos + new Vector2(0, 0.4f));
+            Destroy(gameObject);
+        }
+
+        /// <summary>Gone, without a sound: it was dealt with on an earlier visit.</summary>
+        public void Clear()
+        {
+            if (solid != null) Solids.Remove(solid);
             Destroy(gameObject);
         }
 

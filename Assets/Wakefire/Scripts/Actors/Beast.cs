@@ -390,6 +390,17 @@ namespace Wakefire
     // --------------------------------------------------------------------------------- jackal
     public class JackalBeast : Beast
     {
+        /// <summary>The Den Mother: the same animal grown old and heavy in the dark, grey down the back, one ear in ribbons.</summary>
+        public static Shape Mother => new Shape
+        {
+            coat = new Color(0.50f, 0.40f, 0.30f), belly = new Color(0.72f, 0.66f, 0.56f), dark = new Color(0.10f, 0.08f, 0.09f),
+            back = new Color(0.22f, 0.20f, 0.22f), muzzle = new Color(0.78f, 0.74f, 0.68f),
+            length = 0.74f, height = 0.52f, girth = 0.15f, chest = 0.185f, rump = 0.14f, legThick = 0.046f, stance = 0.11f,
+            neckLen = 0.21f, neckRise = 34f, neckThick = 0.09f, headLen = 0.29f, headThick = 0.092f, headTilt = 12f,
+            tailLen = 0.34f, tailRise = -34f, tailThick = 0.07f, earLen = 0.15f, earsUp = true, stride = 0.74f, stepHeight = 0.08f,
+            eye = new Color(1.0f, 0.62f, 0.20f), eyeGlow = 1.3f,
+        };
+
         public static Shape Body => new Shape
         {
             coat = new Color(0.74f, 0.56f, 0.34f), belly = new Color(0.90f, 0.80f, 0.60f), dark = new Color(0.15f, 0.11f, 0.10f),

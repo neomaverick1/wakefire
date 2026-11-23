@@ -17,20 +17,6 @@ namespace Wakefire
             {
                 case "terraces": if (Has("hill_gate")) SwingOpen(m.Find("hill_gate"), "hill_gate_open"); break;
                 case "temple_yard": SetupYard(m); break;
-                case "zig_1":
-                    m.PlatePressed += id => { if (id == "z1_plate") { Set("bars_z1"); OpenProp("z1_bars"); Run(Narrate("Somewhere in the wall, a weight drops. The bronze bars lift.")); } };
-                    if (Has("bars_z1")) OpenProp("z1_bars");
-                    break;
-                case "zig_2":
-                {
-                    var bh = m.Find("z2_bull");
-                    if (bh != null)
-                    {
-                        if (Has("z2_bull")) { m.props.Remove(bh); Destroy(bh.gameObject); }
-                        else { var c = bh.gameObject.AddComponent<BullHead>(); c.prop = bh; c.flag = "z2_bull"; }
-                    }
-                    break;
-                }
                 case "zig_3": StartCoroutine(SetupSummit(m)); break;
             }
         }
@@ -280,11 +266,13 @@ namespace Wakefire
                     if (pr.data.id == "hill_gate") Run(HillGate(pr));
                     break;
                 case "pot":
-                    Run(Narrate("A storage jar. Your khopesh has opinions about storage jars."));
+                    Run(Narrate(Player.I.hasSword ? "A storage jar. Your khopesh has opinions about storage jars."
+                                                  : "A storage jar. You have no quarrel with it.^You have nothing to quarrel with."));
                     break;
                 case "look":
                     if (pr.data.id == "shrine_altar")
                         Run(dream ? Narrate("In the dream, the altar is not empty.")
+                          : FirstNight ? Narrate("The shrine of the First Watch. Nobody has left anything on the altar in years.^Behind it there is a doorway in the rock, and steps going down.")
                                   : Narrate("An old shrine. Whatever was offered here is long gone.^Or long asleep. In Ashkel, it's hard to tell."));
                     break;
             }

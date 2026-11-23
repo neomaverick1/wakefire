@@ -26,7 +26,11 @@ namespace Wakefire
         public Vector2 half = new Vector2(0.32f, 0.16f);
         public int coins, keys;
         public bool hasShield;
+        /// <summary>The khopesh and the Wakefire are found, not given: until then there is no blade to swing and no light to carry.</summary>
+        public bool hasSword = true, hasLantern = true;
         public LightBlob lantern;
+        /// <summary>While something else is moving him (a doorway between two rooms): the way and the pace.</summary>
+        public Vector2 march;
         LightBlob mirror;               // the Wakefire's light thrown forward off the raised shield
         SpriteRenderer glare;           // and the bright edge of the mirror itself, on whichever side it faces
         static Sprite[] glareFrames;
@@ -181,7 +185,7 @@ namespace Wakefire
                     knock = Vector2.Lerp(knock, Vector2.zero, dt * 9f);
                     vel = Vector2.MoveTowards(vel, input * speed * 0.36f, 60f * dt) + knock;
                     if (anim.anim == "block" && anim.Done) anim.Play("guard", facing, true);
-                    if (Controls.Down(Controls.Attack)) { combo = 0; StartAttack(); }
+                    if (hasSword && Controls.Down(Controls.Attack)) { combo = 0; StartAttack(); }
                     else if (Controls.Down(Controls.Roll) && rollCd <= 0) StartRoll(input);
                     else if (!Controls.Held(Controls.Interact) && stateClock > 0.14f) ToFree();
                     break;
@@ -189,8 +193,10 @@ namespace Wakefire
                     vel = Vector2.Lerp(vel, Vector2.zero, dt * 14f);
                     if (anim.Done) ToFree();
                     break;
-                case State.Talk:
                 case State.Cutscene:
+                    vel = march;
+                    break;
+                case State.Talk:
                 case State.ItemGet:
                 case State.Dead:
                     vel = Vector2.zero;
@@ -198,6 +204,7 @@ namespace Wakefire
             }
 
             var before = pos;
+            if ((state == State.Free || state == State.Guard) && Solids.Blocks(new Rect(pos - half, half * 2), pos, this)) Unstick();
             pos = Solids.Move(pos, vel * dt, half, this);
             CheckGround();
             if (anim.model)
@@ -206,6 +213,9 @@ namespace Wakefire
                 m.ownVelocity = true;
                 m.velocity = dt > 0.0001f ? (pos - before) / dt : Vector2.zero;
                 if (m.props.TryGetValue("shield", out var mirror) && mirror.gameObject.activeSelf != hasShield) mirror.gameObject.SetActive(hasShield);
+                if (m.props.TryGetValue("blade", out var blade) && blade.gameObject.activeSelf != hasSword) blade.gameObject.SetActive(hasSword);
+                if (m.props.TryGetValue("lantern", out var lamp) && lamp.gameObject.activeSelf != hasLantern) lamp.gameObject.SetActive(hasLantern);
+                if (lantern && lantern.gameObject.activeSelf != hasLantern) lantern.gameObject.SetActive(hasLantern);
                 // the body points where it's going, not just four ways, and tips into its own acceleration
                 if (state == State.Free && vel.sqrMagnitude > 0.5f) m.Aim(vel);
                 else if (state == State.Roll) m.Aim(rollDir);
@@ -280,9 +290,9 @@ namespace Wakefire
                     if (idleClock > 7f && facing == Facing.Down) { anim.Play(UnityEngine.Random.value < 0.6f ? "idle_nod" : "yawn", facing, true); idleClock = 0; }
                 }
             }
-            if (Controls.Down(Controls.Attack)) { combo = 0; StartAttack(); return; }
+            if (hasSword && Controls.Down(Controls.Attack)) { combo = 0; StartAttack(); return; }
             if (Controls.Down(Controls.Roll) && rollCd <= 0) { StartRoll(input); return; }
-            if (Controls.Down(Controls.Nod)) { StartNod(); return; }
+            if (Controls.Down(Controls.Nod)) { if (hasLantern) StartNod(); else DareNot(); return; }
             if (Controls.Down(Controls.Item)) { UseItem(); return; }
             Action = WhatNow();
             if (Controls.Down(Controls.Interact) && !TryInteract() && hasShield) StartGuard();
@@ -291,12 +301,21 @@ namespace Wakefire
         /// <summary>The item button: whatever was chosen on the item page.</summary>
         void UseItem()
         {
-            switch (Items.Current.id)
+            var it = Items.Current;
+            if (it == null) return;
+            switch (it.id)
             {
-                case "sling": StartThrow("sling"); break;
-                case "stick": if (Thrown.Out("stick") == 0) StartThrow("stick"); else Sfx.Play("deny", 0.5f); break;
+                case "wheel": if (Thrown.Out("wheel") == 0) StartThrow("wheel"); else Sfx.Play("deny", 0.5f); break;
                 default: StartUse(); break;
             }
+        }
+
+        /// <summary>Before the Wakefire: he will not close his eyes. Everyone who has is still asleep.</summary>
+        void DareNot()
+        {
+            if (Story.I && !Story.I.Running && Story.Bump("dare_not") % 4 == 0)
+                Story.Run(Story.Narrate("You don't dare close your eyes.^Everyone in Ashkel who has, tonight, is still asleep."));
+            else Sfx.Play("deny", 0.5f);
         }
 
         string throwing;
@@ -306,7 +325,7 @@ namespace Wakefire
             state = State.Throw;
             stateClock = 0;
             anim.Play("throw", facing, true);
-            Sfx.Play(what == "sling" ? "sling_whirl" : "stick_throw", 0.8f, 0.04f);
+            Sfx.Play("stick_throw", 0.8f, 0.04f);
         }
 
         void StartGuard()
@@ -319,8 +338,8 @@ namespace Wakefire
             Fx.Sparks(pos + Dir * 0.55f + new Vector2(0, 0.75f), new Color(1f, 0.92f, 0.62f), 3);
         }
 
-        static bool Acts(Prop p) => p.Kind == "sign" || p.Kind == "well" || p.Kind == "gate" || p.Kind == "npc" || p.Kind == "pot" ||
-                                    p.Kind == "chest" || p.Kind == "lockdoor" || p.Kind == "bigdoor" || p.Kind == "look" || p.Kind == "stairs";
+        static bool Acts(Prop p) => p.Kind == "sign" || p.Kind == "well" || p.Kind == "gate" || p.Kind == "npc" || p.Kind == "pot" || p.Kind == "roots" ||
+                                    p.Kind == "chest" || p.Kind == "bigchest" || p.Kind == "lockdoor" || p.Kind == "bigdoor" || p.Kind == "look" || p.Kind == "stairs";
 
         Act WhatNow()
         {
@@ -328,7 +347,7 @@ namespace Wakefire
             if (n != null && n.talk != null) return Act.Talk;
             var pr = PropInFront(0.6f, Acts);
             if (pr != null)
-                return pr.Kind == "chest" || pr.Kind == "lockdoor" || pr.Kind == "bigdoor" || pr.Kind == "gate" ? Act.Open
+                return pr.Kind == "chest" || pr.Kind == "bigchest" || pr.Kind == "lockdoor" || pr.Kind == "bigdoor" || pr.Kind == "gate" ? Act.Open
                      : pr.Kind == "sign" ? Act.Read : pr.Kind == "npc" ? Act.Talk : Act.Look;
             return hasShield ? Act.Guard : Act.None;
         }
@@ -434,6 +453,23 @@ namespace Wakefire
             Sfx.Play("roll");
         }
 
+        /// <summary>He has come to inside something: a wall the dream did not have, bars that dropped where
+        /// he stood. He is beside it instead, on the nearest ground that will take him.</summary>
+        void Unstick()
+        {
+            for (float r = 0.1f; r < 5f; r += 0.1f)
+                for (int k = 0; k < 16; k++)
+                {
+                    float a = k / 16f * Mathf.PI * 2f;
+                    var q = pos + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r;
+                    if (Solids.Overlaps(new Rect(q - half, half * 2), q, this)) continue;
+                    pos = q;
+                    vel = Vector2.zero;
+                    Fx.Dust(pos, 3);
+                    return;
+                }
+        }
+
         /// <summary>For test runs: nod off (or wake) as if the button were pressed.</summary>
         public void NodOff() { if (state == State.Free) StartNod(); }
 
@@ -509,10 +545,11 @@ namespace Wakefire
                 for (int i = map.props.Count - 1; i >= 0; i--)
                 {
                     var pr = map.props[i];
-                    if (!pr || (pr.Kind != "bush" && pr.Kind != "pot")) continue;
+                    if (!pr || (pr.Kind != "bush" && pr.Kind != "pot" && pr.Kind != "roots")) continue;
                     if (!pr.Bounds.Overlaps(r)) continue;
                     map.props.RemoveAt(i);
                     if (pr.Kind == "pot") { pr.Shatter(); Sfx.Play("pot_break"); Pickup.Chance(pr.basePos, 0.5f, 0.15f); }
+                    else if (pr.Kind == "roots") { pr.Cut(); Sfx.Play("cut", 1f, 0.02f); Sfx.Play("pot_break", 0.35f, 0.05f); PixelView.I.Shake(1, 0.14f); }
                     else { pr.Cut(); Sfx.Play("cut"); Pickup.Chance(pr.basePos, 0.18f, 0.08f); }
                     hitAny = true;
                 }
@@ -563,7 +600,13 @@ namespace Wakefire
         bool TryInteract()
         {
             var n = NpcInFront();
-            if (n != null && n.talk != null) { Story.Run(n.talk(), n); return true; }
+            if (n != null && n.talk != null)
+            {
+                // on the first night there is no dream to meet anyone in: a sleeper is just a sleeper
+                bool sleeper = Story.FirstNight && n.layer == WorldLayer.Waking && !n.id.StartsWith("goat");
+                Story.Run(sleeper ? Story.I.FirstNightTalk(n) : n.talk(), n);
+                return true;
+            }
             var pr = PropInFront(0.6f, Acts);
             if (pr != null) { Interacted?.Invoke(pr); return true; }
             return false;

@@ -74,7 +74,9 @@ namespace Wakefire
             View.bounds = m.bounds;
             View.SnapTo(at);
             if (!Hud.I) Hud.Create();
+            Rooms.Setup(m, at);
             Populate(m);
+            Mech.Setup(m);
             Story.Ensure().Setup(map, m);
             Music.Play(m.data.music);
             return p;
@@ -94,9 +96,13 @@ namespace Wakefire
             Story.Abort();
             Story.ResetAll();
             Items.Chosen = d != null && !string.IsNullOrEmpty(d.item) ? d.item : "wakefire";
+            if (d == null) Story.Set("prequel");
             if (d != null)
             {
                 foreach (var f in d.flags) Story.Set(f);
+                // a journey from before the first night was told: he has plainly been through it
+                if (!Story.Has("prequel"))
+                    foreach (var f in new[] { "prequel", "prequel_done", "item_sword", "item_wakefire", "chest_crypt_sword", "chest_crypt_fire", "dead_crypt_mother", "door_crypt_door", "chest_crypt_key" }) Story.Set(f);
                 for (int i = 0; i < d.countKeys.Length; i++) Story.SetCount(d.countKeys[i], d.countVals[i]);
                 Save.PlayTime = d.playTime;
                 // a journey from before the world map was drawn: he has plainly walked the places his story has been through
@@ -119,7 +125,7 @@ namespace Wakefire
             p.health.invulnerable = 0;
             p.SetState(Player.State.Free, "idle");
             if (Dream.I.Dreaming) Dream.I.SetInstant(false);
-            if (d == null) Story.Run(Story.I.Intro());
+            if (d == null) Story.Run(Story.I.Prologue());
             else Notices.Place(CurrentMap);
         }
     }

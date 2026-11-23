@@ -227,13 +227,15 @@ namespace Wakefire
                 // carried the way a tired man carries a blade: tipped forward and down out of the fist, not held square
                 const float tip = 28f * Mathf.Deg2Rad;
                 Vector3 along = across * Mathf.Cos(tip) + fingers * Mathf.Sin(tip), edge = fingers * Mathf.Cos(tip) - across * Mathf.Sin(tip);
-                kit.On("hand_r").Frame(grip, along, edge, palm);
-                kit.Paint(look.leather).Ribbon(new[] { new Vector2(-0.12f, 0), new Vector2(0.03f, 0) }, new[] { 0.042f, 0.042f }, 0.042f);
-                kit.Paint(look.bronze, look.metal).Box(new Vector3(-0.145f, 0, 0), new Vector3(0.055f, 0.066f, 0.06f));
-                kit.Paint(look.blade, 1).Ribbon(
+                var bk = new Kit(t);
+                bk.On("hand_r").Frame(grip, along, edge, palm);
+                bk.Paint(look.leather).Ribbon(new[] { new Vector2(-0.12f, 0), new Vector2(0.03f, 0) }, new[] { 0.042f, 0.042f }, 0.042f);
+                bk.Paint(look.bronze, look.metal).Box(new Vector3(-0.145f, 0, 0), new Vector3(0.055f, 0.066f, 0.06f));
+                bk.Paint(look.blade, 1).Ribbon(
                     new[] { new Vector2(0.03f, 0), new Vector2(0.21f, 0), new Vector2(0.32f, 0.03f), new Vector2(0.43f, 0.09f), new Vector2(0.54f, 0.15f), new Vector2(0.65f, 0.178f), new Vector2(0.75f, 0.162f), new Vector2(0.82f, 0.118f) },
                     new[] { 0.07f, 0.07f, 0.085f, 0.105f, 0.11f, 0.10f, 0.078f, 0.04f }, 0.05f);
-                kit.Frame();
+                bk.Frame();
+                m.props["blade"] = bk.Wear("Blade").transform;
                 var handBone = m.Bone("hand_r");
                 Vector3 Mark(Vector3 p) => handBone.InverseTransformPoint(t.rig.TransformPoint(t.FromTailor(p)));
                 m.marks["blade0"] = (handBone, Mark(grip + along * 0.10f));

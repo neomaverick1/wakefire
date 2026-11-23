@@ -2,9 +2,11 @@
 
 ![WAKEFIRE](docs/showcase.jpg)
 
-**Chapter One: The Sleeping God. Chapter Two: The Sleepless Dead.** A top-down action-adventure in the 32-bit style: 3D characters in a city of 3D buildings, all of it drawn down into pixel art. Built in Unity 6 for Android, iPhone and the web.
+**The First Night. Chapter One: The Sleeping God. Chapter Two: The Sleepless Dead.** A top-down action-adventure in the 32-bit style: 3D characters in a city of 3D buildings, all of it drawn down into pixel art. Built in Unity 6 for Android, iPhone and the web.
 
 Forty nights ago Ninhal, god of the sky, lay down on top of his ziggurat for a nap. The whole bronze-age city of Ashkel fell asleep with him: bakers, priests, soldiers, babies and dogs. The only one still awake is Azar, the night watchman. He carries a bronze khopesh and the Wakefire, an old lantern that never goes out.
+
+The game starts on the night it happened, and that night he has neither. The god's sleep came down the ziggurat steps and took everyone awake to breathe it. It had no use for the one man who was already asleep at his post. He wakes into the quietest town in the world with a rattle, a rule cut over the watch-house door (IF THE CITY WILL NOT WAKE, GO TO THE FIRST WATCH), and no idea why he is the one left.
 
 When Azar nods off, the world flips. A ring of gold sweeps out from where he stands, and inside it is the dream version of the same street. Walls are missing there, bridges of moonlight cross the sea, and every sleeper's dream-self is up and talking. The problem is that Azar can't stay asleep for long.
 
@@ -16,6 +18,10 @@ In chapter two he climbs the Hill of Sleepers for the Dawn Horn, the one thing t
 
 | | |
 |---|---|
+| ![The first night](docs/screens/13-first-night.png) | ![The khopesh](docs/screens/14-the-khopesh.png) |
+| The first night: Azar at his post, the goat, and nobody else awake in Ashkel | A great chest in the Crypt of the First Watch: the khopesh, behind a stone that had to be pushed |
+| ![The roots](docs/screens/15-the-roots.png) | ![The Den Mother](docs/screens/16-den-mother.png) |
+| Olive roots across the only way in, and the jackals who have thought about the roots too | The Den Mother, and behind her bars the flame that has been burning for four hundred years |
 | ![The Temple Gate square](docs/screens/01-gate-square.png) | ![Nodding off](docs/screens/02-nodding-off.png) |
 | The Temple Gate square: Captain Dur asleep on his feet, the Wakefire catching a brazier | Nodding off: the ring of the dream sweeps across the square |
 | ![The goat](docs/screens/03-the-goat.png) | ![Dur, age six](docs/screens/04-dur-age-six.png) |
@@ -29,14 +35,25 @@ In chapter two he climbs the Hill of Sleepers for the Dawn Horn, the one thing t
 | ![The hall of servants](docs/screens/11-hall-of-servants.png) | ![The Sleepless King](docs/screens/12-sleepless-king.png) |
 | The king's servants, dead and on duty. A dreamer can walk straight through them | Kurashtar, who has waited up four hundred years to be woken |
 
+## Prologue: The First Night
+
+- **The gate, an hour after.** Nobody wakes. Captain Dur is asleep on his feet halfway through a word, and the word was probably 'Azar'. Azar has no blade and no light, and he does not dare shut his eyes: everyone in Ashkel who has, tonight, is still asleep.
+- **The Crypt of the First Watch.** Behind the altar of the old shrine on the olive terraces a door goes down into the hill. The lamps down there are lit. Nobody has been down in a hundred years; they are lit anyway. Five rooms: a stair, an armoury, a dormitory of watchmen who went off duty for good, a hall of lamps, and a den.
+- **Great chests.** The few things the whole game turns on are kept in chests twice the size of the others, and they open like it. The first holds the khopesh, behind a stone that has to be pushed. (A note is scratched under the instructions: JUST PUSH IT, IDDIN.)
+- **Olive roots, a key, a plate.** The roots across the dormitory are as thick as an arm and only a blade goes through them. The jackals on the far side have thought about the roots too. Their chest has the key; the hall of lamps has a stone, a plate, and two cold fires for later.
+- **The Den Mother.** A jackal the size of a calf. She gathers herself before she leaps and has picked her line a moment before she goes; a leap that ends in a pillar leaves her on her side. Hurt badly enough, she calls the pack.
+- **The Wakefire.** The watch-flame of Ashkel, in its cage behind her, with the reason cut into the wall: the god's sleep cannot keep whoever carries it. Which means the one man in the city who can't be kept asleep can go under, and come back. The bars are down behind him and the back door was bricked up long ago. The dream never heard about the bricks.
+
+Then forty nights go by, and chapter one begins.
+
 ## Chapter one: The Sleeping God
 
 - **The Temple Gate square.** Captain Dur sleeps standing up with the gate key on his belt, and he won't let go of it. His dream-self is a six-year-old boy who is afraid of the dark. Light three braziers with the Wakefire and he'll hand the key over.
 - **Lower Ashkel.** Hesha the baker kneads dough that isn't there. Kesh the potter sells sacred vessels for very sacred prices. The oracle Ummi prophesies in her sleep, mostly about snacks. There is also a tax collector asleep in the road, a boy guarding flour from a goat, and a young man who has been serenading a sleeping woman for forty nights.
 - **The sea cliffs.** Brine crabs have stolen Abu-Nur's Night Oil. Get it back and your dreams last twice as long.
-- **The olive terraces.** Jackals hunt in pairs. An old shrine keeps something for anyone who looks twice.
+- **The olive terraces.** Jackals hunt in pairs. The old shrine keeps something for anyone who looks twice, and the crypt under it has two fires that were waiting for the Wakefire.
 - **The temple yard.** A chasm with a long road of moonlight across it, for someone who can dream long enough.
-- **The ziggurat.** Walls that exist in only one world, blocks to shove, bronze sentinels, a bull's head that breathes fire, the Bronze Mirror Shield, and at the summit, open to the storm, the reason the god won't wake up.
+- **The ziggurat.** Its first floor is six rooms: a wall that exists in only one world, a stone and a plate, a chasm only moonlight crosses, a locked stair hall with two bronze sentinels, the builders' own scroll of the place, and a vault whose bars answer to a sun disc that wants the moon handed to it. Above that, a bull's head that breathes fire, the Bronze Mirror Shield, and at the summit, open to the storm, the reason the god won't wake up.
 
 ## Chapter two: The Sleepless Dead
 
@@ -55,16 +72,16 @@ And the goat. The goat is everywhere.
 | | Keyboard | Gamepad | Touch |
 |---|---|---|---|
 | Move | WASD / arrows | Left stick / d-pad | Thumb down anywhere on the left |
-| Khopesh (3-hit combo) | J / Space | X / Square | Blade button |
+| Khopesh (3-hit combo), once he has found it | J / Space | X / Square | Blade button |
 | Roll | K / Shift | B / Circle | Roll button |
 | Action: talk, open, read, look. With nothing in front of you, hold it to raise the Mirror Shield | E / U / Enter | A / Cross | Action button, which shows what it will do |
 | Item: whatever you put on it from your pack (the Wakefire to begin with) | F / I | RB / R1 | Item button, which shows the item |
-| Nod off / wake up | Q / L | Y / Triangle | Moon button |
+| Nod off / wake up, once he carries the Wakefire | Q / L | Y / Triangle | Moon button |
 | Pack | Esc / P | Start | Pause button |
 
 **One button for whatever is in front of you.** The action button talks to a person, opens a chest or a door, reads a sign and looks at anything worth a look. When there is nothing in front of Azar and he carries the Bronze Mirror Shield, holding the button raises it. He walks slowly and keeps facing the way he faced, a blow from the front glances off, and fire goes back where it came from. What comes down from above, like a mace, does not stop for a shield.
 
-**The pack has three pages.** It opens on your items: choose what goes on the item button, and see everything else you carry. One page to the left is save and load. One page to the right is the map, lit wherever you have walked, with a flame where you stand. Turn the page with , and . on a keyboard, LB and RB on a gamepad, a swipe on a phone, or by walking off the edge of a page.
+**The pack has three pages.** It opens on your items: choose what goes on the item button, and see everything else you carry. One page to the left is save and load. One page to the right is the map, lit wherever you have walked, with a flame where you stand. Inside a dungeon that page is the dungeon's own plan instead: each floor, each room a box, the ones you have walked lit, doors as notches (gold while they are locked). Find the place's scroll and it shows every room, every chest still shut, and where its keeper is. Turn the page with , and . on a keyboard, LB and RB on a gamepad, a swipe on a phone, or by walking off the edge of a page.
 
 **Three journeys.** The title screen shows all three: choose one to carry on, choose an empty one to begin, or rub one out. The game saves by itself into the journey you are playing every time you walk into a new place and every time you find something, and says so. From the pack you can save into any of the three (saving into another one leaves a copy of this moment there) or load any of them. If Azar falls, you choose where to pick up: at the way into the place he fell in (full life, nothing lost), at one of the three journeys, or back at the title.
 
@@ -79,13 +96,14 @@ On phones the buttons stay clear of notches and rounded corners, and they step a
 - **Movement has weight.** Azar builds speed and slides to a stop, leans into his own acceleration, and turns to face where he is actually going. The planted part of each stride is slowed to the true ground speed so a foot stays where it lands. His cape and the lantern in his fist are simulated and swing with him; the blade leaves a streak swept out by its real path (`Scripts/Actors/Cloth.cs`).
 - **The dead** are the same figures as the living, drawn by the same shader with one more instruction: cold from head to knee, and thinning away to nothing before they reach the ground. They carry no shadow, and they exist in the waking world only, so the ring of the dream wipes them off the street as it passes (`Shaders/WFSprite.shader`, `Npc.Ghost`).
 - **The animals** have no stock rig: the goat, the dog, the jackals, the crabs, the moths and the Brazen Bull are skeletons built and walked by code. The Bull is one body drawn through its cross-sections, squared off like cast bronze, with gold belts, a furnace grille in its flanks and a lapis beard. The tomb scarabs walk on the crab's six legs under a beetle's shell. Every foot is planted and stays put while the body passes over it, legs fold at knee and hock to reach, and the goat's head follows Azar wherever he goes (`Scripts/Actors/Beast.cs`).
+- **Dungeons are floors of rooms.** A floor is one map laid out on a grid of cells; the game shows one room at a time and slides the picture across when Azar walks through a doorway, carrying him through it. What lives in a room is put there when he walks in and taken away when he leaves. Bars and doors name what lifts them (a plate weighted, fires lit, a sun disc lit off the mirror shield, a room cleared, anything the story knows), so a floor is built by saying what answers to what (`Art/pixel/dkit.py`, `Scripts/World/Rooms.cs`, `Scripts/World/Mech.cs`).
 - **Light and shadow.** Everything that stands up throws a moon shadow of its own shape, people included. Every building, prop and paving stone carries a normal map and a height, so a fire lights the faces turned towards it and nothing else: a wall behind a brazier glows, the roof above it stays in moonlight, and cobbles catch the Wakefire on their near edges as Azar walks past (`Shaders/WFSprite.shader`, `FireShape`). Whatever burns nearby also lights the side of a figure that faces it. The sea moves, and trees and bushes sway in the night wind.
 - **Nothing just stops.** Wherever the ground runs on but Azar can't, something stands there and says why: a yard wall, a wrecked handcart, a cypress windbreak, a fall of boulders, the harbour quay, the edge of the hill falling away into mist. Walk up and look, and most of them have a line about it.
 - **The touch buttons are metalwork.** Each is a small relief worked out as heights and lit like bronze under a lamp (`Art/ui/touch_art.py`): a hoop, gold beading, blue enamel, the sign raised in gold.
 - **The city is modelled, then drawn.** Houses, the precinct wall and its glazed gate, market stalls, wells, carts, jars, cliffs, palms and olive trees are small 3D scenes put together by code (`Art/pixel/town.py`) and drawn by a renderer written for this game (`Art/pixel/forge.py`): one tile to sixteen pixels, moonlight from the north-west, real cast shadows and sky occlusion, then the pixel-art finish, with tones snapped to a ramp, brick and plaster marks laid on the surface, an inked outline and a lit rim. Each prop comes out as a sprite, a normal map and the exact shadow it throws on the ground. The Hill of Sleepers is built the same way (`Art/pixel/necro.py`): brick vaults, stepped tombs and round barrows, the king's tomb front with its cone-mosaic columns and the sun coming up in gold over the door, the throne, the treasure, even the icons of the things Azar is handed.
 - **The ground has relief.** Streets, flagstones, cobbles, sand and grass are laid as materials with a height for every stone and rut (`Art/pixel/ground.py`), so the moon picks out their edges in the picture and firelight does the same in the game.
 - **The text face** is hand-set in a 7-pixel grid (`Art/pixel/font.py`). Every character speaks in their own synthesized voice.
-- **The score** is written note by note in the Hijaz mode and played on a General MIDI soundfont (`Art/audio/music.py`). Every place has a waking arrangement and a dream arrangement of the same notes at the same length, so nodding off crossfades the music in the middle of a phrase. Chapter two adds a slow reed over a drone for the hill, a cello and a tolling bell for the tomb, a march for the king, and the theme in the major on a horn for one breath of dawn (`Art/audio/hill.py`). The sound effects and night ambience are synthesized from scratch (`Art/audio/sfx.py`, `Art/audio/ambience.py`).
+- **The score** is written note by note in the Hijaz mode and played on a General MIDI soundfont (`Art/audio/music.py`). Every place has a waking arrangement and a dream arrangement of the same notes at the same length, so nodding off crossfades the music in the middle of a phrase. The crypt has the theme itself at half speed, an octave down on a low reed, over a drum at the pace of a man walking his rounds (`Art/audio/night.py`). Chapter two adds a slow reed over a drone for the hill, a cello and a tolling bell for the tomb, a march for the king, and the theme in the major on a horn for one breath of dawn (`Art/audio/hill.py`). The sound effects and night ambience are synthesized from scratch (`Art/audio/sfx.py`, `Art/audio/ambience.py`).
 
 ## Building
 
