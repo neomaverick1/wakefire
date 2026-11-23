@@ -170,8 +170,8 @@ namespace Wakefire
             lastH = Screen.height;
             int scale = Mathf.Max(1, Mathf.RoundToInt(Screen.height / (float)Lines));
             Height = Mathf.Clamp(Screen.height / scale, 164, 208);
-            // pixels stay square on every shape of screen: on narrow ones (4:3 tablets, a phone
-            // held upright in a browser) the view grows taller rather than the picture squashing
+            // pixels stay square on every shape of screen: on narrow ones (4:3 tablets, a fold
+            // opened flat) the view grows taller rather than the picture squashing
             float aspect = Screen.width / (float)Mathf.Max(1, Screen.height);
             if (Height * aspect < 256) Height = Mathf.Min(560, Mathf.CeilToInt(256 / aspect));
             if (Height % 2 == 1) Height++;

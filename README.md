@@ -2,7 +2,7 @@
 
 ![WAKEFIRE](docs/showcase.jpg)
 
-**The First Night. Chapter One: The Sleeping God. Chapter Two: The Sleepless Dead.** A top-down action-adventure in the 32-bit style: 3D characters in a city of 3D buildings, all of it drawn down into pixel art. Built in Unity 6 for Android, iPhone and the web.
+**The First Night. Chapter One: The Sleeping God. Chapter Two: The Sleepless Dead.** A top-down action-adventure in the 32-bit style: 3D characters in a city of 3D buildings, all of it drawn down into pixel art. Built in Unity 6 for Android.
 
 Forty nights ago Ninhal, god of the sky, lay down on top of his ziggurat for a nap. The whole bronze-age city of Ashkel fell asleep with him: bakers, priests, soldiers, babies and dogs. The only one still awake is Azar, the night watchman. He carries a bronze khopesh and the Wakefire, an old lantern that never goes out.
 
@@ -12,7 +12,7 @@ When Azar nods off, the world flips. A ring of gold sweeps out from where he sta
 
 In chapter two he climbs the Hill of Sleepers for the Dawn Horn, the one thing that ever woke the god. Up there it is the other way round. All the sleep in the world ran downhill to the living, so the dead are wide awake, have been for forty nights, and are being very polite about it. And the dead do not dream: whatever they are doing in the waking world, in the dream they are simply not there.
 
-**Play it:** [in your browser](https://neomaverick1.github.io/wakefire) · [Android APK and iPhone project](https://github.com/neomaverick1/wakefire/releases/latest)
+**Play it:** [the Android APK is on the latest release](https://github.com/neomaverick1/wakefire/releases/latest)
 
 ## Screens
 
@@ -124,13 +124,11 @@ On phones the buttons stay clear of notches and rounded corners, and they step a
 
 ## Building
 
-Open the project in Unity 6000.6.9f1 with the Android, iOS and Web modules installed, or build from the command line:
+Open the project in Unity 6000.6.9f1 with the Android module installed, or build from the command line:
 
 ```
 Unity -batchmode -quit -projectPath . -executeMethod Wakefire.EditorTools.Builder.Android      # Builds/Android/Wakefire.apk
-Unity -batchmode -quit -projectPath . -executeMethod Wakefire.EditorTools.Builder.AndroidBundle
-Unity -batchmode -quit -projectPath . -executeMethod Wakefire.EditorTools.Builder.IOS          # Xcode project in Builds/iOS
-Unity -batchmode -quit -projectPath . -executeMethod Wakefire.EditorTools.Builder.Web
+Unity -batchmode -quit -projectPath . -executeMethod Wakefire.EditorTools.Builder.AndroidBundle  # Builds/Android/Wakefire-Play.aab
 ```
 
 The asset generators need Python 3 with numpy, scipy, Pillow, `bpy` (Blender as a module) and `tinysoundfont`, plus ffmpeg. To regenerate the music, place `GeneralUser-GS.sf2` in `Art/audio/`.

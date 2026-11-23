@@ -185,7 +185,7 @@ namespace Wakefire.EditorTools
         {
             PlayerSettings.companyName = "Randy Kundinger";
             PlayerSettings.productName = "Wakefire";
-            foreach (var t in new[] { NamedBuildTarget.Android, NamedBuildTarget.iOS, NamedBuildTarget.Standalone, NamedBuildTarget.WebGL })
+            foreach (var t in new[] { NamedBuildTarget.Android, NamedBuildTarget.iOS, NamedBuildTarget.Standalone })
                 PlayerSettings.SetApplicationIdentifier(t, Id);
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.AutoRotation;
             PlayerSettings.allowedAutorotateToPortrait = false;
@@ -212,7 +212,7 @@ namespace Wakefire.EditorTools
             PlayerSettings.iOS.requiresFullScreen = true;
             PlayerSettings.iOS.appleEnableAutomaticSigning = false;
             PlayerSettings.statusBarHidden = true;
-            foreach (var t in new[] { NamedBuildTarget.Android, NamedBuildTarget.iOS, NamedBuildTarget.WebGL })
+            foreach (var t in new[] { NamedBuildTarget.Android, NamedBuildTarget.iOS })
             {
                 PlayerSettings.SetManagedStrippingLevel(t, ManagedStrippingLevel.Medium);
                 PlayerSettings.SetIl2CppCodeGeneration(t, Il2CppCodeGeneration.OptimizeSize);

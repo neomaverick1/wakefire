@@ -19,12 +19,7 @@ namespace Wakefire
         float lastH;
         Rect lastSafe;
 
-#if UNITY_WEBGL && !UNITY_EDITOR
-        // a browser always reports a touchscreen, so on the web the buttons wait for a phone or a real touch
-        public static bool Wanted => Application.isMobilePlatform || Boot.Flag("-touch") || touchedOnce;
-#else
         public static bool Wanted => Application.isMobilePlatform || Boot.Flag("-touch") || UnityEngine.InputSystem.Touchscreen.current != null;
-#endif
         static bool touchedOnce;
 
         /// <summary>Called every frame: the first finger on the screen brings the buttons up.</summary>

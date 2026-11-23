@@ -37,12 +37,8 @@ namespace Wakefire
             DontDestroyOnLoad(gameObject);
             // the scene is empty, so nothing in it is listening: without this the whole game is silent
             if (!FindFirstObjectByType<AudioListener>()) gameObject.AddComponent<AudioListener>();
-#if UNITY_WEBGL && !UNITY_EDITOR
-            Application.targetFrameRate = -1;      // the browser paces frames to the display
-#else
             Application.targetFrameRate = 60;
             QualitySettings.vSyncCount = 0;
-#endif
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             Controls.Init();
             Settings.Load();

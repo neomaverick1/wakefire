@@ -136,15 +136,5 @@ namespace Wakefire.EditorTools
         }
 
         public static void IOS() => Run(BuildTarget.iOS, BuildTargetGroup.iOS, "Builds/iOS");
-
-        public static void Web()
-        {
-            if (Directory.Exists("Assets/WebGLTemplates/Wakefire")) PlayerSettings.WebGL.template = "PROJECT:Wakefire";
-            PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Brotli;
-            PlayerSettings.WebGL.decompressionFallback = true;
-            PlayerSettings.WebGL.dataCaching = true;
-            PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport.None;
-            Run(BuildTarget.WebGL, BuildTargetGroup.WebGL, "Builds/Web");
-        }
     }
 }
