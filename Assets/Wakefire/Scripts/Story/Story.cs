@@ -33,6 +33,7 @@ namespace Wakefire
             {
                 case "ashkel": SetupAshkel(m); break;
                 case "crypt": SetupRegion(map, m); SetupCrypt(m); break;
+                case "zig_2": case "zig_hi": SetupRegion(map, m); SetupZig(m); break;
                 case "necro_road": case "necropolis": case "tomb_1": case "tomb_2": case "tomb_3": SetupHill(map, m); break;
                 default: SetupRegion(map, m); break;
             }
@@ -116,6 +117,14 @@ namespace Wakefire
                 case "map_tomb":
                     Set("item_map_tomb");
                     yield return ItemGet("scroll", "You got the {g}SCROLL OF THE KING'S TOMB{/}!^The tomb as its architect drew it, and as he was told to forget it.| Every room is on the map page now.");
+                    break;
+                case "fork_zig":
+                    Set("item_fork_zig");
+                    yield return ItemGet("fork_zig", "You got the {g}LAPIS FORK{/}!^A tuning fork, enamelled temple blue. Strike it and it listens for chests nobody has opened: the nearer one is, the higher it hums.| A room it has found goes on the ziggurat's plan.^It is in your pack. Put it on the {g}item button{/} to strike it.| The temple's treasurers carried one. The temple's thieves carried two.^The temple lends it, and takes it back at the door: outside the ziggurat it is not in your pack. Inside, it is.| The temple has always been like this about its things.");
+                    break;
+                case "fork_tomb":
+                    Set("item_fork_tomb");
+                    yield return ItemGet("fork_tomb", "You got the {g}CARNELIAN FORK{/}!^The king's own, the red of old blood. It listens for his chests the way the lapis one listens for the temple's.| He had it made to keep count of what he was buried with.^He was buried with it, which nobody thought through.| Like the other, it stays in its own house.");
                     break;
                 case "map_crypt":
                     Set("item_map_crypt");

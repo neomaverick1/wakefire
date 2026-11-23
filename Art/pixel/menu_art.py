@@ -132,7 +132,7 @@ def pictures():
             im = cv
         im.save(f'{OUT}/{name}.png')
     put(f'{RES}/UI/icon_lantern.png', 'wakefire', (16, 16))
-    for n in ('mirror_shield', 'night_oil', 'bronze_lamp', 'flame_vessel', 'big_key', 'hill_key', 'figs', 'dawn_horn', 'small_key', 'khopesh', 'sun_wheel', 'scroll'):
+    for n in ('mirror_shield', 'night_oil', 'bronze_lamp', 'flame_vessel', 'big_key', 'hill_key', 'figs', 'dawn_horn', 'small_key', 'khopesh', 'sun_wheel', 'scroll', 'fork_zig', 'fork_tomb'):
         put(f'{RES}/Items/{n}.png', n)
     for n in ('life_full', 'life_half', 'life_empty', 'coin', 'key'):
         put(f'{RES}/UI/{n}.png', n)

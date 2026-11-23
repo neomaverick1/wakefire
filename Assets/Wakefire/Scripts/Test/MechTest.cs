@@ -123,8 +123,15 @@ namespace Wakefire
             foreach (var e in Enemy.All.ToArray()) if (e) Object.Destroy(e.gameObject);
             Story.Set("item_shield");
             Story.I.ApplyItems();
-            p.pos = Map.ToWorld(256, 236);
+            // (the bull's gate: north-east room of the floor; its head stands in the gap of the wall across it)
+            p.pos = Map.ToWorld(1040, 196);
             p.Face(Facing.Up);
+            yield return null; yield return null;
+            for (float s = 0; s < 3f && (Rooms.Sliding || Game.Busy || (Story.I && Story.I.Running)); s += Time.deltaTime) yield return null;
+            foreach (var e in Enemy.All.ToArray()) if (e) Object.Destroy(e.gameObject);
+            p.pos = Map.ToWorld(1040, 196);
+            p.Face(Facing.Up);
+            p.SetState(Player.State.Free, "idle");
             // the shield has to be held up now: the action button, with nothing in front of him
             Controls.FakeHold = Controls.Interact;
             for (float held = 0; held < 7f && !Story.Has("z2_bull"); held += Time.deltaTime)

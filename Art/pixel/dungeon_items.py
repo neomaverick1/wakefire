@@ -120,6 +120,20 @@ def item_sun_wheel(turn=0.0, flat=False):
     return m
 
 
+def item_fork(ramp='lapis'):
+    """A tuning fork: two long tines on a yoke, enamelled the colour of the house it was made for,
+    on a gold stem with a knob to strike it by."""
+    m = Model()
+    col = M(ramp, 4.3, gloss=0.05)
+    gold = M('gold', 4.6, gloss=0.04)
+    for sx in (-0.17, 0.17):
+        m.part(); m.limb([(sx, 0.03, 0.40), (sx, 0.03, 0.87)], [0.058, 0.046], col, n=6)
+    m.part(); m.limb([(-0.17, 0.03, 0.42), (-0.11, 0.03, 0.33), (0.11, 0.03, 0.33), (0.17, 0.03, 0.42)], [0.058, 0.064, 0.064, 0.058], col, n=6)
+    m.part(); m.limb([(0, 0.03, 0.33), (0, 0.03, 0.15)], [0.046, 0.04], gold, n=6)
+    m.part(); m.blob(0, 0.03, 0.11, 0.07, 0.05, 0.07, gold, n=8, rings=4)
+    return m
+
+
 def cut(model, ink=True):
     d = forge.draw(model, seed=1, shadow=False, ink=ink)
     a = d.rgba
@@ -158,6 +172,8 @@ if __name__ == '__main__':
     made.append(icon('wakefire', item_wakefire()))
     made.append(icon('sun_wheel', item_sun_wheel(0.2)))
     made.append(icon('scroll', item_scroll()))
+    made.append(icon('fork_zig', item_fork('lapis')))          # the ziggurat's: lapis
+    made.append(icon('fork_tomb', item_fork('red')))           # the king's tomb's: carnelian
     for i in range(4):
         made.append(centred(f'wheel_{i}', item_sun_wheel(i * math.pi / 16, flat=True)))
     if len(sys.argv) > 1:

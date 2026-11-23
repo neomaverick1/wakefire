@@ -172,7 +172,7 @@ namespace Wakefire
                 case State.Nod:
                 case State.Use:
                     vel = Vector2.zero;
-                    if (anim.Done) ToFree();
+                    if (striking ? stateClock > 0.95f : anim.Done) { striking = false; ToFree(); }
                     break;
                 case State.Hurt:
                     vel = knock;
@@ -306,6 +306,7 @@ namespace Wakefire
             switch (it.id)
             {
                 case "wheel": if (Thrown.Out("wheel") == 0) StartThrow("wheel"); else Sfx.Play("deny", 0.5f); break;
+                case "fork": StartFork(); break;
                 default: StartUse(); break;
             }
         }
@@ -317,6 +318,19 @@ namespace Wakefire
                 Story.Run(Story.Narrate("You don't dare close your eyes.^Everyone in Ashkel who has, tonight, is still asleep."));
             else Sfx.Play("deny", 0.5f);
         }
+
+        /// <summary>He strikes the fork and holds it up, facing out of the picture, while it says what it has to say.</summary>
+        void StartFork()
+        {
+            state = State.Use;
+            stateClock = 0;
+            striking = true;
+            vel = Vector2.zero;
+            Face(Facing.Down);
+            anim.Play("itemget", Facing.Down, true);
+            Fork.Strike(this);
+        }
+        bool striking;
 
         string throwing;
         void StartThrow(string what)
@@ -496,6 +510,7 @@ namespace Wakefire
         void StartUse()
         {
             state = State.Use;
+            striking = false;
             stateClock = 0;
             anim.Play("use", facing, true);
         }

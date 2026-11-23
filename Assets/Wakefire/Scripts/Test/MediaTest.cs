@@ -90,9 +90,10 @@ namespace Wakefire
             foreach (var e in Enemy.All.ToArray()) if (e) Object.Destroy(e.gameObject);
             Story.Set("item_shield");
             Story.I.ApplyItems();
-            p.pos = Map.ToWorld(256, 250);
+            p.pos = Map.ToWorld(1040, 200);                 // the bull's gate
             p.Face(Facing.Up);
-            Frame(new Vector2(256, 200));
+            yield return new WaitForSeconds(1.2f);
+            Frame(new Vector2(1040, 150));
             for (int i = 0; i < 6; i++) yield return t.Shot("m10-shield-" + i, 0.35f);
             // the Brazen Bull
             Story.Set("bull_dead");

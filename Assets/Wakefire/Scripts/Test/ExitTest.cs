@@ -14,11 +14,11 @@ namespace Wakefire
         static IEnumerator Run(AutoTest t)
         {
             DialogueBox.AutoAdvance = 0.05f;
-            foreach (var f in new[] { "gate_open", "door_z2_bigdoor", "yard_bridge", "key", "item_oil", "item_shield", "bigkey", "door_z1_door",
+            foreach (var f in new[] { "gate_open", "door_z2_bigdoor", "door_z2_door", "dead_z2_herdsman", "z2_bull", "yard_bridge", "key", "item_oil", "item_shield", "bigkey", "door_z1_door",
                                       "bull_seen", "bull_dead", "chapter_done", "ch2", "item_hillkey", "hill_gate", "met_namtar", "queue_passed", "king_door",
                                       "door_t1_door", "door_t2_seal", "king_seen", "king_done", "item_horn", "chapter2_done" })
                 Story.Set(f);
-            string[] maps = { "ashkel", "lowtown", "cliffs", "terraces", "crypt", "temple_yard", "zig_1", "zig_2", "zig_3", "necro_road", "necropolis", "tomb_1", "tomb_2", "tomb_3" };
+            string[] maps = { "ashkel", "lowtown", "cliffs", "terraces", "crypt", "temple_yard", "zig_1", "zig_2", "zig_hi", "zig_3", "necro_road", "necropolis", "tomb_1", "tomb_2", "tomb_3" };
             int bad = 0, n = 0;
             foreach (var map in maps)
             {
@@ -40,6 +40,13 @@ namespace Wakefire
                     float min = Mathf.Min(Mathf.Min(dl, dr), Mathf.Min(du, dd));
                     Vector2 dir = min == dl ? Vector2.left : min == dr ? Vector2.right : min == du ? Vector2.up : Vector2.down;
                     var inside = new Vector2(cx, cy) - new Vector2(dir.x, -dir.y) * 22f;
+                    p.pos = Map.ToWorld(inside.x, inside.y);
+                    p.SetState(Player.State.Free, "idle");
+                    // on a floor of rooms the picture slides to the room he has turned up in, and walks him a
+                    // few steps the way it thinks he came: let it finish, then stand him where he was meant to be
+                    yield return null; yield return null;
+                    for (float s = 0; s < 3f && (Rooms.Sliding || Game.Busy); s += Time.deltaTime) yield return null;
+                    for (float s = 0; s < 15f && Story.I && Story.I.Running; s += Time.deltaTime) yield return null;
                     p.pos = Map.ToWorld(inside.x, inside.y);
                     p.SetState(Player.State.Free, "idle");
                     yield return new WaitForSeconds(0.2f);      // let the exit arm

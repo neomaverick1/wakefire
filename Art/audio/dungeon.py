@@ -23,8 +23,27 @@ def gliss(prog, keys, step, tail=1.2, vel=96):
     return S.sf_note(prog, keys, d=tail, vel=vel, step=step)
 
 
+def fork(f0, d=1.9, shiver=0.0, rate=0.0):
+    """A struck tuning fork: the tink of the strike (its clang tone, six and a quarter times the note,
+    gone in a moment), then the note itself, pure, ringing down. shiver beats it against itself: the
+    fork has found something and cannot keep still."""
+    t = S.t_(d)
+    note = np.sin(2 * np.pi * f0 * t) * np.exp(-t * 1.9)
+    if shiver > 0:
+        beat = 1 - shiver + shiver * (0.5 + 0.5 * np.sin(2 * np.pi * rate * t))
+        note = note * beat + np.sin(2 * np.pi * f0 * 2.0 * t) * np.exp(-t * 3.2) * 0.2 * shiver * beat
+    clang = np.sin(2 * np.pi * f0 * 6.27 * t) * np.exp(-t * 16) * 0.45
+    tick = S.bp(S.noise(0.03), 2500, 9000) * S.env(0.03, 0.001, 0.02) * 0.6
+    return S.mix(note * 0.9, clang, tick) * S.env(d, 0.002, 0.25)
+
+
 def build():
     s = S.save
+    # ---- a tuning fork, and what it has to say: nothing near (D), a chest shut next door (A, shivering),
+    #      a chest shut in this very room (the D above, and it cannot keep still)
+    s('fork_0', S.room(fork(293.66), 0.2, 1.2), 0.8)
+    s('fork_1', S.room(fork(440.0, d=2.1, shiver=0.5, rate=7.0), 0.22, 1.3), 0.8)
+    s('fork_2', S.room(S.mix(fork(587.33, d=2.4, shiver=0.85, rate=11.0), S.at(fork(1174.66, d=1.2, shiver=0.6, rate=13.0) * 0.25, 0.06)), 0.25, 1.4), 0.85)
     # ---- a great chest: the lid is heavy, the hinges are old, and it lands back with a boom
     lid = S.mix(groan(0.9, 70, 150, 0.9), S.at(groan(0.5, 320, 620, 0.35), 0.2),
                 S.at(S.lp(S.noise(0.5), 160) * S.env(0.5, 0.004, 0.16) * 3.0, 0.92),            # the lid hits its stop

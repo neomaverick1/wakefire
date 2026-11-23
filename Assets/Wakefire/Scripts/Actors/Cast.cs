@@ -115,6 +115,7 @@ namespace Wakefire
             public Color shield = new Color(0.80f, 0.54f, 0.20f);
             public float crestHeight = 0.12f;
             public bool hasCape = true, hasBlade = true, hasLantern = true, hasSpear, hasShield, plateSkin;
+            public bool horns, goad;             // a bull's horns on the helm; a hook under the spear's head
             public float metal = 1f;             // how bright the plate is: 1 polished bronze, 0 fired clay
         }
 
@@ -132,6 +133,14 @@ namespace Wakefire
             plateSkin = true, tunic = new Color(0.62f, 0.40f, 0.16f), tunicFold = new Color(0.50f, 0.31f, 0.12f), trim = new Color(0.88f, 0.64f, 0.24f),
             leather = new Color(0.42f, 0.26f, 0.10f), crest = new Color(0.66f, 0.42f, 0.14f), eyes = new Color(1.0f, 0.62f, 0.16f),
             hasCape = false, hasBlade = false, hasLantern = false, hasSpear = true, hasShield = true,
+        });
+
+        /// <summary>The Bronze Herdsman: the sentinels' bronze gone dark, a helm horned like the herd he keeps, and the goad.</summary>
+        public static void Herdsman(ModelActor m) => Soldier(m, new Look
+        {
+            plateSkin = true, bronze = new Color(0.62f, 0.40f, 0.17f), tunic = new Color(0.46f, 0.28f, 0.12f), tunicFold = new Color(0.36f, 0.21f, 0.09f),
+            trim = new Color(0.93f, 0.72f, 0.26f), leather = new Color(0.30f, 0.18f, 0.08f), crestHeight = 0f, eyes = new Color(1.0f, 0.52f, 0.12f),
+            blade = new Color(0.95f, 0.78f, 0.36f), hasCape = false, hasBlade = false, hasLantern = false, hasSpear = true, hasShield = false, horns = true, goad = true,
         });
 
         /// <summary>A man of the watch: crested bronze helm, linen breastplate and kilt, plates at shoulder, forearm and shin.</summary>
@@ -185,6 +194,14 @@ namespace Wakefire
                 }
                 kit.Paint(look.crest).Fin(foot, top, 0.052f);
             }
+            // ---- or horns: out from the temples and up, a hand longer than a bull's
+            if (look.horns)
+                foreach (int s in new[] { -1, 1 })
+                    kit.Paint(look.trim, 1).Tube(new[]
+                    {
+                        new Vector3(s * (hr.x - 0.01f), hc.y + 0.05f, hc.z), new Vector3(s * (hr.x + 0.13f), hc.y + 0.09f, hc.z + 0.01f),
+                        new Vector3(s * (hr.x + 0.20f), hc.y + 0.20f, hc.z + 0.02f), new Vector3(s * (hr.x + 0.17f), hc.y + 0.33f, hc.z + 0.03f),
+                    }, new[] { 0.044f, 0.038f, 0.026f, 0.006f }, 6);
 
             // ---- breastplate of stiffened linen: broad at the chest, drawn in at the waist, a strap across it
             kit.On(f.Spine());
@@ -248,6 +265,9 @@ namespace Wakefire
                 kit.On("hand_r").Frame(grip, across, fingers, palm);
                 kit.Paint(look.leather).Ribbon(new[] { new Vector2(0, -1.02f), new Vector2(0, 0.78f) }, new[] { 0.04f, 0.04f }, 0.04f);
                 kit.Paint(look.blade, 1).Ribbon(new[] { new Vector2(0, -1.02f), new Vector2(0, -1.10f), new Vector2(0, -1.22f), new Vector2(0, -1.34f) }, new[] { 0.05f, 0.11f, 0.08f, 0.012f }, 0.035f);
+                // an ox-goad has a hook under the point, for turning a bull's head
+                if (look.goad)
+                    kit.Paint(look.blade, 1).Ribbon(new[] { new Vector2(0.01f, -1.04f), new Vector2(0.10f, -1.09f), new Vector2(0.15f, -1.00f), new Vector2(0.11f, -0.92f) }, new[] { 0.045f, 0.045f, 0.035f, 0.008f }, 0.03f);
                 kit.Frame();
             }
             kit.Wear("Kit");

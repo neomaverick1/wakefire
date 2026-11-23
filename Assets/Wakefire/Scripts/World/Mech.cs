@@ -82,6 +82,7 @@ namespace Wakefire
                         var head = pr.gameObject.AddComponent<BullHead>();
                         head.prop = pr; head.flag = pr.data.id;
                         head.straight = !string.IsNullOrEmpty(pr.data.who) && pr.data.who.Contains("straight");
+                        head.dormant = !string.IsNullOrEmpty(pr.data.who) && pr.data.who.Contains("herd");
                         if (!string.IsNullOrEmpty(pr.data.text) && float.TryParse(pr.data.text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float ph)) head.phase = ph;
                         break;
                     case "disc":

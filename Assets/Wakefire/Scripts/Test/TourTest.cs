@@ -72,7 +72,8 @@ namespace Wakefire
             yield return Enter("zig_1", "south");
             yield return t.Shot("08-zig1", 1.0f);
             yield return Enter("zig_2", "south");
-            p.pos = Map.ToWorld(256, 240);
+            p.pos = Map.ToWorld(1040, 196);                 // the bull's gate
+            yield return new WaitForSeconds(1.2f);
             Story.Set("item_shield");
             Story.I.ApplyItems();
             p.Face(Facing.Up);

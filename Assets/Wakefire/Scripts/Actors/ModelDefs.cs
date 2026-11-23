@@ -125,6 +125,15 @@ namespace Wakefire
             var sentinel = Human(1.52f, Cast.Sentinel);
             Run(sentinel, 1.52f, 6.5f).With(Gesture.Level);
             Add("sentinel", sentinel);
+            // the Herdsman: half as tall again as the men he was cast to outlast
+            var herd = Human(1.95f, Cast.Herdsman);
+            herd.span = 2;
+            Walk(herd, "walk", 1.95f);
+            herd.Own("raise", "Sword_Regular_C", 0.02f, 0.40f, loop: false, speed: 0.75f, fade: 0.08f);
+            herd.Own("sweep", "Sword_Regular_B", 0.12f, 0.62f, loop: false, speed: 1.1f, fade: 0.04f);
+            herd.Own("lean", "Idle_Loop", speed: 0.5f).With(Gesture.Leaning);
+            herd.Own("call", "Idle_Torch_Loop", fade: 0.1f);
+            Add("herdsman", herd);
             foreach (var who in new[] { "baker", "potter", "oracle", "fisher", "priest", "sleeper_a", "sleeper_b", "sleeper_c" })
                 Add(who, Human(1.33f, Cast.Person(who)));
             Add("captain_child", Human(0.98f, Cast.Person("captain_child")));

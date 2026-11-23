@@ -125,6 +125,7 @@ namespace Wakefire
                 "crab" => Crab.Spawn(at),
                 "jackal" => Jackal.Spawn(at),
                 "den_mother" => DenMother.Spawn(at),
+                "herdsman" => Herdsman.Spawn(at),
                 "moth" => Moth.Spawn(at),
                 "sentinel" => Sentinel.Spawn(at),
                 "unremembered" => Shade.Spawn(at),

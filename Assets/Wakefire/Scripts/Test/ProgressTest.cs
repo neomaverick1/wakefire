@@ -25,6 +25,9 @@ namespace Wakefire
             // on a floor of rooms the picture slides to the room he has turned up in: let it, then stand where he meant to
             yield return null; yield return null;
             for (float s = 0; s < 3f && (Rooms.Sliding || Game.Busy); s += Time.deltaTime) yield return null;
+            // a room may have something to say the first time he walks into it: hear it out before reaching for anything
+            yield return new WaitForSeconds(0.3f);
+            for (float s = 0; s < 15f && Story.I && Story.I.Running; s += Time.deltaTime) yield return null;
             foreach (var e in Enemy.All.ToArray()) if (e) UnityEngine.Object.Destroy(e.gameObject);
             p.pos = pr.basePos + new Vector2(0, -0.85f);
             p.Face(Facing.Up);
@@ -62,12 +65,17 @@ namespace Wakefire
             yield return Use(t, "zig_1", "south", "z1_key", "small key chest", () => p.keys == keys0 + 1);
             yield return Use(t, "zig_1", "south", "z1_door", "locked door takes the key", () => Story.Has("door_z1_door") && p.keys == keys0);
             yield return Use(t, "zig_1", "south", "z1_coins", "coin chest behind the bars", () => Story.Has("chest_z1_coins"));
-            // the second floor: shield, bull key, the great door
+            // the second floor: the key off the bull walk, the door it opens, the shield in its great chest
+            keys0 = p.keys;
+            yield return Use(t, "zig_2", "south", "z2_key", "small key off the bull walk", () => p.keys == keys0 + 1);
+            yield return Use(t, "zig_2", "south", "z2_door", "the landing's locked door takes it", () => Story.Has("door_z2_door") && p.keys == keys0);
+            Story.Set("dead_z2_herdsman");           // (the Herdsman has his own test: here he is already down, and his cage is up)
             yield return Use(t, "zig_2", "south", "z2_shield", "Bronze Mirror Shield", () => Story.Has("item_shield"));
-            yield return Use(t, "zig_2", "top", "z2_bigkey", "bull key", () => Story.Has("bigkey"));
-            yield return Use(t, "zig_2", "top", "z2_bigdoor", "great door opens", () => Story.Has("door_z2_bigdoor"));
+            // the third: bull key, the great door
+            yield return Use(t, "zig_hi", "south", "z2_bigkey", "bull key", () => Story.Has("bigkey"));
+            yield return Use(t, "zig_hi", "south", "z2_bigdoor", "great door opens", () => Story.Has("door_z2_bigdoor"));
             // and the saved game carries it all
-            Save.Write("zig_2", "top");
+            Save.Write("zig_hi", "top");
             var d = Save.Read();
             bool saved = d != null && Array.IndexOf(d.flags, "door_z2_bigdoor") >= 0 && Array.IndexOf(d.flags, "item_shield") >= 0 && d.maxHp == p.health.max;
             t.Note("save keeps doors, items and life: " + (saved ? "ok" : "FAILED"));

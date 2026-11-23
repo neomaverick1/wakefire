@@ -11,6 +11,9 @@ namespace Wakefire
         {
             public string id, name, art, about;
             public Func<bool> have;
+            /// <summary>For the few things whose picture depends on where he is (a tuning fork is the colour of its house).</summary>
+            public Func<string> artNow;
+            public string Art => artNow != null ? artNow() : art;
         }
 
         /// <summary>The ones that go on the item button, in the order the item page shows them.</summary>
@@ -18,6 +21,9 @@ namespace Wakefire
         {
             new Def { id = "wakefire", name = "The Wakefire", art = "wakefire", have = () => Story.Has("item_wakefire"),
                       about = "The watch-flame of Ashkel. It never goes out.|Hold it out to light what ought to be lit. No sleep can keep the man who carries it." },
+            // (a fork is in the pack only inside the dungeon it was made for)
+            new Def { id = "fork", name = "Tuning Fork", art = "fork_zig", artNow = () => "fork_" + (Fork.Here ?? "zig"), have = () => Fork.Here != null,
+                      about = "Strike it and listen. The nearer a chest nobody has opened, the higher it hums, and the room goes on the plan.|It stays in the house it was made for. Outside, it is not in your pack." },
             new Def { id = "wheel", name = "The Sun Wheel", art = "sun_wheel", have = () => Story.Has("item_wheel"),
                       about = "A bronze disc with an edge of gold, made for a king who missed the sun.|Thrown, it banks off walls and comes back to the hand." },
         };
@@ -95,12 +101,13 @@ namespace Wakefire
         public static Sprite Icon(Def d)
         {
             if (d == null) return null;
-            if (sprites.TryGetValue(d.art, out var s) && s) return s;
-            var t = Resources.Load<Texture2D>("Menu/" + d.art);
+            string art = d.Art;
+            if (sprites.TryGetValue(art, out var s) && s) return s;
+            var t = Resources.Load<Texture2D>("Menu/" + art);
             if (!t) return null;
             t.filterMode = FilterMode.Point;
             s = Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0, 1), 1f);
-            sprites[d.art] = s;
+            sprites[art] = s;
             return s;
         }
     }

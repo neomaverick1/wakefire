@@ -139,7 +139,7 @@ namespace Wakefire
                        : p.Action == Player.Act.Guard ? "act_guard" : "talk";
             if (act != actShown && actImg) { actImg.sprite = Spr(act); actShown = act; }
             var cur = Items.Current;
-            string item = cur != null && cur.id == "wheel" ? "item_wheel" : "item";
+            string item = cur != null && cur.id == "wheel" ? "item_wheel" : cur != null && cur.id == "fork" ? "item_fork" : "item";
             if (item != itemShown && itemImg) { itemImg.sprite = Spr(item); itemShown = item; }
             // no blade button before there is a blade, no lamp or moon before there is a flame
             bool sword = !p || p.hasSword, lamp = !p || p.hasLantern;

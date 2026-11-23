@@ -189,6 +189,14 @@ def wheel(X, Y):
     return d, None
 
 
+def fork(X, Y):
+    """A tuning fork: two tines on a yoke, a stem, a knob."""
+    tines = np.minimum(stroke(X, Y, [(-0.24, -0.66), (-0.24, 0.02)], [0.075, 0.085]), stroke(X, Y, [(0.24, -0.66), (0.24, 0.02)], [0.075, 0.085]))
+    yoke = fine(X, Y, [(-0.24, 0.0), (-0.16, 0.16), (0.16, 0.16), (0.24, 0.0)], [0.085, 0.09, 0.09, 0.085])
+    stem = stroke(X, Y, [(0, 0.16), (0, 0.50)], [0.07, 0.065])
+    return np.minimum.reduce([tines, yoke, stem, circle(X, Y, 0, 0.60, 0.12)]), None
+
+
 def rosette(X, Y):
     """The eight-petalled flower the old cities put on everything."""
     d = circle(X, Y, 0, 0, 0.15)
@@ -313,7 +321,7 @@ def save(name, rgba):
 
 
 SIZES = {'attack': 40, 'nod': 30, 'item': 30, 'talk': 30, 'roll': 30, 'pause': 20, 'stick_base': 62, 'stick_knob': 28,
-         'act_open': 30, 'act_look': 30, 'act_guard': 30, 'item_wheel': 30}
+         'act_open': 30, 'act_look': 30, 'act_guard': 30, 'item_wheel': 30, 'item_fork': 30}
 
 if __name__ == '__main__':
     made = {}
@@ -327,6 +335,7 @@ if __name__ == '__main__':
     made['act_look'] = relief(SIZES['act_look'] * DENSITY, eye, sign_scale=0.70)
     made['act_guard'] = relief(SIZES['act_guard'] * DENSITY, shield, sign_scale=0.66)
     made['item_wheel'] = relief(SIZES['item_wheel'] * DENSITY, wheel, sign_scale=0.70)
+    made['item_fork'] = relief(SIZES['item_fork'] * DENSITY, fork, sign_scale=0.70)
     made['pause'] = relief(SIZES['pause'] * DENSITY, bars, rim=0.17, beads=0, sign_scale=0.62)
     made['stick_base'] = ring(SIZES['stick_base'] * DENSITY)
     made['stick_knob'] = knob(SIZES['stick_knob'] * DENSITY)
@@ -343,7 +352,7 @@ if __name__ == '__main__':
                 d.rectangle([i + (j // 40 % 2) * 40, j, i + (j // 40 % 2) * 40 + 76, j + 36], fill=(96 + (i * 7 + j * 3) % 24, 88 + (i * 5 + j) % 20, 92))
         d.rectangle([0, 280, W, H], fill=(150, 120, 84))
         x = 20
-        for k in ('attack', 'nod', 'item', 'talk', 'roll', 'act_open', 'act_look', 'act_guard', 'item_wheel', 'pause'):
+        for k in ('attack', 'nod', 'item', 'talk', 'roll', 'act_open', 'act_look', 'act_guard', 'item_wheel', 'item_fork', 'pause'):
             im = ims[k]; s = SIZES[k] * 5                 # 1080p: five screen pixels to the game pixel
             sm = im.resize((s, s), Image.LANCZOS)
             a = sm.split()[3].point(lambda v: int(v * 0.94))

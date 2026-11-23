@@ -2,8 +2,9 @@
 
 1F  the first hall and what opens off it: a block and a plate, a wall the dream does not have,
     a locked door, a chasm only moonlight crosses, and a vault that waits for the mirror shield.
-2F  the Mirror Shield, and the bulls' heads that teach what it is for.
-3F  the Bronze Herdsman and his sling, the Bull Key, the great door.
+2F  the Halls of the Bull: a walk of fire to the key, the Bronze Herdsman and the Mirror Shield he
+    keeps, and the bull's head that shuts the stair to anyone without a mirror.
+3F  the High Halls: two sun discs for the last hall, three mouths for the Bull Key, the great door.
 The summit (zig_3, temple_maps.py) is above them."""
 import sys
 sys.path.insert(0, '/srv/Wakefire/Art/pixel')
@@ -67,6 +68,7 @@ def zig_1():
     F.torch(stair, 150, 84); F.torch(stair, 266, 84)
     F.enemy(stair, "sentinel", 70, 100, "z1_s3", once=True)
     F.enemy(stair, "sentinel", 346, 100, "z1_s4", once=True)
+    F.chest(stair, 60, 186, "z1_fork", "fork_zig")
     F.disc(stair, 350, "z1_disc")
     F.pool(stair, 350, 142, r=15)
     F.plaque(stair, 384, "{g}'NINHAL'S LAMP IS THE MOON. HIS FACE IS THE SUN.'{/}^{g}'HAND HIM HIS OWN LIGHT AND HE OPENS HIS HOUSE.'{/}^"
@@ -99,13 +101,13 @@ def zig_2():
     F.link(1, 1, 'w'); F.link(1, 1, 'e')
     F.link(1, 1, 'n', 'lock', id="z2_door")
     F.link(0, 1, 'n')
-    F.link(1, 0, 'e', 'bars', id="z2_gate", when="flag:dead_z2_herdsman")
+    F.link(2, 1, 'n', 'bars', id="z2_gate", when="flag:dead_z2_herdsman")
     F.link(2, 0, 'n', 'stairs', to="zig_hi", spawn="south", name="top")
     F.lay()
     F.carpet(land, 196, 60, 24, 148, seed=1)
     F.carpet(herd, 196, 150, 24, 58, seed=2)
     F.dais(herd, 164, 52, 88, 50, seed=92)
-    F.carpet(gate, 196, 60, 24, 60, seed=3)
+    F.carpet(gate, 196, 152, 24, 56, seed=3)
     F.bake()
     m = F.m
     # the landing
@@ -130,9 +132,11 @@ def zig_2():
     # the feed store: jars, moths, a sentinel, and a wall only the waking world keeps
     F.partition_ns(store, 280, 48, 208, layer=1)
     F.chest(store, 340, 128, "z2_vessel", "vessel")
-    for (x, y) in ((40, 66), (56, 62), (72, 66), (40, 196), (56, 200), (200, 64), (216, 62), (232, 66), (248, 196)):
+    for (x, y) in ((40, 66), (56, 62), (72, 66), (40, 196), (56, 200), (120, 64), (136, 62), (152, 66), (248, 196)):
         kit.pot(m, *store.p(x, y), big=(x % 32 == 8))
     F.torch(store, 44, 130)
+    F.plaque(store, 250, "{g}'THE STAIR TO THE HIGH HALLS. THE HERDSMAN KEEPS THE GATE. THE BULL KEEPS THE STAIR.'{/}^"
+                         "{g}'THE BULL ASKS ONE QUESTION, AND THE QUESTION IS FIRE. ANSWER IN KIND.'{/}^Somebody has added: {g}'do NOT answer in kind unless you have been issued the shield.'{/}")
     F.enemy(store, "sentinel", 180, 150, "z2_s3", once=True)
     F.enemy(store, "moth", 120, 100, "z2_m2"); F.enemy(store, "moth", 330, 180, "z2_m3")
     # the Herdsman's hall: the keeper of the bulls, two of his herd in the wall, and the shield in its cage
@@ -190,9 +194,9 @@ def zig_hi():
     F.enemy(west, "moth", 240, 150, "zh_m0"); F.enemy(west, "moth", 300, 100, "zh_m1")
     F.enemy(west, "sentinel", 280, 160, "zh_s2", once=True)
     # the moon room: the pool is across a drop that only a dreamer's road crosses
-    F.pit(moon, 150, 48, 270, 208, bridges=[[(276, 128), (144, 128)]], seed=61)
-    F.disc(moon, 80, "zh_d2")
-    F.pool(moon, 80, 150, r=15)
+    F.pit(moon, 96, 48, 176, 208, bridges=[[(182, 128), (90, 128)]], seed=61)
+    F.disc(moon, 56, "zh_d2")
+    F.pool(moon, 56, 150, r=15)
     F.torch(moon, 372, 84); F.torch(moon, 372, 196)
     F.enemy(moon, "moth", 330, 150, "zh_m2")
     # the three mouths: all three look at whoever comes in, and all three have to be answered

@@ -103,6 +103,8 @@ namespace Wakefire
                 // a journey from before the first night was told: he has plainly been through it
                 if (!Story.Has("prequel"))
                     foreach (var f in new[] { "prequel", "prequel_done", "item_sword", "item_wakefire", "chest_crypt_sword", "chest_crypt_fire", "dead_crypt_mother", "door_crypt_door", "chest_crypt_key" }) Story.Set(f);
+                // a journey that already carries the mirror shield took it from a plain chest: nobody was keeping it then
+                if (Story.Has("item_shield")) Story.Set("dead_z2_herdsman");
                 for (int i = 0; i < d.countKeys.Length; i++) Story.SetCount(d.countKeys[i], d.countVals[i]);
                 Save.PlayTime = d.playTime;
                 // a journey from before the world map was drawn: he has plainly walked the places his story has been through

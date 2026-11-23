@@ -79,7 +79,7 @@ namespace Wakefire
             frt.sizeDelta = new Vector2(4, 24);
             itemBox = Pixel(root, UISprite("itembox"), 22, 6, "itembox").gameObject;
             item = Pixel(root, Items.Icon(Items.Current) ?? UISprite("icon_lantern"), 25, 9, "item");
-            shownItem = Items.Current?.id;
+            shownItem = Items.Current == null ? null : Items.Current.id + ":" + Items.Current.Art;
             // what the action button would do this moment, as a word
             actCv = new PixelCanvas(44, 13);
             var ago = new GameObject("action", typeof(RectTransform));
@@ -146,9 +146,10 @@ namespace Wakefire
                 shownKeys = p.keys;
             }
             var cur = Items.Current;
-            if (cur?.id != shownItem)
+            string showing = cur == null ? null : cur.id + ":" + cur.Art;
+            if (showing != shownItem)
             {
-                shownItem = cur?.id;
+                shownItem = showing;
                 var sp = Items.Icon(cur);
                 if (sp) { item.sprite = sp; item.rectTransform.sizeDelta = new Vector2(sp.rect.width, sp.rect.height); }
             }

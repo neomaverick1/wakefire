@@ -169,81 +169,7 @@ def pillar(m, x, y, kind=None):
     m.model("pillar", town.pillar(2.2), x, y, box=(-7, -11, 7, 0), kind=kind)
 
 
-def zig_1():
-    TW, TH = 32, 24
-    W, H = TW * 16, TH * 16
-    m = MapBuilder("zig_1", TW, TH, (36, 22, 32, 255), music="dungeon")
-    T = floor(m, W, H, seed=81)
-    T.carpet(T.rect(244, 208, 24, H - 224), seed=1)
-    T.carpet(T.rect(244, 104, 24, 72), seed=2)
-    T.contact(24, 176, 236, 208, reach=5, strength=1.3); T.contact(276, 176, W - 24, 208, reach=5, strength=1.3)
-    g = m.bake()
-    walls(m, W, H, portal=256, steps_to=100)
-    G.cobweb(g, 26, 52); G.cobweb(g, W - 27, 52, flip=True)
-    # a dividing wall with the locked door, and stairs up beyond it
-    m.set_into_ground(town.partition((236 - 24) / 16.0), 24, 208, seed=82)
-    m.set_into_ground(town.partition((W - 24 - 276) / 16.0), 276, 208, seed=83)
-    m.solid(24, 176, 236, 204); m.solid(276, 176, W - 24, 204)
-    m.model("lockdoor", town.bronze_door(2.5, 1.9, 'lock'), 256, 206, box=(-20, -26, 20, 0), kind="lockdoor", data={"id": "z1_door"})
-    # the east alcove, closed off by a wall that only the waking world has
-    m.model("dreamwall", town.partition_ns(122 / 16.0), 392, 330, box=None, layer=1)
-    m.solid(392, 208, 400, 330, 1)
-    chest(m, 450, 276, "z1_key", "key")
-    # the west: a block, a plate, bars that lift
-    m.model("block", town.stone_block(), 172, 296, box=(-8, -12, 8, 0), kind="block", data={"id": "z1_block"})
-    m.model("plate", town.plate(), 140, 284, box=None, kind="plate", data={"id": "z1_plate"}, shadow=False)
-    chest(m, 66, 236, "z1_coins", "shekels:30")
-    m.set_into_ground(town.partition_ns(54 / 16.0), 108, 258, seed=85)
-    m.solid(108, 204, 116, 258)
-    m.model("bars", town.bars(5.25, 1.4), 66, 258, box=(-42, -6, 42, 0), kind="bars", data={"id": "z1_bars"})
-    for (x, y) in ((150, 120), (362, 120), (204, 336), (308, 336)):
-        pillar(m, x, y)
-    torches(m, ((80, 160), (432, 160)))
-    m.enemy("sentinel", 300, 280, "z1_s1", once=True)
-    m.enemy("sentinel", 200, 120, "z1_s2", once=True)
-    for i, (x, y) in enumerate(((180, 250), (330, 300), (256, 150))):
-        m.enemy("moth", x, y, f"z1_m{i}")
-    m.spawn("south", 256, H - 26, "up")
-    m.spawn("top", 256, 124, "down")
-    m.exit(236, H - 8, 276, H, "temple_yard", "door")
-    m.exit(240, 64, 272, 80, "zig_2", "south")
-    m.save()
-
-
-def zig_2():
-    TW, TH = 32, 24
-    W, H = TW * 16, TH * 16
-    m = MapBuilder("zig_2", TW, TH, (36, 22, 32, 255), music="dungeon")
-    T = floor(m, W, H, seed=91)
-    T.carpet(T.rect(244, 290, 24, H - 306), seed=1)
-    T.carpet(T.rect(244, 84, 24, 64), seed=2)
-    # the shield on its dais
-    T.slabs(T.rect(216, 236, 80, 52), seed=92, rows=(13,), wmin=16, wmax=16, ramp='pale', base=4.4, jitter=0.6, whole=False, crack=0.04)
-    T.border(T.rect(216, 236, 80, 52), 'gold', 3.6, 2, 1.5)
-    T.contact(24, 150, 236, 180, reach=5, strength=1.3); T.contact(276, 150, W - 24, 180, reach=5, strength=1.3)
-    g = m.bake()
-    walls(m, W, H, portal=256, steps_to=76)
-    G.cobweb(g, 26, 52); G.cobweb(g, W - 27, 52, flip=True)
-    chest(m, 256, 268, "z2_shield", "shield")
-    # the bull's head that breathes fire across the way north
-    m.set_into_ground(town.partition((236 - 24) / 16.0, h=1.375), 24, 180, seed=93)
-    m.set_into_ground(town.partition((W - 24 - 276) / 16.0, h=1.375), 276, 180, seed=94)
-    m.solid(24, 150, 236, 176); m.solid(276, 150, W - 24, 176)
-    m.model("bullhead", town.bull_statue(), 256, 178, box=(-20, -8, 20, 0), kind="bullhead", data={"id": "z2_bull"})
-    # beyond it: the bull key, and the great door up
-    chest(m, 120, 110, "z2_bigkey", "bigkey")
-    m.model("bigdoor", town.bronze_door(2.5, 2.0, 'bull'), 256, 76, box=(-20, -26, 20, 0), kind="bigdoor", data={"id": "z2_bigdoor"})
-    for (x, y) in ((120, 330), (392, 330)):
-        pillar(m, x, y)
-    torches(m, ((80, 220), (432, 220), (80, 120), (432, 120)))
-    m.enemy("sentinel", 150, 300, "z2_s1", once=True)
-    m.enemy("sentinel", 360, 300, "z2_s2", once=True)
-    m.enemy("sentinel", 380, 110, "z2_s3", once=True)
-    m.spawn("south", 256, H - 26, "up")
-    m.spawn("top", 256, 96, "down")
-    m.exit(236, H - 8, 276, H, "zig_1", "top")
-    m.exit(240, 44, 272, 58, "zig_3", "south", need="door_z2_bigdoor")
-    m.save()
+# (the ziggurat's three floors of rooms are in zig_maps.py; the summit is the only hall left here)
 
 
 def zig_3():
@@ -297,11 +223,11 @@ def zig_3():
     torches(m, ((72, 150), (W - 72, 150), (72, 318), (W - 72, 318)))
     m.light(W // 2, 120, 7.0, (0.62, 0.70, 1.0), 0.45, flicker=False)
     m.spawn("south", W // 2, H - 26, "up")
-    m.exit(W // 2 - 20, H - 8, W // 2 + 20, H, "zig_2", "top")
+    m.exit(W // 2 - 20, H - 8, W // 2 + 20, H, "zig_hi", "top")
     m.save()
 
 
 if __name__ == "__main__":
-    which = sys.argv[1:] or ["temple_yard", "zig_1", "zig_2", "zig_3"]
+    which = sys.argv[1:] or ["temple_yard", "zig_3"]
     for w in which:
         globals()[w]()

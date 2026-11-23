@@ -21,6 +21,13 @@ namespace Wakefire
             }
         }
 
+        /// <summary>Called by the Bronze Herdsman as he falls.</summary>
+        public void HerdsmanDown()
+        {
+            Music.Play(Map.Current.data.music);
+            RunWhenFree(One(Narrate("The Herdsman goes down like a dropped bell, and takes about as long to stop.^Behind him, bars lift. Whatever he was keeping, he kept it in there.")));
+        }
+
         void OpenProp(string id)
         {
             var p = Map.Current.Find(id);

@@ -150,7 +150,7 @@ namespace Wakefire
         public static string Chapter(SaveData d, bool full = true)
         {
             bool two = d != null && d.Has("ch2");
-            bool before = d != null && d.Has("prequel") && !d.Has("prequel_done");
+            bool before = d == null || (d.Has("prequel") && !d.Has("prequel_done"));     // an empty journey starts with the first night
             if (!full) return two ? "Chapter Two" : before ? "The First Night" : "Chapter One";
             return two ? "Chapter Two: The Sleepless Dead" : before ? "Prologue: The First Night" : "Chapter One: The Sleeping God";
         }

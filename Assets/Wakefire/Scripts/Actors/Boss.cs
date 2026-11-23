@@ -299,8 +299,24 @@ namespace Wakefire
         /// <summary>Breathes straight ahead on a beat of its own instead of at Azar (a row of them makes lanes of fire to cross).</summary>
         public bool straight;
         public float period = 2.4f, phase;
+        /// <summary>One of the Herdsman's own: it breathes when he raises the goad, and not otherwise.</summary>
+        public bool dormant;
         float clock;
         bool begun;
+
+        /// <summary>Breathe at Azar, after a moment (so two of them do not speak at once).</summary>
+        public void SpitAt(Player p, float delay) => StartCoroutine(Spit(p, delay));
+
+        System.Collections.IEnumerator Spit(Player p, float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (!prop || !p) yield break;
+            var mouth = prop.basePos + new Vector2(0, -0.4f);
+            Sfx.Play("bull_snort", 0.7f, 0.05f);
+            yield return new WaitForSeconds(0.22f);
+            if (!prop || !p) yield break;
+            Projectile.Fireball(mouth, (p.pos - mouth).normalized * 4.4f, gameObject);
+        }
 
         public bool Hit(HitInfo h)
         {
@@ -322,6 +338,7 @@ namespace Wakefire
             if (Game.Paused || !prop) return;
             var p = Player.I;
             if (!p || (Story.I && Story.I.Running)) return;
+            if (dormant) return;
             if (!begun) { begun = true; clock = -phase; }
             // only the heads of the room he is in are awake
             if (Rooms.I && (Rooms.Sliding || Rooms.Of(prop.basePos + new Vector2(0, -1f)) != Rooms.I.current)) return;

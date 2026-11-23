@@ -38,37 +38,7 @@ namespace Wakefire
         [System.Serializable] class WorldInside { public string map, at; public int x, y; }
         [System.Serializable] class World { public int w, h, scale; public WorldPlace[] places; public WorldInside[] inside; }
 
-        // a dungeon's own plan (Art/pixel/dkit.py writes one for each): floors of rooms on a grid of cells
-        [System.Serializable] class DRoom { public string id, name, mark; public int c, r, cw, ch; }
-        [System.Serializable] class DLink { public int c, r; public string side, kind, to, a, b, id; }
-        [System.Serializable] class DChest { public string id, room; public bool big; }
-        [System.Serializable] class DFloor { public string map, label; public int order, cols, rows; public DRoom[] rooms; public DLink[] links; public DChest[] chests; }
-        [System.Serializable] class Dungeon { public DFloor[] floors; public string name; }
-        static readonly string[] DungeonNames = { "crypt", "zig", "barrow", "tomb" };
-        static readonly Dictionary<string, Dungeon> dungeons = new Dictionary<string, Dungeon>();
-        Dungeon dungeon;                        // map page: the dungeon Azar is in, if he is in one that has a plan
-
-        static Dungeon DungeonOf(string map)
-        {
-            foreach (var n in DungeonNames)
-            {
-                if (!dungeons.TryGetValue(n, out var d))
-                {
-                    var j = Resources.Load<TextAsset>("Menu/dungeon_" + n);
-                    d = j ? JsonUtility.FromJson<Dungeon>(j.text) : null;
-                    if (d != null) d.name = n;
-                    dungeons[n] = d;
-                }
-                if (d == null || d.floors == null) continue;
-                foreach (var f in d.floors) if (f.map == map) return d;
-            }
-            return null;
-        }
-
-        static string DungeonTitle(string name) => name switch
-        {
-            "crypt" => "THE CRYPT", "zig" => "THE ZIGGURAT", "barrow" => "THE BARROW", "tomb" => "THE KING'S TOMB", _ => "THE WORLD",
-        };
+        Dungeons.Plan dungeon;                  // map page: the dungeon Azar is in, if he is in one that has a plan
 
         static readonly Color32 Veil = new Color32(6, 4, 12, 170), Frame = new Color32(10, 6, 16, 255), Bronze = new Color32(188, 122, 52, 255),
             BronzeL = new Color32(255, 216, 138, 255), BronzeD = new Color32(106, 58, 24, 255), Fill = new Color32(22, 18, 40, 255), Fill2 = new Color32(29, 24, 52, 255),
@@ -106,7 +76,7 @@ namespace Wakefire
                 world = j ? JsonUtility.FromJson<World>(j.text) : new World { places = new WorldPlace[0], inside = new WorldInside[0], scale = 10 };
             }
             page = ItemPage; shown = ItemPage; said = null; ask = -1;
-            dungeon = DungeonOf(Game.I.CurrentMap);
+            dungeon = Dungeons.Of(Game.I.CurrentMap);
             row = Save.Slot;
             cell = Mathf.Max(0, System.Array.IndexOf(Items.Usable, Items.Current));
             Layout();
@@ -310,7 +280,7 @@ namespace Wakefire
                 cv.Set(cx, cy, BronzeL); cv.Set(cx + 1, cy, Bronze); cv.Set(cx, cy + 1, Bronze); cv.Set(cx + 1, cy + 1, BronzeD);
             }
             // the page's name, and the pages to either side of it
-            string title = page == SavePage ? "SAVE AND LOAD" : page == ItemPage ? "ITEMS" : dungeon != null ? DungeonTitle(dungeon.name) : "THE WORLD";
+            string title = page == SavePage ? "SAVE AND LOAD" : page == ItemPage ? "ITEMS" : dungeon != null ? Dungeons.Title(dungeon.name) : "THE WORLD";
             f.DrawString(cv, (W - f.Measure(title)) / 2, py + 6, title, Gold, Sh);
             bool blink = ((int)(clock * 2.5f)) % 2 == 0;
             if (page > 0)
@@ -452,7 +422,7 @@ namespace Wakefire
                 cv.Rect(c.r.x + 2, c.r.y + 2, c.r.width - 4, c.r.height - 4, on ? WellOn : Well);
                 if (have)
                 {
-                    var pic = Pic.Get(c.def.art);
+                    var pic = Pic.Get(c.def.Art);
                     int sc = c.use ? 2 : 1;
                     if (pic != null) cv.Blit(pic, c.r.x + (c.r.width - pic.w * sc) / 2, c.r.y + (c.r.height - pic.h * sc) / 2, sc);
                     if (c.def.id == "vessel" || c.def.id == "scrolls")
@@ -775,12 +745,16 @@ namespace Wakefire
             Blood = new Color32(204, 66, 70, 255);
 
         /// <summary>Inside a dungeon the map page is the dungeon: its floors, top one first, each room a
-        /// box. The ones he has walked are lit; the place's scroll shows them all, with what is still
-        /// shut in them. Doors are notches between boxes, gold while they are locked.</summary>
+        /// box. The ones he has walked are lit; the place's scroll shows them all, and who keeps it.
+        /// Doors are notches between boxes, gold while they are locked. Chests: in a big dungeon only
+        /// where its tuning fork has found them, in the fork's colour, shut or opened; in a small one
+        /// (no fork) the scroll shows the ones still shut.</summary>
         void DrawDungeon(int ox)
         {
             var f = PixelFont.Main;
             bool scroll = Story.Has("item_map_" + dungeon.name);
+            bool forked = Dungeons.HasFork(dungeon.name);
+            Color32 forkCol = Dungeons.ForkColor(dungeon.name);
             string here = Game.I.CurrentMap;
             string room = Rooms.I && Rooms.I.current != null ? Rooms.I.current.id : null;
             int rows = 0, cols = 1, nf = dungeon.floors.Length;
@@ -794,19 +768,20 @@ namespace Wakefire
             {
                 int gx = ix + ox + (IW - fl.cols * cw) / 2 + 8, gy = y;
                 bool cur = fl.map == here;
-                bool Known(string id) => !string.IsNullOrEmpty(id) && (scroll || Story.Has(Rooms.VisitedFlag(fl.map, id)));
+                bool Found(string id) => forked && Story.Has(Fork.FoundFlag(fl.map, id));
+                bool Known(string id) => !string.IsNullOrEmpty(id) && (scroll || Found(id) || Story.Has(Rooms.VisitedFlag(fl.map, id)));
                 f.DrawString(cv, gx - 8 - f.Measure(fl.label), gy + (fl.rows * ch - 9) / 2, fl.label, cur ? Gold : Dim, Sh);
                 foreach (var rm in fl.rooms)
                 {
                     bool seen = Story.Has(Rooms.VisitedFlag(fl.map, rm.id));
-                    if (!seen && !scroll) continue;
+                    bool found = Found(rm.id);
+                    if (!seen && !scroll && !found) continue;
                     int x0 = gx + rm.c * cw, y0 = gy + rm.r * ch, w = rm.cw * cw - 1, h = rm.ch * ch - 1;
                     bool me = cur && rm.id == room;
                     cv.Box(x0, y0, w, h, seen ? (me ? RoomOn : RoomLit) : Well, seen ? RoomEdge : Faint);
                     if (me) { fx = x0 + w / 2; fy = y0 + h / 2 + 2; }
-                    if (!scroll) continue;
-                    // what the scroll knows about the room: whoever keeps it, and every chest not yet opened
-                    if (rm.mark == "mini" || rm.mark == "boss")
+                    // who keeps the place: the scroll knows
+                    if (scroll && (rm.mark == "mini" || rm.mark == "boss"))
                     {
                         int k = rm.mark == "boss" ? 3 : 2, mx = x0 + w - 3 - k, my = y0 + 3 + k;
                         for (int dy = -k; dy <= k; dy++)
@@ -814,12 +789,35 @@ namespace Wakefire
                                 if (Mathf.Abs(dx) + Mathf.Abs(dy) <= k) cv.Set(mx + dx, my + dy, Mathf.Abs(dx) + Mathf.Abs(dy) == k ? Frame : Blood);
                     }
                     int n = 0;
+                    if (forked)
+                    {
+                        // a room the fork has sung in: every chest in it, shut (solid) or opened (hollow), in the fork's colour,
+                        // and the whole room ringed in that colour for as long as one of them is still shut
+                        if (!found) continue;
+                        bool shut = false;
+                        foreach (var c in fl.chests)
+                        {
+                            if (c.room != rm.id) continue;
+                            bool open = Story.Has("chest_" + c.id);
+                            shut |= !open;
+                            int sz = c.big ? 5 : 4, bx = x0 + 3 + n, by = y0 + h - 3 - sz;
+                            cv.Box(bx, by, sz, sz, open ? Well : (Color32)forkCol, open ? forkCol : Frame);
+                            n += sz + 1;
+                        }
+                        if (shut && ((int)(clock * 2.5f) % 2 == 0 || !me))
+                        {
+                            cv.Rect(x0 + 1, y0 + 1, w - 2, 1, forkCol); cv.Rect(x0 + 1, y0 + h - 2, w - 2, 1, forkCol);
+                            cv.Rect(x0 + 1, y0 + 1, 1, h - 2, forkCol); cv.Rect(x0 + w - 2, y0 + 1, 1, h - 2, forkCol);
+                        }
+                        continue;
+                    }
+                    if (!scroll) continue;
                     foreach (var c in fl.chests)
                     {
                         if (c.room != rm.id || Story.Has("chest_" + c.id)) continue;
-                        int s = c.big ? 4 : 3, bx = x0 + 3 + n, by = y0 + h - 3 - s;
-                        cv.Box(bx, by, s, s, c.big ? Gold : BronzeL, Frame);
-                        n += s + 1;
+                        int sz = c.big ? 4 : 3, bx = x0 + 3 + n, by = y0 + h - 3 - sz;
+                        cv.Box(bx, by, sz, sz, c.big ? Gold : BronzeL, Frame);
+                        n += sz + 1;
                     }
                 }
                 foreach (var l in fl.links)
@@ -852,7 +850,7 @@ namespace Wakefire
             if (fx >= 0) HereFlame(fx, fy, false);
             if (!scroll)
             {
-                string none = "Only the rooms you have walked.";
+                string none = forked && Fork.Owns(dungeon.name) ? "The rooms you have walked, and what the fork has found." : "Only the rooms you have walked.";
                 f.DrawString(cv, ix + ox + (IW - f.Measure(none)) / 2, iy + IH - 11, none, Faint, Sh);
             }
         }
