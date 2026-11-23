@@ -96,10 +96,31 @@ namespace Wakefire.EditorTools
             Debug.Log($"[build] adaptive icon set ({icons.Length} sizes)");
         }
 
+        /// <summary>Gradle's share of the build machine's memory. Unity hands it four gigabytes by default,
+        /// which is more than a small build machine has left once the editor has the project open: the
+        /// daemon is killed halfway and the build fails with "daemon disappeared". Found by reflection so
+        /// this file still compiles on machines without the Android module.</summary>
+        static void GradleHeap()
+        {
+            int mb = int.TryParse(Environment.GetEnvironmentVariable("WAKEFIRE_GRADLE_HEAP"), out int v) && v >= 512 ? v : 1536;
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var t = asm.GetType("UnityEditor.Android.AndroidExternalToolsSettings");
+                if (t == null) continue;
+                var prop = t.GetProperty("maxJvmHeapSize", BindingFlags.Public | BindingFlags.Static);
+                if (prop == null) { Debug.Log("[build] Gradle heap: no such setting in this editor"); return; }
+                prop.SetValue(null, mb);
+                Debug.Log($"[build] Gradle heap {prop.GetValue(null)} MB");
+                return;
+            }
+            Debug.Log("[build] Gradle heap not set (no Android module)");
+        }
+
         public static void Android()
         {
             Sign();
             AdaptiveIcon();
+            GradleHeap();
             EditorUserBuildSettings.buildAppBundle = false;
             Run(BuildTarget.Android, BuildTargetGroup.Android, "Builds/Android/Wakefire.apk");
         }
@@ -108,6 +129,7 @@ namespace Wakefire.EditorTools
         {
             Sign();
             AdaptiveIcon();
+            GradleHeap();
             EditorUserBuildSettings.buildAppBundle = true;
             Run(BuildTarget.Android, BuildTargetGroup.Android, "Builds/Android/Wakefire-Play.aab");
             EditorUserBuildSettings.buildAppBundle = false;
