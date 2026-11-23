@@ -52,7 +52,11 @@ namespace Wakefire
             var red = Human(1.5f, Cast.ClayOf(0));
             Run(red, 1.5f, 5.9f).With(Gesture.Level);
             Add("clay_red", red);
-            Add("clay_blue", Human(1.42f, Cast.ClayOf(1)));
+            // (a slinger winds for as long as the game gives him, and lets go at the end of it)
+            var blue = Human(1.42f, Cast.ClayOf(1));
+            var sling = blue.Fit("throw", "OverhandThrow", 0f, 1.05f, warp: new[] { 0f, 0f, 0.78f, 0.33f, 1f, 1f }, fade: 0.08f);
+            sling.frames = 12; sling.fps = 15f;
+            Add("clay_blue", blue);
             var piece = Human(2.35f, Cast.Piece);
             piece.span = 2;
             Add("last_piece", piece);
@@ -72,6 +76,18 @@ namespace Wakefire
             Add("king", king);
 
             Add("scarab", Built(1.30f, a => CrabBeast.Make(a, true)));
+
+            // the king's tomb: a lamp bearer (one of the dead, with a habit of holding a lamp up to see who it is),
+            // a warden behind his door of a shield, and the scarab that thinks it is rolling the sun
+            Add("bearer", Dead(1.33f, Cast.Person("servant")));
+            var warden = Human(1.52f, Cast.Warden);
+            Run(warden, 1.52f, 5.6f).With(Gesture.Carry);
+            warden.Own("guard", "Idle_Loop", fade: 0.07f).With(Gesture.Carry);
+            warden.Map("idle").pose = Gesture.Carry;
+            warden.Map("walk").pose = Gesture.Carry;
+            Add("warden", warden);
+            Add("sun_roller", Built(3.6f, a => CrabBeast.Make(a, true), 2));
+            Add("vulture", Built(2.7f, a => VultureBeast.Make(a), 3));
         }
     }
 }

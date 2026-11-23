@@ -116,6 +116,7 @@ namespace Wakefire
             public float crestHeight = 0.12f;
             public bool hasCape = true, hasBlade = true, hasLantern = true, hasSpear, hasShield, plateSkin;
             public bool horns, goad;             // a bull's horns on the helm; a hook under the spear's head
+            public float shieldWide = 1f, shieldTall = 1f;   // a warden's is the size of a door
             public float metal = 1f;             // how bright the plate is: 1 polished bronze, 0 fired clay
         }
 
@@ -281,11 +282,12 @@ namespace Wakefire
                 bool mirror = !look.hasShield;                    // Azar's is the Bronze Mirror: bright as a lamp
                 var face = mirror ? new Color(0.98f, 0.90f, 0.62f) : look.shield;
                 sk.On("lowerarm_l");
-                sk.Stain(p => (new Vector2(p.x - c.x, p.z - c.z)).magnitude > 0.25f ? look.bronze : (Color?)null);
-                sk.Paint(face, mirror ? 1 : look.metal).Egg(c, new Vector3(0.31f, 0.06f, 0.31f), 14, 5, 0, 90);
+                float sw = look.shieldWide, st = look.shieldTall;
+                sk.Stain(p => (new Vector2((p.x - c.x) / sw, (p.z - c.z) / st)).magnitude > 0.25f ? look.bronze : (Color?)null);
+                sk.Paint(face, mirror ? 1 : look.metal).Egg(c, new Vector3(0.31f * sw, 0.06f, 0.31f * st), 14, 5, 0, 90);
                 sk.Stain(null);
                 sk.Paint(look.bronze, look.metal).Egg(c + new Vector3(0, 0.05f, 0), new Vector3(0.07f, 0.04f, 0.07f), 8, 4, 0, 90);
-                sk.Paint(look.leather).Egg(c, new Vector3(0.30f, 0.02f, 0.30f), 12, 3, -90, 0);
+                sk.Paint(look.leather).Egg(c, new Vector3(0.30f * sw, 0.02f, 0.30f * st), 12, 3, -90, 0);
                 var shield = sk.Wear("Shield");
                 m.props["shield"] = shield.transform;
                 if (mirror) shield.gameObject.SetActive(false);
@@ -538,6 +540,16 @@ namespace Wakefire
             shield = new Color(0.62f, 0.38f, 0.27f), hasCape = false, hasBlade = false, hasLantern = false, hasSpear = true, hasShield = true,
         });
 
+        /// <summary>A warden of the king's inner doors: the guard's clay, a gold crest, and a shield the size of
+        /// the door he was made to stand in.</summary>
+        public static void Warden(ModelActor m) => Soldier(m, new Look
+        {
+            plateSkin = true, metal = 0f, skin = new Color(0.62f, 0.37f, 0.26f), bronze = new Color(0.72f, 0.50f, 0.26f),
+            tunic = new Color(0.52f, 0.30f, 0.22f), tunicFold = new Color(0.40f, 0.22f, 0.17f), trim = new Color(0.93f, 0.72f, 0.26f),
+            leather = new Color(0.40f, 0.22f, 0.17f), crest = new Color(0.93f, 0.72f, 0.26f), crestHeight = 0.11f, eyes = new Color(0.45f, 1.0f, 0.86f),
+            hasCape = false, hasBlade = false, hasLantern = false, hasSpear = false, hasShield = false,       // (his shield is a door: it is its own thing, see WardenDoor)
+        });
+
         /// <summary>The clay armies of the Generals' Barrow: the king's guard's cousins, in their general's
         /// colour. Ushur's (0) carry a spear and a red shield; Baltu's (1) carry nothing you can see, and
         /// throw it.</summary>
@@ -763,6 +775,13 @@ namespace Wakefire
         };
 
         /// <summary>A sentinel at the charge: the spear comes down level.</summary>
+        /// <summary>Both arms out in front at the height of the chest: a man walking a door along.</summary>
+        public static Action<ModelActor, float> Carry => (m, n) =>
+        {
+            m.Bend("upperarm_r", -70f, -8f);
+            m.Bend("upperarm_l", -70f, 8f);
+        };
+
         public static Action<ModelActor, float> Level => (m, n) =>
         {
             m.Bend("upperarm_r", -78f, -6f);

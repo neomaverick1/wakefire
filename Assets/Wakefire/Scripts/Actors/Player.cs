@@ -293,19 +293,26 @@ namespace Wakefire
             if (hasSword && Controls.Down(Controls.Attack)) { combo = 0; StartAttack(); return; }
             if (Controls.Down(Controls.Roll) && rollCd <= 0) { StartRoll(input); return; }
             if (Controls.Down(Controls.Nod)) { if (hasLantern) StartNod(); else DareNot(); return; }
-            if (Controls.Down(Controls.Item)) { UseItem(); return; }
+            if (Controls.Down(Controls.Item)) { UseItem(input); return; }
             Action = WhatNow();
             if (Controls.Down(Controls.Interact) && !TryInteract() && hasShield) StartGuard();
         }
 
         /// <summary>The item button: whatever was chosen on the item page.</summary>
-        void UseItem()
+        void UseItem(Vector2 held)
         {
             var it = Items.Current;
             if (it == null) return;
             switch (it.id)
             {
-                case "wheel": if (Thrown.Out("wheel") == 0) StartThrow("wheel"); else Sfx.Play("deny", 0.5f); break;
+                case "wheel":
+                    // it is out already: he holds up his hand, and it comes
+                    if (Thrown.Out("wheel") > 0) { if (!Thrown.CallHome()) Sfx.Play("deny", 0.5f); break; }
+                    // the way the stick is held, corners and all; or the way he is facing
+                    throwDir = Thrown.Aim(held, Dir);
+                    if (held.magnitude >= 0.35f) Face(Mathf.Abs(throwDir.x) > Mathf.Abs(throwDir.y) + 0.01f ? (throwDir.x < 0 ? Facing.Left : Facing.Right) : (throwDir.y < 0 ? Facing.Down : Facing.Up));
+                    StartThrow("wheel");
+                    break;
                 case "fork": StartFork(); break;
                 case "pocket": if (Pocket.Reach(this)) StartPocket(); break;
                 default: StartUse(); break;
@@ -334,13 +341,21 @@ namespace Wakefire
         bool striking;
 
         string throwing;
+        Vector2 throwDir;
+        /// <summary>For tests: the next throw goes this way (as if the stick were held there).</summary>
+        public void ThrowWheel(Vector2 dir)
+        {
+            if (Thrown.Out("wheel") > 0 || state != State.Free) return;
+            throwDir = Thrown.Aim(dir, Dir);
+            StartThrow("wheel");
+        }
         void StartThrow(string what)
         {
             throwing = what;
             state = State.Throw;
             stateClock = 0;
             anim.Play("throw", facing, true);
-            Sfx.Play("stick_throw", 0.8f, 0.04f);
+            Sfx.Play("wheel_throw", 0.8f, 0.04f);
         }
 
         void StartGuard()
@@ -355,7 +370,8 @@ namespace Wakefire
 
         static bool Acts(Prop p) => p.Kind == "sign" || p.Kind == "well" || p.Kind == "gate" || p.Kind == "npc" || p.Kind == "pot" || p.Kind == "roots" ||
                                     p.Kind == "chest" || p.Kind == "bigchest" || p.Kind == "lockdoor" || p.Kind == "bigdoor" || p.Kind == "look" || p.Kind == "stairs" ||
-                                    p.Kind == "dreamlock" || p.Kind == "plankgap" || p.Kind == "bluelamp" || p.Kind == "standard" || (p.Kind == "dreamthing" && Pocket.There(p));
+                                    p.Kind == "dreamlock" || p.Kind == "plankgap" || p.Kind == "bluelamp" || p.Kind == "standard" || p.Kind == "scale" ||
+                                    (p.Kind == "dreamthing" && Pocket.There(p));
 
         Act WhatNow()
         {
@@ -540,11 +556,11 @@ namespace Wakefire
             if (a == "nod" && f == 2) { Dream.I.Flip(pos, true); Sfx.Play("dream_in"); }
             if (a == "wake" && f == 1) { Dream.I.Flip(pos, false); Sfx.Play("dream_out"); }
             if (a == "use" && f == 1) { if (pocketing) Pocket.Apply(this); else UseLantern(); }
-            if (a == "throw" && f == ThrowFrame) { Thrown.Launch(throwing, this, Dir); }
+            if (a == "throw" && f == ThrowFrame) { Thrown.Launch(throwing, this, throwDir.sqrMagnitude > 0.01f ? throwDir : Dir); }
         }
 
-        /// <summary>The frame of the throw on which the stone or the stick leaves his hand.</summary>
-        public const int ThrowFrame = 5;
+        /// <summary>How many frames the throw runs, and the one on which the wheel leaves his hand.</summary>
+        public const int ThrowFrames = 8, ThrowFrame = 3;
 
         Prop PropInFront(float reach, Func<Prop, bool> filter)
         {
@@ -576,10 +592,11 @@ namespace Wakefire
                 for (int i = map.props.Count - 1; i >= 0; i--)
                 {
                     var pr = map.props[i];
-                    if (!pr || (pr.Kind != "bush" && pr.Kind != "pot" && pr.Kind != "roots")) continue;
+                    if (!pr || (pr.Kind != "bush" && pr.Kind != "pot" && pr.Kind != "roots" && pr.Kind != "rope")) continue;
                     if (!pr.Bounds.Overlaps(r)) continue;
                     map.props.RemoveAt(i);
-                    if (pr.Kind == "pot") { pr.Shatter(); Sfx.Play("pot_break"); Pickup.Chance(pr.basePos, 0.5f, 0.15f); }
+                    if (pr.Kind == "rope") Rigging.Cut(pr);
+                    else if (pr.Kind == "pot") { pr.Shatter(); Sfx.Play("pot_break"); Pickup.Chance(pr.basePos, 0.5f, 0.15f); }
                     else if (pr.Kind == "roots") { pr.Cut(); Sfx.Play("cut", 1f, 0.02f); Sfx.Play("pot_break", 0.35f, 0.05f); PixelView.I.Shake(1, 0.14f); }
                     else { pr.Cut(); Sfx.Play("cut"); Pickup.Chance(pr.basePos, 0.18f, 0.08f); }
                     hitAny = true;

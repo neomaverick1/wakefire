@@ -1,7 +1,7 @@
 // Chapter two's path, walked the way a player would: the opening on the summit, the gate on
-// the terraces, the queue that only a dreamer gets past, the three stones, the king's door, the
-// servants and the key behind them, the four fires, and the widow's figs. Each line in the log
-// must say "ok". (The king himself is fought in the "king" scene.)
+// the terraces, the queue that only a dreamer gets past, the three stones, the king's door, a
+// thief in the antechamber, and the widow's figs. Each line in the log must say "ok". (The tomb
+// itself is played through in the "tomb" scene, and the king is fought in the "king" scene.)
 using System;
 using System.Collections;
 using UnityEngine;
@@ -157,38 +157,11 @@ namespace Wakefire
             while (Game.I.CurrentMap != "tomb_1" && Time.time - w0 < 6f) yield return null;
             Controls.Fake = Vector2.zero;
             t.Note($"through the door into the tomb: {(Game.I.CurrentMap == "tomb_1" ? "ok" : "FAILED")}");
-            // ---- the hall of servants
+            // ---- the antechamber (the tomb itself is played through in the "tomb" scene)
             yield return Idle(0.5f);
             Clear();
             yield return t.Shot("h4-tomb1", 0.3f);
-            yield return Walk(new Vector2(448, 340), Vector2.up, 1.2f, false, e => end = e);
-            t.Note($"the king's servants will not let a waking man by: {(end.y > 300 ? "ok" : "FAILED")} (y {end.y:0})");
-            yield return Walk(new Vector2(448, 340), Vector2.up, 1.2f, true, e => end = e);
-            t.Note($"a dreamer walks through them: {(end.y < 288 ? "ok" : "FAILED")} (y {end.y:0})");
-            int keys0 = p.keys;
-            yield return Use(t, "t1_key", "the key behind the servants", () => p.keys == keys0 + 1, true);
-            yield return Use(t, "t1_door", "the locked door takes it", () => Story.Has("door_t1_door"));
             yield return Talk(t, "robber_a_self", "Zimu, asleep and rich", () => Story.Count("zimu") == 1, true);
-            // ---- the hall of the lyre
-            yield return Enter("tomb_2", "south");
-            yield return Use(t, "t2_seal", "the sun door is cold", () => !Story.Has("door_t2_seal"));
-            for (int i = 0; i < 4; i++)
-            {
-                int k = i;
-                yield return Use(t, "lyre_" + i, i < 3 ? $"fire {i + 1} of four" : "the fourth fire opens the sun door",
-                    () => Map.Current.Find("lyre_" + k).lit && Story.Has("door_t2_seal") == (k == 3), false, Controls.Item);
-            }
-            yield return Walk(new Vector2(180, 262), Vector2.up, 1.0f, false, e => end = e);
-            t.Note($"the trench stops a waking man: {(end.y > 240 ? "ok" : "FAILED")} (y {end.y:0})");
-            yield return Walk(new Vector2(180, 262), Vector2.up, 1.3f, true, e => end = e);
-            t.Note($"a dreamer crosses it on moonlight: {(end.y < 196 ? "ok" : "FAILED")} (y {end.y:0})");
-            yield return t.Shot("h5-tomb2", 0.3f);
-            p.pos = Map.ToWorld(256, 70);
-            Controls.Fake = Vector2.up;
-            w0 = Time.time;
-            while (Game.I.CurrentMap != "tomb_3" && Time.time - w0 < 6f) yield return null;
-            Controls.Fake = Vector2.zero;
-            t.Note($"through the sun door to the king: {(Game.I.CurrentMap == "tomb_3" ? "ok" : "FAILED")}");
             // ---- the widow's figs
             yield return Enter("ashkel", null);
             max0 = p.health.max;
@@ -196,7 +169,7 @@ namespace Wakefire
             // ---- and a save carries it
             Save.Write("necropolis", "south");
             var d = Save.Read();
-            bool saved = d != null && Array.IndexOf(d.flags, "king_door") >= 0 && Array.IndexOf(d.flags, "name_ash") >= 0 && Array.IndexOf(d.flags, "door_t2_seal") >= 0;
+            bool saved = d != null && Array.IndexOf(d.flags, "king_door") >= 0 && Array.IndexOf(d.flags, "name_ash") >= 0 && Array.IndexOf(d.flags, "name_tar") >= 0;
             t.Note("save keeps the hill's doors and names: " + (saved ? "ok" : "FAILED"));
             Save.Clear();
         }

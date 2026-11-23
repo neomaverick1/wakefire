@@ -16,7 +16,7 @@ namespace Wakefire
         {
             DialogueBox.AutoAdvance = 0.35f;
             foreach (var f in new[] { "key", "gate_open", "braziers", "item_shield", "item_oil", "item_lamp", "bigkey", "yard_bridge", "bull_seen", "bull_dead", "chapter_done",
-                                      "ch2", "item_hillkey", "hill_gate", "met_namtar", "queue_passed", "name_kur", "name_ash", "name_tar", "king_door", "door_t1_door", "door_t2_seal" })
+                                      "ch2", "item_hillkey", "hill_gate", "met_namtar", "queue_passed", "name_kur", "name_ash", "name_tar", "king_door", "door_t1_door", "door_t2_seal", "item_wheel", "ghostkey", "door_t3_kingdoor" })
                 Story.Set(f);
             Game.I.EnterMap("tomb_3", "south");
             Story.I.ApplyItems();

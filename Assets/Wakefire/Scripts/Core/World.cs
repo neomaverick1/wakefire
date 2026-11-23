@@ -117,7 +117,7 @@ namespace Wakefire
         /// <summary>Puts down the enemy a map marker stands for.</summary>
         public static Enemy SpawnEnemy(MarkerJson mk)
         {
-            if (mk.who == "unremembered" && Story.Has("chapter2_done")) return null;      // they are asleep now, like everyone else up there
+            if ((mk.who == "unremembered" || mk.who == "bearer") && Story.Has("chapter2_done")) return null;      // they are asleep now, like everyone else up there
             if (Story.FirstNight && Game.I.CurrentMap != "crypt") return null;             // the first night: nothing has come down out of the hills yet
             var at = Map.ToWorld(mk.x, mk.y);
             Enemy e = mk.who switch
@@ -134,6 +134,10 @@ namespace Wakefire
                 "clay_red" => Spearman.Spawn(at),
                 "clay_blue" => Slinger.Spawn(at),
                 "last_piece" => LastPiece.Spawn(at),
+                "bearer" => LampBearer.Spawn(at),
+                "warden" => Warden.Spawn(at),
+                "sun_roller" => SunRoller.Spawn(at),
+                "vulture" => Vulture.Spawn(at),
                 _ => null,
             };
             if (!e) return null;
@@ -163,7 +167,7 @@ namespace Wakefire
                 switch (pr.Kind)
                 {
                     case "chest":
-                        if (Story.Has("chest_" + pr.data.id)) pr.SetSprite("chest_open", pr.data.px, pr.data.py);
+                        if (Story.Has("chest_" + pr.data.id)) pr.SetSprite(pr.data.s + "_open", pr.data.px, pr.data.py);
                         break;
                     case "bigchest":
                         if (Story.Has("chest_" + pr.data.id)) pr.SetSprite("bigchest_open", pr.data.px, pr.data.py);
@@ -209,17 +213,34 @@ namespace Wakefire
                 case "dreamlock":
                 case "plankgap":
                 case "bluelamp":
+                case "scale":
                     return Pocket.Look(p);
                 case "standard":
                     Story.Run(Story.I.LowerStandard(p));
                     return true;
                 case "bigdoor":
-                    if (!Story.Has("bigkey")) { Story.Run(Story.Narrate("A great door with a lock shaped like a bull's head.^It wants a bigger key than yours.")); return true; }
+                {
+                    // every great door has a key that was made for it and for nothing else
+                    bool tomb = Game.I.CurrentMap.StartsWith("tomb");
+                    if (!Story.Has(tomb ? "ghostkey" : "bigkey"))
+                    {
+                        Story.Run(Story.Narrate(tomb
+                            ? "The king's own door. Where the keyhole ought to be there is only the place where one was.^Whatever key fits this has been dead as long as he has."
+                            : "A great door with a lock shaped like a bull's head.^It wants a bigger key than yours."));
+                        return true;
+                    }
                     Story.Set("door_" + p.data.id);
-                    p.Open();
+                    foreach (var pr in Map.Current.props.ToArray())
+                        if (pr && pr.Kind == "bigdoor" && pr.data.id == p.data.id) pr.Open();
                     Sfx.Play("gate_open");
                     PixelView.I.Shake(2, 0.5f);
+                    if (tomb)
+                    {
+                        Sfx.Play("ghost_door", 1f, 0f);
+                        Story.Run(Story.Narrate("The ghost of a key goes into the ghost of a lock.^Something turns that has not turned in four hundred years.| It is not the door. The door just opens."));
+                    }
                     return true;
+                }
             }
             return false;
         }
@@ -256,7 +277,7 @@ namespace Wakefire
             // he bends to it and throws the lid back
             if (pl.anim.model) { pl.SetState(Player.State.ItemGet, "open"); yield return Story.Wait(0.55f); }
             Sfx.Play("chest_open");
-            p.SetSprite("chest_open", p.data.px, p.data.py);
+            p.SetSprite(p.data.s + "_open", p.data.px, p.data.py);
             Story.Set("chest_" + p.data.id);
             yield return Story.Wait(pl.anim.model ? 0.6f : 0.35f);
             string what = p.data.text ?? "shekels:10";

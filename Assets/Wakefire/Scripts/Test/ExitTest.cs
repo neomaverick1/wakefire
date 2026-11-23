@@ -16,9 +16,9 @@ namespace Wakefire
             DialogueBox.AutoAdvance = 0.05f;
             foreach (var f in new[] { "gate_open", "door_z2_bigdoor", "door_z2_door", "dead_z2_herdsman", "z2_bull", "yard_bridge", "key", "item_oil", "item_shield", "bigkey", "door_z1_door",
                                       "bull_seen", "bull_dead", "chapter_done", "ch2", "item_hillkey", "hill_gate", "met_namtar", "queue_passed", "king_door",
-                                      "door_t1_door", "door_t2_seal", "king_seen", "king_done", "item_horn", "chapter2_done" })
+                                      "door_t1_door", "door_t2_seal", "door_t3_kingdoor", "door_t3_lock", "ghostkey", "item_wheel", "king_seen", "king_done", "item_horn", "chapter2_done" })
                 Story.Set(f);
-            string[] maps = { "ashkel", "lowtown", "cliffs", "terraces", "crypt", "temple_yard", "zig_1", "zig_2", "zig_hi", "zig_3", "necro_road", "necropolis", "barrow", "tomb_1", "tomb_2", "tomb_3" };
+            string[] maps = { "ashkel", "lowtown", "cliffs", "terraces", "crypt", "temple_yard", "zig_1", "zig_2", "zig_hi", "zig_3", "necro_road", "necropolis", "barrow", "tomb_1", "tomb_2", "tomb_hi", "tomb_3" };
             int bad = 0, n = 0;
             foreach (var map in maps)
             {

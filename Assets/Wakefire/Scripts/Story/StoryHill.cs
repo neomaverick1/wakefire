@@ -162,7 +162,6 @@ namespace Wakefire
                     if (pr && pr.data.s != null && (pr.data.s.StartsWith("tomb_") || pr.data.s.StartsWith("tumulus_") || pr.data.s.StartsWith("grave_")))
                         graves.Add(pr.basePos + new Vector2(0, pr.data.s.StartsWith("grave_") ? 0.9f : 1.4f));
                 if (map == "necro_road") Unblock(394, 286, 446, 300);
-                if (map == "tomb_1") Unblock(428, 290, 468, 302);
             }
             switch (map)
             {
@@ -245,6 +244,7 @@ namespace Wakefire
                 case "robber_d":
                     Robber(who, at, "robber_b", () => One(Narrate("A fourth. He got all the way to the king's own chamber before the sleep took him.^Whatever else he is, he is thorough.")), TalkLastThief, new Vector2(0.7f, 0.5f));
                     break;
+                case "steward": Dead(who, at, "herald", "wait", "clerk", TalkSteward, Facing.Down); break;
                 default:
                     if (who.StartsWith("servant_"))
                     {
@@ -517,8 +517,15 @@ namespace Wakefire
                 yield return Say(who, "We're rich! Look at it! Cups! Rings! A whole gold goat!", "robber", true);
                 yield return AzarSays("You're asleep on the floor of a tomb.");
                 yield return Say(who, "Rich AND asleep. I have had worse jobs.", "robber", true);
-                yield return Say(who, "The key's through there, behind the staff. They haven't sat down in four hundred years, that lot.", "robber", true);
+                yield return Say(who, "The treasury's through there, past the staff. They haven't sat down in four hundred years, that lot.", "robber", true);
                 yield return Say(who, "We walked straight through them in our sleep. Then we couldn't wake up to spend any of it.", "robber", true);
+            }
+            else if (Count("pocketed_goat") > 0 && Bump("zimu_goat") == 0)
+            {
+                yield return Say(who, "You took the goat.| I was asleep. I still saw you. It was MY dream.", "robber", true);
+                yield return AzarSays("You said halves.");
+                yield return Say(who, "I said halves of what you carried OUT. I did not say you could carry it out of ME.", "robber", true);
+                yield return Say(who, "...There is another one. There is always another one. It's a very good dream.", "robber", true);
             }
             else yield return Say(who, "If you see a way to carry a gold goat out of a dream, I will go halves.", "robber", true);
         }
@@ -565,6 +572,9 @@ namespace Wakefire
         IEnumerator SealScene(Prop d)
         {
             yield return Wait(0.5f);
+            // (four fires in four halls: the door is only there to be looked at from the hall of the lyre)
+            bool inSight = d && (!Rooms.I || Rooms.Of(d.basePos + new Vector2(0, -1.5f)) == Rooms.I.current);
+            if (d && !inSight) { d.Open(); d = null; }
             if (d)
             {
                 yield return CamTo(d.basePos + new Vector2(0, -1.0f), 0.9f);
@@ -574,7 +584,8 @@ namespace Wakefire
                 d.Open();
                 yield return Wait(0.6f);
             }
-            yield return Narrate("Four fires, for the four watches of the night.^The bronze sun on the far door warms, and lets go.");
+            yield return Narrate(inSight ? "Four fires, for the four watches of the night.^The bronze sun on the far door warms, and lets go."
+                                         : "Four fires, for the four watches of the night.^Back in the hall of the lyre, a long way off, bronze warms and lets go.| The door with the sun on it is open.");
             yield return CamBack(0.7f);
             Save.Write(Game.I.CurrentMap, Game.I.CurrentSpawn);
         }
@@ -606,7 +617,7 @@ namespace Wakefire
                 case "gate":
                     if (pr.data.id == "king_door") Run(KingsDoor(pr));
                     else if (pr.data.id == "t2_seal")
-                        Run(Narrate("A door of bronze with the sun on it, cold as the floor.^Four fire altars stand in this hall. " +
+                        Run(Narrate("A door of bronze with the sun on it, cold as the floor.^Four fire altars stand in these inner halls, one for each watch of the night. " +
                                     (LyreFires() == 0 ? "None of them is lit." : LyreFires() == 1 ? "One of them is lit." : LyreFires() + " of them are lit.")));
                     break;
                 case "pot":

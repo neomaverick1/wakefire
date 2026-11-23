@@ -30,7 +30,7 @@ namespace Wakefire
             new Def { id = "pocket", name = "Nod's Pocket", art = "pocket", artNow = () => Pocket.Art, aboutNow = () => Pocket.About, have = () => Pocket.Have,
                       about = "One thing you pick up in a dream comes back with you when you wake." },
             new Def { id = "wheel", name = "The Sun Wheel", art = "sun_wheel", have = () => Story.Has("item_wheel"),
-                      about = "A bronze disc with an edge of gold, made for a king who missed the sun.|Thrown, it banks off walls and comes back to the hand." },
+                      about = "A bronze disc with an edge of gold, made for a king who missed the sun.|Thrown, it banks off two walls and the third sends it home. Press again to call it sooner." },
         };
 
         /// <summary>Everything else worth showing.</summary>
@@ -48,6 +48,8 @@ namespace Wakefire
                       about = "Each one holds another flame of life." },
             new Def { id = "bigkey", name = "Bull Key", art = "big_key", have = () => Story.Has("bigkey"),
                       about = "Horned, heavy, and warm to the touch, as if something has been breathing on it." },
+            new Def { id = "ghostkey", name = "Ghost Key", art = "ghost_key", have = () => Story.Has("ghostkey"),
+                      about = "The key to the king's own door. It died in the lock, four hundred years ago.|The dead of his house step aside for whoever carries it. They think you are management." },
             new Def { id = "hillkey", name = "Key to the Hill", art = "hill_key", have = () => Story.Has("item_hillkey"),
                       about = "It opens the gate to the Hill of Sleepers.|Nobody has ever asked for it back." },
             new Def { id = "figs", name = "Old Belu's Figs", art = "figs", have = () => Story.Has("item_figs") && !Story.Has("figs_given"),

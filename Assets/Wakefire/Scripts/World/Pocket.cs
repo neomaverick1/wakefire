@@ -10,6 +10,8 @@
 //   plank  two brackets across a drop       prop kind "plankgap", the plank itself kind "plank" (flag on_<id>)
 //   flame  a cold lamp of the dead          prop kind "bluelamp"   (flag on_<id>, so a grille can say lit:<id>)
 //   snore  whatever is awake in front of him
+//   goat   an offering scale with an empty pan      prop kind "scale" (flag on_<id>)
+//   order  the king's clay, which stands there      (and the servants it was taken from sit down)
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -48,6 +50,14 @@ namespace Wakefire
                 about = "Four hundred years old and still going.|Let it out at something that is awake, and it will not be for long.",
                 took = "A snore, hanging over the bench where it was left.^It is the only part of Nod still on duty.| You fold it up small. It goes on snoring, quietly, in the Pocket.",
                 nothing = "You let the snore out.^It goes once round the room, finds nobody to settle on, and comes back to the Pocket looking hurt." },
+            new Thing { id = "goat", name = "A Whole Gold Goat", use = UseGoat,
+                about = "Out of a thief's dream of being rich.|It weighs exactly what a king's offering should. Somebody was counting.",
+                took = "A whole gold goat, off the top of a thief's dream.^It ought not to fit. The Pocket takes it the way a sleeper takes a blanket.| {g}'HALVES!'{/} says Zimu, in his sleep.",
+                nothing = "You take out the gold goat and look at it.^It looks back the way gold does: as if you owed it something.| It wants an offering pan to stand in." },
+            new Thing { id = "order", name = "A Standing Order", use = UseOrder,
+                about = "The king's own, four hundred years old: 'STAND THERE.'|Let it out and his clay will do it, for a while.",
+                took = "An order, hanging in the doorway where the king left it four hundred years ago:^{g}'STAND THERE.'{/}| Nobody is standing there now. You fold it once and it goes in the Pocket.^It is heavy, for something nobody can see.",
+                nothing = "You let the order out.^{g}'STAND THERE.'{/}| Nobody here was made to take orders. You, least of all.^It comes back to the Pocket, a little put out." },
             new Thing { id = "word", name = "The Last Word", use = UseWord,
                 about = "The last word of an argument that has run three hundred and ninety-one years.|Neither general has ever had it.",
                 took = "The last word of the argument, lying where it was dropped.^Neither of them has had it in three hundred and ninety-one years. You have it now." },
@@ -114,6 +124,13 @@ namespace Wakefire
                         break;
                     case "bluelamp":
                         if (Story.Has("on_" + pr.data.id)) Kindle(pr, true);
+                        break;
+                    case "scale":
+                        if (Story.Has("on_" + pr.data.id)) Weigh(pr, true);
+                        break;
+                    case "rope":
+                    case "bridgeup":
+                        if (Story.Has("on_" + pr.data.id)) pr.Bar(false);
                         break;
                 }
             }
@@ -241,7 +258,7 @@ namespace Wakefire
 
         /// <summary>The plank across its drop: there to be seen, and the drop under it no longer a drop. Its text
         /// is the piece of the pit it covers, "x0,y0,x1,y1" in map pixels.</summary>
-        static void Lay(Prop pr, bool quiet)
+        public static void Lay(Prop pr, bool quiet)
         {
             pr.sr.enabled = true;
             var q = (pr.data.text ?? "").Split(',');
@@ -253,6 +270,15 @@ namespace Wakefire
                     if (s.pit && r.Contains(s.r.min) && r.Contains(s.r.max)) s.enabled = false;
             }
             if (quiet) return;
+            if (pr.data.who == "bridge")
+            {
+                // a drawbridge of cedar and bronze, let go: it comes down like a door being slammed on four hundred years
+                Sfx.Play("stone_door", 1f, 0f);
+                Sfx.Play("bars_down", 0.8f, 0f);
+                PixelView.I.Shake(3, 0.3f);
+                for (int i = 0; i < 6; i++) Fx.Dust(pr.basePos + new Vector2(UnityEngine.Random.Range(-0.6f, 0.6f), UnityEngine.Random.Range(0.2f, 2.4f)), 4);
+                return;
+            }
             Sfx.Play("plank_down", 1f, 0f);
             PixelView.I.Shake(1, 0.15f);
             for (int i = 0; i < 14; i++)
@@ -311,6 +337,53 @@ namespace Wakefire
             return true;
         }
 
+        // ---- the gold goat
+        static bool UseGoat(Player p)
+        {
+            var sc = p.InFront(0.9f, q => q.Kind == "scale" && !Story.Has("on_" + q.data.id));
+            if (!sc) return false;
+            Story.Set("on_" + sc.data.id);
+            Weigh(sc, false);
+            if (Story.Bump("goat_used") == 0)
+                Story.Run(Story.Narrate("You set the gold goat in the pan.^The pan goes down. It is, to the grain, the weight the king was promised.| Back by the door a thief is going to wake up poorer one day, and never know why."));
+            return true;
+        }
+
+        static void Weigh(Prop pr, bool quiet)
+        {
+            pr.SetSprite(pr.data.s + "_full", pr.data.px, pr.data.py);
+            if (quiet) return;
+            Sfx.Play("coin_big", 1f, 0f);
+            Sfx.Play("plate", 1f, 0f);
+            PixelView.I.Shake(1, 0.15f);
+            Fx.Dust(pr.basePos, 5);
+        }
+
+        // ---- the king's order
+        static bool Clay(Enemy e) => e is Ushabti || e is Warden;
+
+        static bool UseOrder(Player p)
+        {
+            Enemy best = null;
+            float bd = 5.2f;
+            foreach (var e in Enemy.All)
+            {
+                if (!e || e.health.Dead || !e.Present || !Clay(e)) continue;
+                var d = e.pos - p.pos;
+                if (Vector2.Dot(d.normalized, p.Dir) < 0.2f) continue;
+                if (d.magnitude < bd) { bd = d.magnitude; best = e; }
+            }
+            if (!best) return false;
+            // every one of the king's clay near enough to hear it
+            foreach (var e in Enemy.All)
+                if (e && !e.health.Dead && e.Present && Clay(e) && Vector2.Distance(e.pos, p.pos) < 7.5f) e.StandThere(9f);
+            Sfx.Play("king_wave", 0.9f, 0f);
+            PixelView.I.Shake(1, 0.2f);
+            if (Story.Bump("order_used") == 0)
+                Story.Run(Story.Narrate("You let the order out. It is in the king's voice, and it is four hundred years old:^{g}'STAND THERE.'{/}| The clay stands there. It was made to.^It will not last. Orders wear off. Ask anyone who has given one."));
+            return true;
+        }
+
         // ---- the last word
         static bool UseWord(Player p)
         {
@@ -330,9 +403,19 @@ namespace Wakefire
                     Take(pr);
                     return true;
                 case "dreamlock":
-                    Story.Run(Story.Narrate(InDream(pr.basePos)
-                        ? "Locked, here too. But in the dream the lock looks pleased with itself, like a lock that knows where its key is."
-                        : "A grille, and a lock on it with no key.^Not lost. There never was one, awake.| The quartermaster did his stocktaking in his sleep."));
+                    if (Game.I && Game.I.CurrentMap.StartsWith("tomb"))
+                        Story.Run(Story.Narrate(InDream(pr.basePos)
+                            ? "Locked, here too. But in the dream there is a key on the wall beside it, where a careful man would hang one."
+                            : "A grille across the treasury, and a lock with no key.^The steward who kept it took it to bed with him. He has been in bed four hundred years.| A key like that is only ever anywhere in a dream."));
+                    else
+                        Story.Run(Story.Narrate(InDream(pr.basePos)
+                            ? "Locked, here too. But in the dream the lock looks pleased with itself, like a lock that knows where its key is."
+                            : "A grille, and a lock on it with no key.^Not lost. There never was one, awake.| The quartermaster did his stocktaking in his sleep."));
+                    return true;
+                case "scale":
+                    Story.Run(Story.Narrate(Story.Has("on_" + pr.data.id)
+                        ? "The gold goat stands in the offering pan, where the king can count it.^It is the only goat in Ashkel that has ever stayed where it was put."
+                        : "An offering scale, as tall as you are. One pan holds a stone goat-weight; the other is empty.^Cut in the beam: {g}'ONE GOAT, IN GOLD, OR NOTHING OPENS.'{/}| The king was very specific."));
                     return true;
                 case "plankgap":
                     Story.Run(Story.Narrate(Story.Has("on_" + pr.data.id)

@@ -86,6 +86,25 @@ def item_word():
     return m
 
 
+def item_goat():
+    """A whole gold goat, a hand high."""
+    import tprops
+    m = Model()
+    tprops.goat(m, -0.05, 0.0, 0.04, 1.08)
+    return m
+
+
+def item_order():
+    """An order: a tablet with two lines cut in it and the king's seal rolled along the bottom."""
+    m = Model()
+    m.part(); m.face([(-0.3, 0.14), (0.3, 0.14), (0.3, 0.78), (-0.3, 0.78)], 0.0, moon(3.6))
+    m.part()
+    for (x0, z0, x1, z1) in ((-0.22, 0.6, 0.22, 0.66), (-0.22, 0.46, 0.1, 0.52)):
+        m.box(x0, -0.02, z0, x1, -0.01, z1, M('dark', 2.0))
+    m.part(); m.box(-0.22, -0.02, 0.22, 0.22, -0.01, 0.31, M('gold', 4.2))
+    return m
+
+
 def bullet(turn=0):
     """A slinger's bullet: baked clay, the shape of an olive, a thumbprint in one side."""
     m = Model()
@@ -107,7 +126,7 @@ def small(name, model, size=8):
 
 
 THINGS = [('pocket', item_pocket), ('pocket_key', item_key), ('pocket_plank', item_plank), ('pocket_flame', item_flame),
-          ('pocket_snore', item_snore), ('pocket_word', item_word)]
+          ('pocket_snore', item_snore), ('pocket_word', item_word), ('pocket_goat', item_goat), ('pocket_order', item_order)]
 
 
 def icon(name, model, size=16):

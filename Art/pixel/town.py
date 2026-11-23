@@ -935,6 +935,18 @@ def bronze_door(w=2.1, h=2.1, kind='lock'):
     if kind == 'lock':
         m.part(); m.box(-0.2, -0.06, h * 0.5 - 0.24, 0.2, -0.03, h * 0.5 + 0.2, wm.gold)
         m.part(); m.box(-PX, -0.07, h * 0.5 - 0.12, PX, -0.06, h * 0.5 + 0.04, M('dark', 1.4))
+    elif kind == 'ghost':
+        # the king's own door: no bull, no sun. A lock plate gone the colour of old ice, and where the keyhole
+        # ought to be, the shape of one, lit from the other side
+        cz = h * 0.52
+        m.part(); m.box(-0.28, -0.06, cz - 0.36, 0.28, -0.03, cz + 0.32, Mat(RAMPS['ghost'], 1.6, m_mottle(3, 0.8)))
+        m.part()
+        for z in (cz - 0.36, cz + 0.28):
+            m.box(-0.28, -0.07, z, 0.28, -0.06, z + 0.04, Mat(RAMPS['ghost'], 2.8))
+        glow = Mat(RAMPS['ghost'], 5.0, glow=True)
+        m.part(); m.face([(math.cos(a) * 0.08, cz + 0.1 + math.sin(a) * 0.08) for a in np.linspace(0, 2 * math.pi, 10, endpoint=False)], -0.075, glow)
+        m.part(); m.face([(-0.035, cz + 0.06), (0.035, cz + 0.06), (0.06, cz - 0.2), (-0.06, cz - 0.2)], -0.075, glow)
+        m.light(0, -0.4, cz, 2.6, (0.45, 1.0, 0.85), 0.5)
     elif kind == 'sun':
         # the king's sign: the sun half up, and its rays
         cz = h * 0.56
@@ -1378,19 +1390,29 @@ def tomb_partition_ns(depth, wd=0.5, h=1.5):
 
 
 # ------------------------------------------------------------------ chests, ovens, the potter's things
-def chest(open_=False):
+def chest(open_=False, ghost=False):
     """A treasure chest: dark cedar bound in bright bronze, a barrel lid, a gold lock plate with its
-    keyhole. Open, the lid stands back on its hinges and what is inside shows gold."""
+    keyhole. Open, the lid stands back on its hinges and what is inside shows gold.
+    ghost: the chest a ghost key is kept in. It died with its steward: the colour of old ice, lit from inside."""
     m = Model()
     wood = M('cedar', 3.3, m_planks(4, 'h'))
     lidw = M('cedar', 3.7, m_planks(3, 'u'))
     brz = M('bronze', 4.7, gloss=0.04)
     gold = M('gold', 4.5, gloss=0.03)
+    inside = Mat(RAMPS['gold'], 3.6, m_mottle(2, 1.5), glow=True)
+    lining = 'red'
+    if ghost:
+        wood = Mat(RAMPS['ghost'], 1.5, m_planks(4, 'h'))
+        lidw = Mat(RAMPS['ghost'], 1.9, m_planks(3, 'u'))
+        brz = Mat(RAMPS['ghost'], 3.6, glow=True)
+        gold = Mat(RAMPS['ghost'], 4.8, glow=True)
+        inside = Mat(RAMPS['ghost'], 4.4, m_mottle(2, 1.0), glow=True)
+        lining = 'ghost' 
     x0, x1, y0, y1, h = -0.52, 0.52, 0.08, 0.62, 0.36
     yc, r = (y0 + y1) / 2, (y1 - y0) / 2
     bands = (x0 + 0.03, -0.06, x1 - 0.15)
     # the box, on four bronze feet
-    m.part(); m.box(x0, y0, 0.04, x1, y1, h, wood, top=Mat(RAMPS['gold'], 3.6, m_mottle(2, 1.5), glow=True) if open_ else M('dark', 1.2))
+    m.part(); m.box(x0, y0, 0.04, x1, y1, h, wood, top=inside if open_ else M('dark', 1.2))
     m.part()
     for fx in (x0 - 0.01, x1 - 0.09):
         m.box(fx, y0 - 0.02, 0, fx + 0.1, y0 + 0.08, 0.07, brz)
@@ -1405,14 +1427,15 @@ def chest(open_=False):
         m.part()
         for k in range(5):
             m.quad((x0, y1 + 0.02 + 0.05 * k, h + 0.085 * k), (x1, y1 + 0.02 + 0.05 * k, h + 0.085 * k),
-                   (x1, y1 + 0.02 + 0.05 * (k + 1), h + 0.085 * (k + 1)), (x0, y1 + 0.02 + 0.05 * (k + 1), h + 0.085 * (k + 1)), M('red', 2.8 + 0.25 * k), two=True)
+                   (x1, y1 + 0.02 + 0.05 * (k + 1), h + 0.085 * (k + 1)), (x0, y1 + 0.02 + 0.05 * (k + 1), h + 0.085 * (k + 1)),
+                   Mat(RAMPS['ghost'], 1.2 + 0.2 * k) if ghost else M(lining, 2.8 + 0.25 * k), two=True)
         m.part()
         for sx in bands:
             for k in range(5):
                 m.quad((sx, y1 + 0.015 + 0.05 * k, h + 0.085 * k), (sx + 0.12, y1 + 0.015 + 0.05 * k, h + 0.085 * k),
                        (sx + 0.12, y1 + 0.015 + 0.05 * (k + 1), h + 0.085 * (k + 1)), (sx, y1 + 0.015 + 0.05 * (k + 1), h + 0.085 * (k + 1)), brz, two=True)
         m.part(); m.box(x0 - 0.01, y1 + 0.26, h + 0.40, x1 + 0.01, y1 + 0.30, h + 0.46, brz)
-        m.light(0, 0.3, 0.5, 2.4, (1.0, 0.8, 0.4), 0.55)
+        m.light(0, 0.3, 0.5, 2.4, (0.45, 1.0, 0.85) if ghost else (1.0, 0.8, 0.4), 0.55)
     else:
         # the barrel lid, and the bands carried over it
         m.part(); m.limb([(x0, yc, h), (x1, yc, h)], [r, r], lidw, n=12)
@@ -1421,6 +1444,8 @@ def chest(open_=False):
             m.limb([(sx, yc, h), (sx + 0.12, yc, h)], [r + 0.02, r + 0.02], brz, n=12)
         m.part(); m.box(-0.11, y0 - 0.05, h - 0.13, 0.11, y0 - 0.02, h + 0.1, gold)   # the lock plate
         m.part(); m.box(-0.025, y0 - 0.055, h - 0.07, 0.025, y0 - 0.05, h + 0.02, M('dark', 1.0))
+        if ghost:
+            m.light(0, -0.2, 0.4, 2.0, (0.45, 1.0, 0.85), 0.4)
     return m
 
 

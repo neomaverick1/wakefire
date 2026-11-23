@@ -35,7 +35,8 @@ namespace Wakefire
                 case "crypt": SetupRegion(map, m); SetupCrypt(m); break;
                 case "zig_2": case "zig_hi": SetupRegion(map, m); SetupZig(m); break;
                 case "barrow": SetupRegion(map, m); SetupBarrow(m); break;
-                case "necro_road": case "necropolis": case "tomb_1": case "tomb_2": case "tomb_3": SetupHill(map, m); break;
+                case "necro_road": case "necropolis": case "tomb_3": SetupHill(map, m); break;
+                case "tomb_1": case "tomb_2": case "tomb_hi": SetupHill(map, m); SetupTomb(map, m); break;
                 default: SetupRegion(map, m); break;
             }
         }
@@ -50,8 +51,8 @@ namespace Wakefire
                 Run(Narrate("Cold, salty and awake. The road of moonlight is only there while you dream.^Nod off right at the end of the pier, and run."));
             else if (Game.I.CurrentMap == "necropolis" && Bump("hill_falls") == 0)
                 Run(Narrate("The split in the hill goes down further than the hill does.^There is a road of moonlight across it. For dreamers."));
-            else if (Game.I.CurrentMap == "tomb_2" && Bump("tomb_falls") == 0)
-                Run(Narrate("The dead filled this cut with dark so that nobody could cross it.^They did not think about dreamers. They don't, much."));
+            else if (Game.I.CurrentMap.StartsWith("tomb") && Bump("tomb_falls") == 0)
+                Run(Narrate("The dead filled every drop in this tomb with dark, so that nobody living should cross one.^It works. You are back where you started, colder.| The Sun Wheel does not mind what is under it. You do."));
         }
 
         void OnPropAny(Prop pr)
@@ -127,6 +128,12 @@ namespace Wakefire
                     Set("item_fork_tomb");
                     yield return ItemGet("fork_tomb", "You got the {g}CARNELIAN FORK{/}!^The king's own, the red of old blood. It listens for his chests the way the lapis one listens for the temple's.| He had it made to keep count of what he was buried with.^He was buried with it, which nobody thought through.| Like the other, it stays in its own house.");
                     break;
+                case "wheel":
+                    Set("item_wheel"); I.ApplyItems();
+                    Items.Chosen = "wheel";
+                    yield return MainItemGet("sun_wheel", WheelText);
+                    yield return Narrate(LessonWheel(TouchControls.Wanted));
+                    break;
                 case "pocket":
                     Set("item_pocket"); I.ApplyItems();
                     Items.Chosen = "pocket";
@@ -151,6 +158,12 @@ namespace Wakefire
                 case "bigkey":
                     Set("bigkey");
                     yield return ItemGet("big_key", "You got the {g}BULL KEY{/}!^Horned, heavy, and warm to the touch, as if something has been breathing on it.");
+                    break;
+                case "ghostkey":
+                    Set("ghostkey");
+                    Sfx.Play("ghost_key", 0.9f, 0f);
+                    yield return ItemGet("ghost_key", "You got the {g}GHOST KEY{/}!^The key to the king's own door. It was buried with the steward who kept it, and it has not been a real key for four hundred years.| "
+                                                    + "You can see your hand through it. It still knows which lock is its lock.");
                     break;
                 case "vessel":
                     Bump("vessels"); I.ApplyItems(); Player.I.health.hp = Player.I.health.max;

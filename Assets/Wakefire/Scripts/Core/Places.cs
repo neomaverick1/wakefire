@@ -19,8 +19,9 @@ namespace Wakefire
             "barrow" => "The Generals' Barrow",
             "necro_road" => "The Road of the Dead",
             "necropolis" => "The Hill of Sleepers",
-            "tomb_1" => "The Tomb: Hall of Servants",
-            "tomb_2" => "The Tomb: Hall of the Lyre",
+            "tomb_1" => "The King's Tomb: Outer Halls",
+            "tomb_2" => "The King's Tomb: Inner Halls",
+            "tomb_hi" => "The King's Tomb: The King's Road",
             "tomb_3" => "The King's Chamber",
             _ => "Ashkel",
         };

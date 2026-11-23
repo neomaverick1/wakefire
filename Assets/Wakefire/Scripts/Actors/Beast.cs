@@ -657,7 +657,7 @@ namespace Wakefire
         readonly Transform[] upper = new Transform[6], lower = new Transform[6], arm = new Transform[2], claw = new Transform[2];
         readonly Vector3[] hip = new Vector3[6], rest = new Vector3[6];
         Vector3 shellRest;
-        float time, phase, moving, up, snap, flinch;
+        float time, phase, moving, up, snap, flinch, over;
         const float Half = 0.17f;
 
         static Transform Bone(string name, Transform parent, Vector3 at)
@@ -765,9 +765,11 @@ namespace Wakefire
             up = Mathf.Lerp(up, raise, 1f - Mathf.Exp(-22f * dt));
             snap = Mathf.Lerp(snap, shut, 1f - Mathf.Exp(-40f * dt));
             flinch = Mathf.Lerp(flinch, anim == "hurt" ? 1f : 0f, 1f - Mathf.Exp(-24f * dt));
+            // "back": turned right over, six legs running at the ceiling
+            over = Mathf.Lerp(over, anim == "back" ? 1f : 0f, 1f - Mathf.Exp(-16f * dt));
 
-            var sp = shellRest + new Vector3(0, Mathf.Sin(phase * Mathf.PI * 4f) * 0.012f * moving + up * 0.03f - flinch * 0.05f, 0);
-            var sr = Quaternion.Euler(-up * 9f + flinch * 10f, 0, Mathf.Sin(phase * Mathf.PI * 2f) * 4f * moving);
+            var sp = shellRest + new Vector3(0, Mathf.Sin(phase * Mathf.PI * 4f) * 0.012f * moving + up * 0.03f - flinch * 0.05f + over * 0.02f, 0);
+            var sr = Quaternion.Euler(-up * 9f + flinch * 10f, 0, Mathf.Sin(phase * Mathf.PI * 2f) * 4f * moving + 180f * over + Mathf.Sin(time * 7f) * 5f * over);
             shell.localPosition = sp;
             shell.localRotation = sr;
             for (int i = 0; i < 6; i++)
@@ -776,7 +778,12 @@ namespace Wakefire
                 var foot = rest[i];
                 // alternate tripods: left fore, right middle, left hind move together
                 float u = Mathf.Repeat(phase + ((i % 2 + i / 2) % 2 == 0 ? 0f : 0.5f), 1f);
-                if (u < duty) foot += travel * ((0.5f - u / duty) * duty * stride * moving);
+                if (over > 0.5f)
+                {
+                    int sd = i % 2 == 0 ? -1 : 1;
+                    foot = h + new Vector3(sd * (0.10f + 0.05f * Mathf.Sin(time * 11f + i * 2.1f)), 0.25f + 0.06f * Mathf.Sin(time * 13f + i * 1.7f), 0.04f * Mathf.Sin(time * 9f + i));
+                }
+                else if (u < duty) foot += travel * ((0.5f - u / duty) * duty * stride * moving);
                 else
                 {
                     float w = (u - duty) / (1f - duty), e = w * w * (3f - 2f * w);
@@ -800,6 +807,130 @@ namespace Wakefire
                 int s = i == 0 ? -1 : 1;
                 arm[i].localRotation = Quaternion.Euler(-up * 62f, s * (-up * 14f + snap * 20f), 0);
                 claw[i].localRotation = Quaternion.Euler(-up * 24f + snap * 34f, 0, 0);
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------------- vulture
+    /// <summary>One of the king's vultures: a black body the size of a goat kid, a bare red neck in a ruff of
+    /// dirty white, a hooked beak the colour of old bone, wings that are mostly fingers at the ends, and a gold
+    /// ring on one leg to say whose it is.</summary>
+    public class VultureBeast : IPoser
+    {
+        Transform body, neck, head, tail;
+        readonly Transform[] inner = new Transform[2], outer = new Transform[2], leg = new Transform[2];
+        float time, spread, sweep, reach, sag, beat;
+        static readonly Vector3 At = new Vector3(0, 0.30f, 0);
+
+        static Transform Bone(string name, Transform parent, Vector3 at)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = at;
+            return go.transform;
+        }
+
+        public static VultureBeast Make(ModelActor a)
+        {
+            var v = new VultureBeast();
+            var rig = a.rig;
+            v.body = Bone("body", rig, At);
+            v.neck = Bone("neck", v.body, new Vector3(0, 0.06f, 0.15f));
+            v.head = Bone("head", v.neck, new Vector3(0, 0.13f, 0.09f));
+            v.tail = Bone("tail", v.body, new Vector3(0, 0.0f, -0.19f));
+            var bones = new List<Transform> { v.body, v.neck, v.head, v.tail };
+            for (int i = 0; i < 2; i++)
+            {
+                int side = i == 0 ? -1 : 1;
+                v.inner[i] = Bone("wi" + i, v.body, new Vector3(side * 0.09f, 0.07f, 0.05f));
+                v.outer[i] = Bone("wo" + i, v.inner[i], new Vector3(side * 0.36f, 0, 0));
+                v.leg[i] = Bone("leg" + i, v.body, new Vector3(side * 0.06f, -0.10f, -0.02f));
+                bones.Add(v.inner[i]); bones.Add(v.outer[i]); bones.Add(v.leg[i]);
+            }
+            foreach (var t in bones) a.bones[t.name] = t;
+            var kit = new Kit(a, rig, bones.ToArray());
+            Color black = new Color(0.15f, 0.12f, 0.11f), brown = new Color(0.27f, 0.21f, 0.17f), edge = new Color(0.43f, 0.36f, 0.29f);
+            Color ruff = new Color(0.80f, 0.76f, 0.66f), bare = new Color(0.62f, 0.28f, 0.24f), bone = new Color(0.88f, 0.80f, 0.60f), claw = new Color(0.52f, 0.46f, 0.36f);
+            Color gold = new Color(0.93f, 0.72f, 0.26f);
+            // the body: a keel of a breast, a back that slopes to the tail
+            kit.On("body").Stain(p => p.y > At.y + 0.07f ? brown : (Color?)null).Paint(black).Egg(At, new Vector3(0.125f, 0.115f, 0.21f), 12, 7);
+            kit.Stain(null);
+            kit.Paint(ruff).Egg(At + new Vector3(0, 0.07f, 0.15f), new Vector3(0.10f, 0.075f, 0.075f), 10, 5);
+            // the bare neck, in two reaches, and the head: a skull cap, a beak that hooks
+            var nk = At + new Vector3(0, 0.06f, 0.15f);
+            kit.On("neck").Paint(bare).Egg(nk + new Vector3(0, 0.07f, 0.04f), new Vector3(0.036f, 0.085f, 0.04f), 7, 5);
+            var hd = nk + new Vector3(0, 0.13f, 0.09f);
+            kit.On("head").Paint(bare).Egg(hd, new Vector3(0.05f, 0.046f, 0.062f), 8, 5);
+            kit.Paint(bone, 0.3f).Egg(hd + new Vector3(0, -0.012f, 0.075f), new Vector3(0.024f, 0.026f, 0.055f), 6, 4);
+            kit.Paint(new Color(0.22f, 0.18f, 0.14f)).Egg(hd + new Vector3(0, -0.04f, 0.118f), new Vector3(0.016f, 0.026f, 0.02f), 5, 4);
+            foreach (int side in new[] { -1, 1 })
+                kit.Paint(new Color(0.96f, 0.80f, 0.30f), 0, 1).Egg(hd + new Vector3(side * 0.041f, 0.012f, 0.03f), Vector3.one * 0.011f, 5, 3);
+            // the tail: a short dark fan
+            kit.On("tail").Stain(p => p.z < At.z - 0.34f ? edge : (Color?)null).Paint(black).Egg(At + new Vector3(0, 0.0f, -0.28f), new Vector3(0.10f, 0.018f, 0.13f), 8, 3);
+            kit.Stain(null);
+            for (int i = 0; i < 2; i++)
+            {
+                int side = i == 0 ? -1 : 1;
+                var root = At + new Vector3(side * 0.09f, 0.07f, 0.05f);
+                var wrist = root + new Vector3(side * 0.36f, 0, 0);
+                // the arm of the wing: coverts over flight feathers, a pale edge where they end
+                kit.On("wi" + i).Stain(p => p.z < root.z - 0.13f ? edge : p.z > root.z + 0.03f ? brown : (Color?)null).Paint(black);
+                kit.Egg(root + new Vector3(side * 0.18f, 0, -0.05f), new Vector3(0.20f, 0.022f, 0.17f), 10, 3);
+                kit.Stain(null);
+                // the hand: five primaries, each its own finger
+                kit.On("wo" + i).Paint(black).Egg(wrist + new Vector3(side * 0.10f, 0, -0.03f), new Vector3(0.12f, 0.018f, 0.12f), 8, 3);
+                for (int f = 0; f < 5; f++)
+                {
+                    float a2 = (-26f + f * 23f) * Mathf.Deg2Rad;
+                    var along = new Vector3(side * Mathf.Cos(a2), 0, -Mathf.Sin(a2));
+                    kit.Frame(wrist + new Vector3(side * 0.12f, 0, -0.02f), along, Vector3.up, Vector3.Cross(along, Vector3.up));
+                    kit.Paint(f % 2 == 0 ? black : brown).Egg(new Vector3(0.115f, 0, 0), new Vector3(0.125f, 0.009f, 0.03f), 6, 3);
+                    kit.Frame();
+                }
+                // legs: feathered trousers, grey feet; and on the left one, the king's ring
+                var hip = At + new Vector3(side * 0.06f, -0.10f, -0.02f);
+                kit.On("leg" + i).Paint(black).Egg(hip + new Vector3(0, -0.02f, 0), new Vector3(0.04f, 0.055f, 0.045f), 6, 4);
+                kit.Paint(claw).Egg(hip + new Vector3(0, -0.105f, 0.0f), new Vector3(0.016f, 0.05f, 0.016f), 5, 3);
+                kit.Paint(claw).Egg(hip + new Vector3(0, -0.155f, 0.03f), new Vector3(0.03f, 0.014f, 0.05f), 6, 3);
+                if (i == 0) kit.Paint(gold, 1).Egg(hip + new Vector3(0, -0.10f, 0.0f), new Vector3(0.024f, 0.014f, 0.024f), 6, 3);
+            }
+            kit.Wear("Vulture");
+            return v;
+        }
+
+        public void Pose(ModelActor a, string anim, float n, float dt)
+        {
+            time += dt;
+            // how far the wings are out, how far swept back, how far the neck is down and out, how far it has slumped
+            float wantSpread = 0.06f, wantSweep = 0f, wantReach = 0f, wantSag = 0f, wantBeat = 0f;
+            switch (anim)
+            {
+                case "mark": wantSpread = 0.72f; wantReach = 1f; break;
+                case "stoop": wantSpread = 0.92f; wantSweep = 1f; wantReach = 0.7f; break;
+                case "fly": wantSpread = 1f; wantBeat = 1f; break;
+                case "hurt": wantSpread = 0.5f; wantSag = 0.4f; break;
+                case "down": wantSpread = 0.38f; wantSag = 1f; break;
+            }
+            float k = 1f - Mathf.Exp(-12f * dt);
+            spread = Mathf.Lerp(spread, wantSpread, k); sweep = Mathf.Lerp(sweep, wantSweep, k);
+            reach = Mathf.Lerp(reach, wantReach, k); sag = Mathf.Lerp(sag, wantSag, k); beat = Mathf.Lerp(beat, wantBeat, k);
+            float flap = Mathf.Sin(time * 11f) * beat, shrug = Mathf.Max(0, Mathf.Sin(time * 0.9f + 1f) - 0.86f) * 5f * (1f - spread);
+            body.localPosition = At + new Vector3(0, flap * -0.035f - sag * 0.13f + shrug * 0.01f, 0);
+            body.localRotation = Quaternion.Euler(-34f + reach * 30f + sweep * 14f + sag * 26f - beat * 10f, 0, sag * 9f * Mathf.Sin(time * 1.3f));
+            // perched, the head turns to look at things one at a time, the way a bird's does
+            float look = Mathf.Round(Mathf.Sin(time * 0.55f) * 1.4f) * 30f * (1f - reach) * (1f - beat);
+            neck.localRotation = Quaternion.Euler(18f + reach * 52f - sag * 30f, look * 0.5f, 0);
+            head.localRotation = Quaternion.Euler(8f + reach * 12f + sag * 30f, look * 0.6f, 0);
+            tail.localRotation = Quaternion.Euler(10f - spread * 16f - flap * 12f, 0, 0);
+            for (int i = 0; i < 2; i++)
+            {
+                int side = i == 0 ? -1 : 1;
+                // folded: the arm lies back along the body and the hand lies back along the arm
+                float fold = 1f - spread;
+                inner[i].localRotation = Quaternion.Euler(0, side * (fold * 78f + sweep * 24f), side * (-fold * 16f + flap * 34f + shrug * 6f - sag * 22f));
+                outer[i].localRotation = Quaternion.Euler(0, side * (fold * -150f + sweep * 22f), side * (flap * 26f - sag * 10f));
+                // talons forward in a stoop, trailing in level flight, folded under on the floor
+                leg[i].localRotation = Quaternion.Euler(-34f + reach * 20f - sweep * 44f + beat * 46f + sag * 40f, 0, 0);
             }
         }
     }

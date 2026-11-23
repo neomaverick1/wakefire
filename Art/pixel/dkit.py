@@ -532,7 +532,13 @@ class Floor:
                     m.set_into_ground(town.steps(2.5, n=6, rise=rise, run=run - rise), dx - 20, y + NW + 32)
                     m.exit(dx - 16, y + NW - 4, dx + 16, y + NW + 10, l["to"], l["spawn"], need=l.get("need"))
                     m.spawn(l["name"], dx, y + NW + 44, "down")
-                    if l.get("door"):
+                    if l.get("door") == 'sun':
+                        # the king's own door: a bronze sun that only the story opens (a 'gate', by its id)
+                        m.model("sealdoor", town.bronze_door(2.5, 2.0, 'sun'), dx, y + NW + 34, box=(-20, -26, 20, 0), kind="gate", data={"id": uid})
+                    elif l.get("door") == 'ghost':
+                        # the king's own door, which only the Ghost Key opens
+                        m.model("ghostdoor", town.bronze_door(2.5, 2.0, 'ghost'), dx, y + NW + 34, box=(-20, -26, 20, 0), kind="bigdoor", data={"id": uid})
+                    elif l.get("door"):
                         # a door standing at the foot of the steps: 'big' or 'lock'
                         dk = l["door"]
                         m.model("bigdoor" if dk == 'big' else "lockdoor", town.bronze_door(2.5, 2.0 if dk == 'big' else 1.9, 'bull' if dk == 'big' else 'lock'),
@@ -599,10 +605,16 @@ class Floor:
             g.vline(sx, y - SW, y - 1, side0); g.vline(sx + 1, y - SW, y - 1, side1 if sx < dx else side2)
 
     # ---- furniture
-    def chest(self, rm, x, y, uid, what, layer=0):
+    def chest(self, rm, x, y, uid, what, layer=0, ghost=False):
+        """ghost: a chest that died with its keeper. The colour of old ice, and (like the rest of the dead)
+        there for a waking man and not for a dreamer."""
         X, Y = rm.p(x, y)
-        kit.chest(self.m, X, Y, uid, what, layer=layer)
-        self.chests.append({"id": uid, "room": rm.id, "big": what in ("shield", "sling", "stick", "bigkey")})
+        if ghost:
+            self.m.model("ghostchest", lambda fi: town.chest(fi == 1, ghost=True), X, Y, box=(-9, -10, 9, 0), frames=2, names=["ghostchest", "ghostchest_open"],
+                         still=True, kind="chest", layer=1, data={"id": uid, "text": what})
+        else:
+            kit.chest(self.m, X, Y, uid, what, layer=layer)
+        self.chests.append({"id": uid, "room": rm.id, "big": what in ("shield", "bigkey", "ghostkey")})
 
     def bigchest(self, rm, x, y, uid, what):
         """A great chest, for a main item."""

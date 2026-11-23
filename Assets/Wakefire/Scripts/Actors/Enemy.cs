@@ -65,7 +65,10 @@ namespace Wakefire
         public float asleep;
         float zed;
         public virtual bool Sleeps => true;
-        public void Sleep(float seconds) { asleep = seconds; zed = 0; vel = Vector2.zero; }
+        public void Sleep(float seconds) { asleep = seconds; zed = 0; vel = Vector2.zero; atAttention = false; }
+        /// <summary>Told to stand there (the king's order, out of Nod's Pocket): the same stillness, with its eyes open.</summary>
+        public void StandThere(float seconds) { asleep = seconds; vel = Vector2.zero; atAttention = true; }
+        bool atAttention;
 
         protected virtual void Init() { }
         protected abstract void Think(float dt, Player p);
@@ -87,6 +90,7 @@ namespace Wakefire
         public bool Hit(HitInfo h)
         {
             if (!Present || health.Dead) return false;
+            if (Untouchable(h)) return false;
             if (!Accepts(h)) { Sfx.Play("clank"); Fx.Sparks(pos + new Vector2(0, 0.5f), new Color(1f, 0.85f, 0.5f), 4); return true; }
             if (!health.Take(h)) return false;
             asleep = 0;
@@ -109,6 +113,10 @@ namespace Wakefire
         }
 
         protected virtual bool Accepts(HitInfo h) => true;
+        /// <summary>For the dead: the blow goes through and meets nothing (whatever that looks like is the creature's to show).</summary>
+        protected virtual bool Untouchable(HitInfo h) => false;
+        /// <summary>Would this blow bite, or be turned (a shield, a shell)? For things that need to know before they land.</summary>
+        public bool Takes(HitInfo h) => Accepts(h);
         protected virtual float KnockScale => 1f;
         protected virtual string HurtSound => "enemy_hit";
         protected virtual Color BurstColor => new Color(0.25f, 0.18f, 0.32f);
@@ -143,7 +151,7 @@ namespace Wakefire
             {
                 asleep -= dt;
                 anim.Play("idle", facing);
-                if ((zed -= dt) <= 0) { zed = 0.8f; Zed.Spawn(pos + new Vector2(0.25f, 1.5f), layer == WorldLayer.Both ? WorldLayer.Waking : layer); }
+                if (!atAttention && (zed -= dt) <= 0) { zed = 0.8f; Zed.Spawn(pos + new Vector2(0.25f, 1.5f), layer == WorldLayer.Both ? WorldLayer.Waking : layer); }
             }
             else if (p && p.state != Player.State.Dead && !(Story.I && Story.I.Running)) Think(dt, p);
             // touching hurts (only in the world we share)

@@ -466,102 +466,6 @@ def lamps(m, pts):
         kit.spirit_lamp(m, x, y, light=4.4)
 
 
-def tomb_1():
-    """The hall of servants: the king's clay soldiers in their niches, the robbers asleep where
-    the sleep caught them, a wall the dead put up that only the waking world has, and the key
-    on the far side of it."""
-    TW, TH = 32, 24
-    W, H = TW * 16, TH * 16
-    m = MapBuilder("tomb_1", TW, TH, (12, 10, 18, 255), music="tomb")
-    T = floor(m, W, H, seed=301)
-    runner(T, 244, 210, 24, H - 226)
-    runner(T, 244, 104, 24, 72)
-    T.contact(24, 176, 236, 208, reach=5, strength=1.3); T.contact(276, 176, W - 24, 208, reach=5, strength=1.3)
-    g = m.bake()
-    walls(m, W, H, portal=256, steps_to=100)
-    G.cobweb(g, 26, 52); G.cobweb(g, W - 27, 52, flip=True)
-    m.set_into_ground(town.tomb_partition((236 - 24) / 16.0), 24, 208, seed=302)
-    m.set_into_ground(town.tomb_partition((W - 24 - 276) / 16.0), 276, 208, seed=303)
-    m.solid(24, 176, 236, 204); m.solid(276, 176, W - 24, 204)
-    m.model("lockdoor", town.bronze_door(2.5, 1.9, 'lock'), 256, 206, box=(-20, -26, 20, 0), kind="lockdoor", data={"id": "t1_door"})
-    # east: a walled bay, the key inside it, and in the one way through three of the king's servants,
-    # dead and on duty, shoulder to shoulder. They are there in the waking world and not in the dream
-    m.set_into_ground(town.tomb_partition_ns(92 / 16.0, h=0.9), 400, 300, seed=304)
-    m.set_into_ground(town.tomb_partition(20 / 16.0, h=0.9), 408, 300, seed=305)
-    m.set_into_ground(town.tomb_partition(20 / 16.0, h=0.9), 468, 300, seed=306)
-    m.solid(400, 208, 408, 300); m.solid(408, 292, 428, 300); m.solid(468, 292, 488, 300)
-    for i, x in enumerate((436, 448, 460)):
-        m.marker("npc", x, 300, who=f"servant_{i}")
-    m.solid(428, 290, 468, 302, 1)
-    kit.chest(m, 448, 250, "t1_key", "key")
-    # west: the robbers, asleep on their sacks
-    m.model("loot", necro.treasure(1), 96, 300, box=(-12, -8, 12, 0), kind="look",
-            data={"id": "say", "text": "Grave goods, bagged and ready to go.^They got this far forty nights ago. They have not got any further."})
-    for (x, y) in ((70, 212), (176, 212), (336, 212)):
-        m.model("sentinel_niche", necro.sentinel_niche(), x, y, box=None)
-    lamps(m, ((150, 334), (362, 334), (150, 120), (362, 120)))
-    lamps(m, ((420, 228), (476, 228)))
-    m.model("sarcophagus", necro.sarcophagus(1), 180, 344, box=(-16, -13, 16, 0), kind="look", data={"id": "say", "text": COFFIN})
-    m.model("sarcophagus_open", necro.sarcophagus(2, True), 326, 290, box=(-16, -14, 16, 0), kind="look", data={"id": "say", "text": COFFIN_OPEN})
-    m.model("sarcophagus", necro.sarcophagus(1), 110, 140, box=(-16, -13, 16, 0), kind="look", data={"id": "say", "text": COFFIN})
-    m.model("sarcophagus", necro.sarcophagus(1), 420, 140, box=(-16, -13, 16, 0), kind="look", data={"id": "say", "text": COFFIN})
-    for i, (x, y) in enumerate(((44, 250), (474, 340), (44, 110), (474, 108), (300, 236))):
-        kit.urn(m, x, y, i)
-    m.marker("npc", 70, 326, who="robber_a")
-    m.marker("npc", 124, 334, who="robber_b")
-    m.enemy("ushabti", 300, 320, "t1_g1", once=True)
-    m.enemy("ushabti", 200, 140, "t1_g2", once=True)
-    for i, (x, y) in enumerate(((200, 280), (350, 340))):
-        m.enemy("scarab", x, y, f"t1_s{i}")
-    m.spawn("south", 256, H - 26, "up")
-    m.spawn("top", 256, 124, "down")
-    m.exit(236, H - 8, 276, H, "necropolis", "door")
-    m.exit(240, 64, 272, 80, "tomb_2", "south")
-    m.save()
-
-
-def tomb_2():
-    """The hall of the lyre: a trench cut right across it that the dead filled with dark, four fire
-    altars to light, the queen's lyre, and beyond them the door to the king."""
-    TW, TH = 32, 24
-    W, H = TW * 16, TH * 16
-    m = MapBuilder("tomb_2", TW, TH, (12, 10, 18, 255), music="tomb")
-    T = floor(m, W, H, seed=311)
-    runner(T, 244, 262, 24, H - 278)
-    runner(T, 244, 84, 24, 90)
-    g = m.bake()
-    py_, ph = 196, 44
-    trench(m, g, W, H, py_, ph, 313, bridge_x=180)
-    bx0, by0, bx1, by1 = 168, py_ - 10, 192, py_ + ph + 10
-    def bridge_draw(cv, ax, ay, fi):
-        G.moon_bridge(cv, [(12, 6), (12, by1 - by0 - 6)], 16, fi)
-    m.prop("moon_bridge_tomb", bridge_draw, bx0, by0, layer=2, size=(bx1 - bx0, by1 - by0), anchor=(0, 0), pad=0)
-    walls(m, W, H, portal=256, steps_to=76)
-    G.cobweb(g, 26, 52); G.cobweb(g, W - 27, 52, flip=True)
-    # four fire altars for the dead, out: two this side of the trench, two the other
-    for i, (x, y) in enumerate(((120, 300), (392, 300), (120, 150), (392, 150))):
-        kit.brazier(m, x, y, False, f"lyre_{i}")
-    kit.brazier_frames(m)
-    m.model("lyre", town.lyre(), 330, 156, box=(-10, -8, 12, 0), kind="look", data={"id": "lyre"})
-    m.model("sealdoor", town.bronze_door(2.5, 2.0, 'sun'), 256, 76, box=(-20, -26, 20, 0), kind="gate", data={"id": "t2_seal"})
-    kit.chest(m, 420, 336, "t2_coins", "shekels:40")
-    m.model("sarcophagus", necro.sarcophagus(1), 84, 344, box=(-16, -13, 16, 0), kind="look", data={"id": "say", "text": COFFIN})
-    m.model("sarcophagus", necro.sarcophagus(1), 440, 116, box=(-16, -13, 16, 0), kind="look", data={"id": "say", "text": COFFIN})
-    m.model("treasure_3", necro.treasure(3), 76, 116, box=(-12, -8, 12, 0))
-    lamps(m, ((60, 262), (452, 262), (200, 110), (312, 110)))
-    for i, (x, y) in enumerate(((44, 300), (470, 300), (44, 150), (300, 330))):
-        kit.urn(m, x, y, i + 1)
-    m.marker("npc", 404, 300, who="robber_c")
-    m.enemy("ushabti", 150, 330, "t2_g1", once=True)
-    m.enemy("ushabti", 360, 120, "t2_g2", once=True)
-    m.enemy("ushabti", 150, 120, "t2_g3", once=True)
-    m.spawn("south", 256, H - 26, "up")
-    m.spawn("top", 256, 96, "down")
-    m.exit(236, H - 8, 276, H, "tomb_1", "top")
-    m.exit(240, 44, 272, 58, "tomb_3", "south", need="door_t2_seal")
-    m.save()
-
-
 def sun_floor(T, cx, cy, r, sq=1.16):
     """The sun let into the floor of the king's chamber in gold, blue and red stone: he had it
     put where he could see it, since he was not going to see the other one again."""
@@ -612,11 +516,12 @@ def tomb_3():
     m.marker("boss", W // 2, 220)
     m.marker("npc", 86, 318, who="robber_d")
     m.spawn("south", W // 2, H - 26, "up")
-    m.exit(W // 2 - 20, H - 8, W // 2 + 20, H, "tomb_2", "top")
+    m.exit(W // 2 - 20, H - 8, W // 2 + 20, H, "tomb_hi", "top")
     m.save()
 
 
 if __name__ == "__main__":
-    which = sys.argv[1:] or ["necro_road", "necropolis", "tomb_1", "tomb_2", "tomb_3"]
+    # (the tomb's two floors of halls are in tomb_maps.py)
+    which = sys.argv[1:] or ["necro_road", "necropolis", "tomb_3"]
     for name in which:
         globals()[name]()

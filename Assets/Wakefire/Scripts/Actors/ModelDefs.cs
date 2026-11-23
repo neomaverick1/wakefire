@@ -229,7 +229,10 @@ namespace Wakefire
             d.Own("use", "Spell_Simple_Shoot", loop: false, fade: 0.06f);
             d.Own("block", "Idle_Shield_Loop", fade: 0.05f);
             d.Own("guard", "Idle_Shield_Loop", fade: 0.07f);
-            d.Own("throw", "OverhandThrow", 0.10f, 1.05f, loop: false, fade: 0.05f);
+            // the throw: the arm comes over, and the wheel leaves his hand on the frame the game lets it go
+            var thr = d.Fit("throw", "OverhandThrow", 0.10f, 1.05f, warp: new[] { 0f, 0f, Player.ThrowFrame / (float)Player.ThrowFrames, 0.25f, 1f, 1f }, fade: 0.05f);
+            thr.frames = Player.ThrowFrames;
+            thr.fps = 15f;
             d.Own("nod", "Idle_Loop", fade: 0.05f).With(Gesture.NodOff);
             d.Own("wake", "Idle_Loop", fade: 0.03f).With(Gesture.WakeUp);
             d.Own("doze", "Idle_Loop", speed: 0.5f).With(Gesture.Doze);
