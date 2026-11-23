@@ -79,13 +79,17 @@ namespace Wakefire
             if (p.health.max != max) { p.health.max = max; p.health.hp = Mathf.Min(max, Mathf.Max(p.health.hp, 1)); }
         }
 
+        /// <summary>What to call the action button and the item button for whoever is playing.</summary>
+        public static string ActName => TouchControls.Wanted ? "the {g}action{/} button" : "{g}E{/}";
+        public static string ItemName => TouchControls.Wanted ? "the {g}item{/} button" : "{g}F{/}";
+
         public static IEnumerator GiveItem(string what)
         {
             switch (what)
             {
                 case "shield":
                     Set("item_shield"); I.ApplyItems();
-                    yield return ItemGet("mirror_shield", "You got the {g}BRONZE MIRROR SHIELD{/}!^Polished so bright you can see how tired you look.| Face fire with it, and the fire goes back where it came from.");
+                    yield return ItemGet("mirror_shield", ShieldText);
                     break;
                 case "oil":
                     Set("item_oil"); I.ApplyItems();
@@ -147,11 +151,16 @@ namespace Wakefire
             yield return Wait(0.6f);
             yield return AzarSays("...Almost nobody.");
             yield return Narrate("The temple gate is locked, and Captain Dur has the key.");
-            if (TouchControls.Wanted)
-                yield return Narrate("Put your thumb down anywhere on the left to {g}walk{/}. Talk and look with the {g}speech{/} button. Swing the khopesh with the {g}blade{/}, roll with the {g}circle{/}.^Hold out the {g}Wakefire{/} with the {g}lamp{/}. And when you must, nod off with the {t}moon{/}.");
-            else
-                yield return Narrate("Move with {g}WASD{/} or the arrows. Talk and look with {g}E{/}. Swing the khopesh with {g}J{/} or {g}Space{/}, roll with {g}K{/}.^Hold out the {g}Wakefire{/} with {g}F{/}. And when you must, nod off with {t}Q{/}.");
+            yield return Narrate(Lesson(TouchControls.Wanted));
         }
+
+        /// <summary>The first lesson: what each button does, for thumbs or for keys.</summary>
+        public static string Lesson(bool touch) => touch
+            ? "Put your thumb down anywhere on the left to {g}walk{/}. Swing the khopesh with the {g}blade{/}, roll with the {g}circle{/}.^The {g}action{/} button does whatever is in front of you: talk, open, read, look. The {g}lamp{/} holds out the {g}Wakefire{/}.^The button at the top opens your {g}pack{/}: what you carry, your journeys, the map.| And when you must, nod off with the {t}moon{/}."
+            : "Move with {g}WASD{/} or the arrows. Swing the khopesh with {g}J{/} or {g}Space{/}, roll with {g}K{/}.^{g}E{/} does whatever is in front of you: talk, open, read, look. {g}F{/} holds out the {g}Wakefire{/}.^{g}Esc{/} opens your {g}pack{/}: what you carry, your journeys, the map.| And when you must, nod off with {t}Q{/}.";
+
+        /// <summary>What the mirror shield says when Azar lifts it out of its chest.</summary>
+        public static string ShieldText => "You got the {g}BRONZE MIRROR SHIELD{/}!^Polished so bright you can see how tired you look.^With nothing in front of you, hold " + ActName + " to raise it.^A blow from the front glances off it. And fire goes back where it came from.";
 
         public static Story Ensure()
         {

@@ -88,6 +88,13 @@ namespace Wakefire
             return true;
         }
 
+        /// <summary>This one's blow has just stopped on Azar's raised shield: it is thrown back off the bronze.</summary>
+        public virtual void Blocked(Player p)
+        {
+            knockVel = (pos - p.pos).normalized * 6f * Mathf.Max(0.5f, KnockScale);
+            knockClock = 0.24f;
+        }
+
         protected virtual bool Accepts(HitInfo h) => true;
         protected virtual float KnockScale => 1f;
         protected virtual string HurtSound => "enemy_hit";
@@ -159,17 +166,17 @@ namespace Wakefire
     {
         Vector2 dir;
         float next;
-        public static Crab Spawn(Vector2 at) => Make<Crab>("crab", "idle", at, WorldLayer.Waking, 2);
-        protected override void Init() { speed = 2.6f; half = new Vector2(0.45f, 0.16f); }
+        public static Crab Spawn(Vector2 at) => Make<Crab>("crab", "idle", at, WorldLayer.Waking, 3);
+        protected override void Init() { speed = 2.9f; half = new Vector2(0.45f, 0.16f); }
         protected override Color BurstColor => new Color(0.75f, 0.3f, 0.22f);
 
         protected override void Think(float dt, Player p)
         {
             next -= dt;
-            if (CanSee(p, 4.5f))
+            if (CanSee(p, 5.2f))
             {
                 var d = p.pos - pos;
-                if (d.magnitude < 1.1f && next <= 0) { anim.Play("attack", Facing.Down, true); Sfx.Play("crab_snap", 0.7f); next = 1.1f; }
+                if (d.magnitude < 1.1f && next <= 0) { anim.Play("attack", Facing.Down, true); Sfx.Play("crab_snap", 0.7f); next = 0.9f; }
                 // crabs come at you sideways
                 var side = new Vector2(Mathf.Sign(d.x), Mathf.Clamp(d.y, -0.6f, 0.6f));
                 if (anim.anim != "attack" || anim.Done) { anim.Play("walk", Facing.Down); Move(side.normalized * speed * 1.2f, dt); }
@@ -194,8 +201,8 @@ namespace Wakefire
         S s;
         Vector2 lungeDir;
         float orbit;
-        public static Jackal Spawn(Vector2 at) => Make<Jackal>("jackal", "idle", at, WorldLayer.Waking, 3);
-        protected override void Init() { speed = 3.2f; half = new Vector2(0.5f, 0.16f); orbit = Random.value * 6f; }
+        public static Jackal Spawn(Vector2 at) => Make<Jackal>("jackal", "idle", at, WorldLayer.Waking, 4);
+        protected override void Init() { speed = 3.5f; half = new Vector2(0.5f, 0.16f); orbit = Random.value * 6f; }
         protected override Color BurstColor => new Color(0.62f, 0.5f, 0.34f);
 
         protected override void Think(float dt, Player p)
@@ -218,24 +225,25 @@ namespace Wakefire
                     anim.Play("run", FaceOf(w));
                     anim.SetFacing(FaceOf(w));
                     Move(w.normalized * Mathf.Min(speed, w.magnitude * 3f), dt);
-                    if (stateClock > 1.6f && d.magnitude < 4.2f) { s = S.Crouch; stateClock = 0; facing = FaceOf(d); anim.Play("crouch", facing, true); Sfx.Play("jackal_growl", 0.7f); }
+                    if (stateClock > 1.25f && d.magnitude < 4.4f) { s = S.Crouch; stateClock = 0; facing = FaceOf(d); anim.Play("crouch", facing, true); Sfx.Play("jackal_growl", 0.7f); }
                     break;
                 case S.Crouch:
                     facing = FaceOf(d);
                     anim.SetFacing(facing);
-                    if (stateClock > 0.45f) { s = S.Lunge; stateClock = 0; lungeDir = d.normalized; anim.Play("lunge", FaceOf(lungeDir), true); Sfx.Play("jackal_bark", 0.8f); }
+                    if (stateClock > 0.38f) { s = S.Lunge; stateClock = 0; lungeDir = d.normalized; anim.Play("lunge", FaceOf(lungeDir), true); Sfx.Play("jackal_bark", 0.8f); }
                     break;
                 case S.Lunge:
-                    Move(lungeDir * 9.5f * Mathf.Lerp(1f, 0.3f, stateClock / 0.42f), dt);
+                    Move(lungeDir * 10.4f * Mathf.Lerp(1f, 0.3f, stateClock / 0.42f), dt);
                     if (stateClock > 0.42f) { s = S.Recover; stateClock = 0; anim.Play("idle", facing, true); }
                     break;
                 case S.Recover:
-                    if (stateClock > 0.6f) { s = S.Prowl; stateClock = 0; }
+                    if (stateClock > 0.5f) { s = S.Prowl; stateClock = 0; }
                     break;
             }
         }
 
         protected override void OnHurt(HitInfo h) { s = S.Recover; stateClock = 0; }
+        public override void Blocked(Player p) { base.Blocked(p); s = S.Recover; stateClock = -0.35f; anim.Play("idle", facing, true); }
     }
 
     // ---------------------------------------------------------------------------------- moth
@@ -247,7 +255,7 @@ namespace Wakefire
         public static Moth Spawn(Vector2 at) => Make<Moth>("moth", "fly", at, WorldLayer.Dream, 1);
         /// <summary>How many moths are about (the king's chamber only ever draws a few).</summary>
         public static int All2() { int n = 0; foreach (var e in All) if (e is Moth) n++; return n; }
-        protected override void Init() { flying = true; speed = 2.2f; hover = 0.6f; half = new Vector2(0.3f, 0.2f); }
+        protected override void Init() { flying = true; speed = 2.5f; hover = 0.6f; half = new Vector2(0.3f, 0.2f); }
         protected override Color BurstColor => new Color(0.55f, 0.45f, 0.9f);
 
         protected override void Think(float dt, Player p)
@@ -258,7 +266,7 @@ namespace Wakefire
             if (CanSee(p, 6f))
             {
                 var d = p.pos + new Vector2(0, 0.4f) - pos;
-                if (dart <= 0 && d.magnitude < 3.2f) { drift = d.normalized * 7f; dart = 1.4f; Sfx.Play("moth", 0.6f); }
+                if (dart <= 0 && d.magnitude < 3.6f) { drift = d.normalized * 7.6f; dart = 1.15f; Sfx.Play("moth", 0.6f); }
                 drift = Vector2.Lerp(drift, d.normalized * speed + new Vector2(Mathf.Sin(stateClock * 7f), Mathf.Cos(stateClock * 5f)) * 1.5f, dt * 2.5f);
             }
             else drift = Vector2.Lerp(drift, (home - pos) * 0.8f + new Vector2(Mathf.Sin(stateClock * 3f), Mathf.Cos(stateClock * 2f)), dt * 2f);
@@ -276,8 +284,8 @@ namespace Wakefire
         Vector2 chargeDir;
         public Vector2[] beat;
         int leg;
-        public static Sentinel Spawn(Vector2 at) => Make<Sentinel>("sentinel", "idle", at, WorldLayer.Both, 4);
-        protected override void Init() { speed = 1.4f; half = new Vector2(0.32f, 0.16f); touchDamage = 2; }
+        public static Sentinel Spawn(Vector2 at) => Make<Sentinel>("sentinel", "idle", at, WorldLayer.Both, 5);
+        protected override void Init() { speed = 1.6f; half = new Vector2(0.32f, 0.16f); touchDamage = 2; }
         protected override float KnockScale => 0.35f;
         protected override string HurtSound => "clank";
         protected override Color BurstColor => new Color(0.85f, 0.55f, 0.25f);
@@ -307,7 +315,7 @@ namespace Wakefire
                     break;
                 }
                 case S.Aim:
-                    if (stateClock > 0.5f)
+                    if (stateClock > 0.42f)
                     {
                         s = S.Charge; stateClock = 0;
                         chargeDir = facing == Facing.Down ? Vector2.down : facing == Facing.Up ? Vector2.up : facing == Facing.Left ? Vector2.left : Vector2.right;
@@ -317,8 +325,8 @@ namespace Wakefire
                 case S.Charge:
                 {
                     var before = pos;
-                    Move(chargeDir * 6.5f, dt);
-                    if ((pos - before).magnitude < 6.5f * dt * 0.3f || stateClock > 1.6f)
+                    Move(chargeDir * 7.2f, dt);
+                    if ((pos - before).magnitude < 7.2f * dt * 0.3f || stateClock > 1.6f)
                     {
                         // slammed into something: stuck for a moment, open to a blow
                         s = S.Stuck; stateClock = 0; PixelView.I.Shake(1, 0.15f); Sfx.Play("clank"); anim.Play("hurt", facing, true);
@@ -326,9 +334,16 @@ namespace Wakefire
                     break;
                 }
                 case S.Stuck:
-                    if (stateClock > 1.2f) { s = S.Patrol; stateClock = 0; }
+                    if (stateClock > 1.0f) { s = S.Patrol; stateClock = 0; }
                     break;
             }
+        }
+
+        /// <summary>Bronze on bronze: a charge that meets the mirror shield stops dead, and so does the sentinel.</summary>
+        public override void Blocked(Player p)
+        {
+            base.Blocked(p);
+            if (s == S.Charge) { s = S.Stuck; stateClock = 0; anim.Play("hurt", facing, true); PixelView.I.Shake(1, 0.15f); }
         }
     }
 }

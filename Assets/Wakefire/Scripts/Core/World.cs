@@ -81,8 +81,8 @@ namespace Wakefire
                 Fade.Set(0);
                 yield break;
             }
-            var saved = Fallen.Choice == Fallen.LoadSave ? Save.ReadManual() : null;
-            if (saved != null) { Begin(saved); Save.Write(CurrentMap, CurrentSpawn, quiet: true); }
+            var saved = Fallen.Choice == Fallen.LoadSave ? Save.Read(Fallen.Slot) : null;
+            if (saved != null) { Save.Use(Fallen.Slot); Begin(saved); }
             else
             {
                 EnterMap(CurrentMap, CurrentSpawn);
@@ -92,21 +92,23 @@ namespace Wakefire
             Busy = false;
         }
 
-        /// <summary>Bring back the player's own save, from the pause menu.</summary>
-        public void LoadGame(SaveData d)
+        /// <summary>Go back to what one of the three journeys last saved, from the pause screen. That
+        /// journey becomes the one in play.</summary>
+        public void LoadGame(int slot)
         {
+            var d = Save.Read(slot);
             if (d == null || Busy) return;
-            StartCoroutine(LoadRoutine(d));
+            StartCoroutine(LoadRoutine(slot, d));
         }
 
-        IEnumerator LoadRoutine(SaveData d)
+        IEnumerator LoadRoutine(int slot, SaveData d)
         {
             Busy = true;
             var p = Player.I;
             if (p) p.SetState(Player.State.Cutscene);
             yield return Fade.Out(0.35f);
+            Save.Use(slot);
             Begin(d);
-            Save.Write(CurrentMap, CurrentSpawn, quiet: true);
             yield return null;
             yield return Fade.In(0.4f);
             Busy = false;

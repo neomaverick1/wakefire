@@ -129,6 +129,56 @@ def roll(X, Y):
     return np.minimum(ring, head), None
 
 
+def fine(X, Y, pts, radii, k=8):
+    """A stroke with enough points along it that thin lines stay lines."""
+    pts = np.asarray(pts, float); radii = np.asarray(radii, float)
+    P, Rr = [], []
+    for i in range(len(pts) - 1):
+        for t in np.linspace(0, 1, k, endpoint=False):
+            P.append(pts[i] + (pts[i + 1] - pts[i]) * t); Rr.append(radii[i] + (radii[i + 1] - radii[i]) * t)
+    P.append(pts[-1]); Rr.append(radii[-1])
+    return stroke(X, Y, P, Rr)
+
+
+def shield(X, Y):
+    """Guarding: the round mirror shield, a groove inside its rim and a ring round its boss."""
+    R = np.hypot(X, Y)
+    disc = R - 0.64
+    cuts = np.minimum(np.abs(R - 0.47) - 0.032, np.abs(R - 0.20) - 0.03)
+    return disc, cuts
+
+
+def eye(X, Y):
+    """Looking and reading: an eye, the way the old cities drew it, under its brow."""
+    Y = Y - 0.07
+    almond = np.maximum(circle(X, Y, 0, 0.44, 0.80), circle(X, Y, 0, -0.44, 0.80))
+    brow = fine(X, Y, [(-0.52, -0.42), (-0.22, -0.58), (0.22, -0.58), (0.52, -0.42)], [0.03, 0.045, 0.045, 0.03])
+    return np.minimum(almond, brow), np.abs(circle(X, Y, 0, 0, 0.21)) - 0.06
+
+
+def key(X, Y):
+    """Opening: a key, bow uppermost."""
+    bow = circle(X, Y, 0, -0.40, 0.27)
+    shaft = stroke(X, Y, [(0, -0.16), (0, 0.66)], [0.075, 0.075])
+    teeth = np.minimum(box(X, Y, 0.15, 0.36, 0.13, 0.055), box(X, Y, 0.13, 0.58, 0.11, 0.055))
+    return np.minimum.reduce([bow, shaft, teeth]), circle(X, Y, 0, -0.40, 0.115)
+
+
+def sling(X, Y):
+    """The sling: two cords, a cradle, and the stone in it."""
+    left = fine(X, Y, [(-0.10, -0.66), (-0.34, -0.30), (-0.30, 0.10), (-0.10, 0.36)], [0.045, 0.045, 0.05, 0.055])
+    right = fine(X, Y, [(0.22, -0.60), (0.38, -0.26), (0.30, 0.12), (0.10, 0.36)], [0.045, 0.045, 0.05, 0.055])
+    loop = np.abs(circle(X, Y, -0.02, -0.66, 0.10)) - 0.04
+    stone = circle(X, Y, 0, 0.40, 0.21)
+    return np.minimum.reduce([left, right, loop, stone]), None
+
+
+def stick(X, Y):
+    """The throwing stick: one bent length of wood, thicker at the elbow."""
+    pts = rot([(-0.62, 0.20), (-0.30, -0.10), (0.0, -0.20), (0.30, -0.06), (0.60, 0.30)], -14)
+    return fine(X, Y, pts, [0.06, 0.09, 0.105, 0.09, 0.06]), None
+
+
 def rosette(X, Y):
     """The eight-petalled flower the old cities put on everything."""
     d = circle(X, Y, 0, 0, 0.15)
@@ -252,7 +302,8 @@ def save(name, rgba):
     return im
 
 
-SIZES = {'attack': 40, 'nod': 30, 'item': 30, 'talk': 30, 'roll': 30, 'pause': 20, 'stick_base': 62, 'stick_knob': 28}
+SIZES = {'attack': 40, 'nod': 30, 'item': 30, 'talk': 30, 'roll': 30, 'pause': 20, 'stick_base': 62, 'stick_knob': 28,
+         'act_open': 30, 'act_look': 30, 'act_guard': 30, 'item_sling': 30, 'item_stick': 30}
 
 if __name__ == '__main__':
     made = {}
@@ -261,6 +312,12 @@ if __name__ == '__main__':
     made['item'] = relief(SIZES['item'] * DENSITY, flame, sign_scale=0.66)
     made['talk'] = relief(SIZES['talk'] * DENSITY, talk, sign_scale=0.64)
     made['roll'] = relief(SIZES['roll'] * DENSITY, roll, sign_scale=0.70)
+    # what the action button turns into, and what the item button can carry
+    made['act_open'] = relief(SIZES['act_open'] * DENSITY, key, sign_scale=0.66)
+    made['act_look'] = relief(SIZES['act_look'] * DENSITY, eye, sign_scale=0.70)
+    made['act_guard'] = relief(SIZES['act_guard'] * DENSITY, shield, sign_scale=0.66)
+    made['item_sling'] = relief(SIZES['item_sling'] * DENSITY, sling, sign_scale=0.66)
+    made['item_stick'] = relief(SIZES['item_stick'] * DENSITY, stick, sign_scale=0.68)
     made['pause'] = relief(SIZES['pause'] * DENSITY, bars, rim=0.17, beads=0, sign_scale=0.62)
     made['stick_base'] = ring(SIZES['stick_base'] * DENSITY)
     made['stick_knob'] = knob(SIZES['stick_knob'] * DENSITY)
@@ -269,19 +326,19 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         # a look at them on a patch of the game's colours, at the size a 1080p phone shows them
         from PIL import ImageDraw
-        W, H = 1500, 560
+        W, H = 1900, 560
         bg = Image.new('RGB', (W, H), (70, 62, 78))
         d = ImageDraw.Draw(bg)
         for i in range(0, W, 80):
             for j in range(0, H, 40):
                 d.rectangle([i + (j // 40 % 2) * 40, j, i + (j // 40 % 2) * 40 + 76, j + 36], fill=(96 + (i * 7 + j * 3) % 24, 88 + (i * 5 + j) % 20, 92))
-        d.rectangle([900, 0, W, H], fill=(150, 120, 84))
+        d.rectangle([0, 280, W, H], fill=(150, 120, 84))
         x = 20
-        for k in ('attack', 'nod', 'item', 'talk', 'roll', 'pause', 'stick_base', 'stick_knob'):
+        for k in ('attack', 'nod', 'item', 'talk', 'roll', 'act_open', 'act_look', 'act_guard', 'item_sling', 'item_stick', 'pause'):
             im = ims[k]; s = SIZES[k] * 5                 # 1080p: five screen pixels to the game pixel
             sm = im.resize((s, s), Image.LANCZOS)
             a = sm.split()[3].point(lambda v: int(v * 0.94))
-            bg.paste(sm, (x, 40), a); bg.paste(sm, (min(W - s - 4, x + 20), 320), a)
+            bg.paste(sm, (x, 40), a); bg.paste(sm, (min(W - s - 4, x), 320), a)
             x += s + 16
         d.text((8, 6), "INTERNAL TEST  -  touch buttons, not the final look", fill=(255, 200, 60))
         bg.save(sys.argv[1]); print(sys.argv[1], bg.size)

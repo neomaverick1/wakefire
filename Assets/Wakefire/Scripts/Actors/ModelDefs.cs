@@ -218,6 +218,8 @@ namespace Wakefire
             d.Own("push", "Push_Loop");
             d.Own("use", "Spell_Simple_Shoot", loop: false, fade: 0.06f);
             d.Own("block", "Idle_Shield_Loop", fade: 0.05f);
+            d.Own("guard", "Idle_Shield_Loop", fade: 0.07f);
+            d.Own("throw", "OverhandThrow", 0.10f, 1.05f, loop: false, fade: 0.05f);
             d.Own("nod", "Idle_Loop", fade: 0.05f).With(Gesture.NodOff);
             d.Own("wake", "Idle_Loop", fade: 0.03f).With(Gesture.WakeUp);
             d.Own("doze", "Idle_Loop", speed: 0.5f).With(Gesture.Doze);

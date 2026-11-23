@@ -64,7 +64,7 @@ namespace Wakefire
             k.anim.sheet = SpriteSheet.Load("priest");
             k.anim.Play("sit", Facing.Down, true);
             k.health = go.AddComponent<Health>();
-            k.health.max = k.health.hp = 15;
+            k.health.max = k.health.hp = 18;
             k.glow = LightBlob.Create(go.transform, seat + new Vector2(0, 1.6f), 4.5f, new Color(0.45f, 1f, 0.85f), 0.5f, false);
             // the crown as a thing of its own: hanging in the dream where his head would be, or lying where it fell
             var cg = new GameObject("Crown");
@@ -249,7 +249,7 @@ namespace Wakefire
         void Think(float dt, Player p)
         {
             var d = p.pos - pos;
-            float pace = 1f + 0.18f * round;
+            float pace = 1.08f + 0.18f * round;
             switch (s)
             {
                 case S.Stalk:
@@ -274,8 +274,10 @@ namespace Wakefire
                     {
                         struck = true;
                         StartCoroutine(Wave(pos + Vec(facing) * 1.0f));
+                        // hurt, he hits the floor hard enough that it answers twice
+                        if (health.hp <= health.max / 2) StartCoroutine(Aftershock(pos + Vec(facing) * 1.0f));
                     }
-                    if (anim.Done || clock > 1.4f) { s = S.Stalk; cool = Mathf.Max(0.7f, 1.5f - 0.3f * round); }
+                    if (anim.Done || clock > 1.4f) { s = S.Stalk; cool = Mathf.Max(0.6f, 1.3f - 0.3f * round); }
                     break;
                 case S.Cast:
                     if (!struck && anim.Frame >= 4)
@@ -287,10 +289,10 @@ namespace Wakefire
                         for (int i = 0; i < n; i++)
                         {
                             float a = (i - (n - 1) / 2f) * 20f;
-                            KingBolt.Throw(hand, (Vector2)(Quaternion.Euler(0, 0, a) * aim) * (4.6f + 0.5f * round), gameObject);
+                            KingBolt.Throw(hand, (Vector2)(Quaternion.Euler(0, 0, a) * aim) * (5.0f + 0.5f * round), gameObject);
                         }
                     }
-                    if (anim.Done || clock > 1.2f) { s = S.Stalk; cool = Mathf.Max(0.8f, 1.6f - 0.3f * round); }
+                    if (anim.Done || clock > 1.2f) { s = S.Stalk; cool = Mathf.Max(0.7f, 1.4f - 0.3f * round); }
                     break;
                 case S.Flinch:
                     if (clock > 0.7f) { s = S.Stalk; cool = 0.8f; }
@@ -331,6 +333,13 @@ namespace Wakefire
         }
 
         /// <summary>Where the mace lands: a blow at the spot, then the floor carries it outward.</summary>
+        IEnumerator Aftershock(Vector2 at)
+        {
+            yield return new WaitForSeconds(0.62f);
+            if (!Fighting || s == S.Bare || s == S.Reel) yield break;
+            yield return Wave(at);
+        }
+
         IEnumerator Wave(Vector2 at)
         {
             Sfx.Play("king_slam");

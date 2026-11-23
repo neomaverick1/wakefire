@@ -45,6 +45,14 @@ namespace Wakefire
             return false;
         }
 
+        /// <summary>For things in the air: walls and furniture stop them, water and drops do not.</summary>
+        public static bool Blocks(Rect r, Vector2 at, Object ignore = null)
+        {
+            foreach (var s in all)
+                if (!s.pit && s.owner != ignore && s.r.Overlaps(r) && Active(s, at)) return true;
+            return false;
+        }
+
         public static Solid FirstOverlap(Rect r, Vector2 at)
         {
             foreach (var s in all)

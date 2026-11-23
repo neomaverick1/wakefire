@@ -7,7 +7,7 @@ namespace Wakefire
 {
     public static class Controls
     {
-        public static InputAction Move, Attack, Roll, Nod, Interact, Item, Pause, Confirm, Back;
+        public static InputAction Move, Attack, Roll, Nod, Interact, Item, Pause, Confirm, Back, PageLeft, PageRight;
         static bool ready;
         public static bool Enabled = true;
 
@@ -24,12 +24,15 @@ namespace Wakefire
             Attack = Button("Attack", "<Keyboard>/j", "<Keyboard>/space", "<Mouse>/leftButton", "<Gamepad>/buttonWest");
             Roll = Button("Roll", "<Keyboard>/k", "<Keyboard>/leftShift", "<Gamepad>/buttonEast");
             Nod = Button("Nod", "<Keyboard>/l", "<Keyboard>/q", "<Gamepad>/buttonNorth");
-            Interact = Button("Interact", "<Keyboard>/e", "<Keyboard>/enter", "<Gamepad>/buttonSouth");
+            Interact = Button("Interact", "<Keyboard>/e", "<Keyboard>/u", "<Keyboard>/enter", "<Gamepad>/buttonSouth");
             Item = Button("Item", "<Keyboard>/i", "<Keyboard>/f", "<Mouse>/rightButton", "<Gamepad>/rightShoulder");
             Pause = Button("Pause", "<Keyboard>/escape", "<Keyboard>/p", "<Gamepad>/start");
             Confirm = Button("Confirm", "<Keyboard>/enter", "<Keyboard>/space", "<Keyboard>/e", "<Keyboard>/j", "<Gamepad>/buttonSouth", "<Gamepad>/buttonWest", "<Mouse>/leftButton");
             Back = Button("Back", "<Keyboard>/escape", "<Keyboard>/backspace", "<Gamepad>/buttonEast");
-            foreach (var a in new[] { Move, Attack, Roll, Nod, Interact, Item, Pause, Confirm, Back }) a.Enable();
+            // the pause screen's three pages (walking off the edge of a page with the stick turns it too)
+            PageLeft = Button("PageLeft", "<Keyboard>/comma", "<Keyboard>/pageUp", "<Gamepad>/leftShoulder", "<Gamepad>/leftTrigger");
+            PageRight = Button("PageRight", "<Keyboard>/period", "<Keyboard>/pageDown", "<Gamepad>/rightShoulder", "<Gamepad>/rightTrigger");
+            foreach (var a in new[] { Move, Attack, Roll, Nod, Interact, Item, Pause, Confirm, Back, PageLeft, PageRight }) a.Enable();
         }
 
         static InputAction Button(string name, params string[] paths)
@@ -61,7 +64,26 @@ namespace Wakefire
             if (FakePress != null && FakePress == a) { FakePress = null; return true; }
             return Enabled && a.WasPressedThisFrame();
         }
-        public static bool Held(InputAction a) => Enabled && a.IsPressed();
+        /// <summary>Test runs hold a button down through here for as long as it stays set.</summary>
+        public static InputAction FakeHold;
+
+        public static bool Held(InputAction a) => (FakeHold != null && FakeHold == a) || (Enabled && a.IsPressed());
+
+        // One step at a time through a menu: a push of the stick counts once, and again if it is held.
+        static Vector2Int navWas;
+        static float navClock;
+        /// <summary>The direction the stick or the arrows stepped this frame (x: -1 left, 1 right; y: 1 up, -1 down), or zero.</summary>
+        public static Vector2Int Step()
+        {
+            var v = MoveVector;
+            var now = new Vector2Int(Mathf.Abs(v.x) > 0.55f ? (int)Mathf.Sign(v.x) : 0, Mathf.Abs(v.y) > 0.55f ? (int)Mathf.Sign(v.y) : 0);
+            if (now.x != 0 && now.y != 0) { if (Mathf.Abs(v.x) > Mathf.Abs(v.y)) now.y = 0; else now.x = 0; }
+            if (now == Vector2Int.zero) { navWas = now; navClock = 0; return now; }
+            if (now != navWas) { navWas = now; navClock = 0.38f; return now; }
+            navClock -= Time.unscaledDeltaTime;
+            if (navClock <= 0) { navClock = 0.14f; return now; }
+            return Vector2Int.zero;
+        }
 
         /// <summary>A finger came down on the screen this frame, wherever it landed. Text boxes, title
         /// cards and menus turn on this, so nothing has to be drawn over them to press.</summary>

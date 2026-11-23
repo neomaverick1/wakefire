@@ -57,12 +57,16 @@ And the goat. The goat is everywhere.
 | Move | WASD / arrows | Left stick / d-pad | Thumb down anywhere on the left |
 | Khopesh (3-hit combo) | J / Space | X / Square | Blade button |
 | Roll | K / Shift | B / Circle | Roll button |
-| Talk, look, open | E / Enter | A / Cross | Speech button |
-| Hold out the Wakefire | F / I | RB / R1 | Lamp button |
+| Action: talk, open, read, look. With nothing in front of you, hold it to raise the Mirror Shield | E / U / Enter | A / Cross | Action button, which shows what it will do |
+| Item: whatever you put on it from your pack (the Wakefire to begin with) | F / I | RB / R1 | Item button, which shows the item |
 | Nod off / wake up | Q / L | Y / Triangle | Moon button |
-| Pause | Esc / P | Start | Pause button |
+| Pack | Esc / P | Start | Pause button |
 
-The game saves by itself every time you walk into a new place and every time you find something, and says so. The pause menu has **Save** and **Load** for a save of your own, and the title screen offers both **Continue** and **Load game**. If Azar falls, you choose where to pick up: at the way into the place he fell in (full life, nothing lost), at your own save, or back at the title.
+**One button for whatever is in front of you.** The action button talks to a person, opens a chest or a door, reads a sign and looks at anything worth a look. When there is nothing in front of Azar and he carries the Bronze Mirror Shield, holding the button raises it. He walks slowly and keeps facing the way he faced, a blow from the front glances off, and fire goes back where it came from. What comes down from above, like a mace, does not stop for a shield.
+
+**The pack has three pages.** It opens on your items: choose what goes on the item button, and see everything else you carry. One page to the left is save and load. One page to the right is the map, lit wherever you have walked, with a flame where you stand. Turn the page with , and . on a keyboard, LB and RB on a gamepad, a swipe on a phone, or by walking off the edge of a page.
+
+**Three journeys.** The title screen shows all three: choose one to carry on, choose an empty one to begin, or rub one out. The game saves by itself into the journey you are playing every time you walk into a new place and every time you find something, and says so. From the pack you can save into any of the three (saving into another one leaves a copy of this moment there) or load any of them. If Azar falls, you choose where to pick up: at the way into the place he fell in (full life, nothing lost), at one of the three journeys, or back at the title.
 
 On phones the buttons stay clear of notches and rounded corners, and they step aside whenever there is something to read: a tap anywhere turns the page, and touching an answer chooses it.
 

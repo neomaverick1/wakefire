@@ -333,6 +333,9 @@ namespace Wakefire
         }
 
         // ---------------------------------------------------------------- text layout
+        /// <summary>How many pages a text takes in a box as wide as a view of this many game pixels (for checks).</summary>
+        public static int PageCount(string text, int viewWidth = 320) => Paginate(text, Mathf.Min(viewWidth - 20, 372) - PadX * 2).Count;
+
         static List<List<List<Ch>>> Paginate(string text, int width)
         {
             var f = PixelFont.Main;

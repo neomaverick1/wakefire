@@ -1,7 +1,9 @@
 // On-screen controls for phones: a floating thumbstick on the left (it appears wherever the thumb
-// lands), the khopesh button under the right thumb with roll, talk, the Wakefire and nod off in an
-// arc around it, and a pause button. They drive a virtual gamepad, so every other part of the game
-// just sees a controller.
+// lands), the khopesh button under the right thumb with roll, the action button, the item button
+// and nod off in an arc around it, and a pause button. The action button wears whatever it would do
+// this moment (a word-balloon to talk, a key to open, an eye to look or read, the shield to guard)
+// and the item button wears the item chosen on the item page. They drive a virtual gamepad, so
+// every other part of the game just sees a controller.
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.OnScreen;
@@ -51,11 +53,20 @@ namespace Wakefire
             I.Build();
         }
 
+        static readonly System.Collections.Generic.Dictionary<string, Sprite> sprites = new System.Collections.Generic.Dictionary<string, Sprite>();
         static Sprite Spr(string name)
         {
+            if (sprites.TryGetValue(name, out var s) && s) return s;
             var t = Resources.Load<Texture2D>("UI/Touch/" + name);
-            return Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0.5f, 0.5f), 1f);
+            s = Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0.5f, 0.5f), 1f);
+            sprites[name] = s;
+            return s;
         }
+
+        Image actImg, itemImg;
+        string actShown, itemShown;
+        /// <summary>The face the action button is wearing ("talk", "act_open", "act_look", "act_guard").</summary>
+        public static string ActFace => I ? I.actShown : null;
 
         /// <summary>The buttons are drawn six texture pixels to the game pixel (Art/ui/touch_art.py).</summary>
         const float Density = 6f;
@@ -100,8 +111,9 @@ namespace Wakefire
             var a = new Vector2(-40, 40);
             Button("Attack", "attack", "<Gamepad>/buttonWest", a, 1.14f);
             Button("Nod", "nod", "<Gamepad>/buttonNorth", a + Arc(90), 1.06f);
-            Button("Item", "item", "<Gamepad>/rightShoulder", a + Arc(127), 1.06f);
-            Button("Talk", "talk", "<Gamepad>/buttonSouth", a + Arc(164), 1.06f);
+            itemImg = Button("Item", "item", "<Gamepad>/rightShoulder", a + Arc(127), 1.06f);
+            actImg = Button("Action", "talk", "<Gamepad>/buttonSouth", a + Arc(164), 1.06f);
+            actShown = "talk"; itemShown = "item";
             Button("Roll", "roll", "<Gamepad>/buttonEast", a + Arc(201), 1.06f);
             var pause = Place("Pause", Spr("pause"), new Vector2(0.5f, 1), new Vector2(0, -15), 1f);
             pause.gameObject.AddComponent<OnScreenButton>().controlPath = "<Gamepad>/start";
@@ -110,11 +122,24 @@ namespace Wakefire
 
         static Vector2 Arc(float deg) => new Vector2(Mathf.Cos(deg * Mathf.Deg2Rad), Mathf.Sin(deg * Mathf.Deg2Rad)) * 56f;
 
-        void Button(string name, string icon, string path, Vector2 pos, float scale)
+        Image Button(string name, string icon, string path, Vector2 pos, float scale)
         {
             var rt = Place(name, Spr(icon), new Vector2(1, 0), pos, scale);
             rt.gameObject.AddComponent<OnScreenButton>().controlPath = path;
             rt.gameObject.AddComponent<PressLook>();
+            return rt.GetComponent<Image>();
+        }
+
+        /// <summary>The action and item buttons wear what they would do right now.</summary>
+        void Faces()
+        {
+            var p = Player.I;
+            string act = !p ? "talk" : p.Action == Player.Act.Open ? "act_open" : p.Action == Player.Act.Read || p.Action == Player.Act.Look ? "act_look"
+                       : p.Action == Player.Act.Guard ? "act_guard" : "talk";
+            if (act != actShown && actImg) { actImg.sprite = Spr(act); actShown = act; }
+            string id = Items.Current.id;
+            string item = id == "sling" ? "item_sling" : id == "stick" ? "item_stick" : "item";
+            if (item != itemShown && itemImg) { itemImg.sprite = Spr(item); itemShown = item; }
         }
 
         /// <summary>True while the buttons are on screen and taking presses.</summary>
@@ -125,6 +150,7 @@ namespace Wakefire
         void Update()
         {
             if (Screen.height != lastH || Screen.safeArea != lastSafe) Build();
+            Faces();
             // the virtual gamepad is made at startup, sometimes before the app has focus, and the input
             // system parks devices made out of focus; wake it whenever we're in front
             if (Application.isFocused)

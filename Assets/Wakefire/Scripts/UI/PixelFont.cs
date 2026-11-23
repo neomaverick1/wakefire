@@ -72,6 +72,29 @@ namespace Wakefire
         }
     }
 
+    /// <summary>A picture the menus can paint with: its pixels, rows from the top. They live in
+    /// Resources/Menu, the one folder of textures the game is allowed to read back.</summary>
+    public class Pic
+    {
+        public Color32[] px;
+        public int w, h;
+        static readonly System.Collections.Generic.Dictionary<string, Pic> all = new System.Collections.Generic.Dictionary<string, Pic>();
+
+        public static Pic Get(string name)
+        {
+            if (all.TryGetValue(name, out var p)) return p;
+            var t = Resources.Load<Texture2D>("Menu/" + name);
+            if (t && t.isReadable)
+            {
+                var src = t.GetPixels32();
+                p = new Pic { w = t.width, h = t.height, px = new Color32[src.Length] };
+                for (int y = 0; y < p.h; y++) System.Array.Copy(src, (p.h - 1 - y) * p.w, p.px, y * p.w, p.w);
+            }
+            all[name] = p;
+            return p;
+        }
+    }
+
     /// <summary>A small CPU-side pixel surface shown through a UI RawImage on the pixel canvas.</summary>
     public class PixelCanvas
     {
@@ -95,9 +118,14 @@ namespace Wakefire
             dirty = true;
         }
 
+        // Nothing is drawn outside this window (a page sliding past its frame, a map wider than its view).
+        int cx0, cy0, cx1 = int.MaxValue, cy1 = int.MaxValue;
+        public void Clip(int x, int y, int w, int h) { cx0 = x; cy0 = y; cx1 = x + w; cy1 = y + h; }
+        public void NoClip() { cx0 = cy0 = 0; cx1 = cy1 = int.MaxValue; }
+
         public void Set(int x, int y, Color32 c, bool isShadow = false)
         {
-            if (x < 0 || y < 0 || x >= W || y >= H) return;
+            if (x < 0 || y < 0 || x >= W || y >= H || x < cx0 || y < cy0 || x >= cx1 || y >= cy1) return;
             int i = (H - 1 - y) * W + x;
             if (isShadow && solid[i]) return;
             px[i] = c;
@@ -112,11 +140,57 @@ namespace Wakefire
             for (int yy = y; yy < y + h; yy++)
                 for (int xx = x; xx < x + w; xx++)
                 {
-                    if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+                    if (xx < 0 || yy < 0 || xx >= W || yy >= H || xx < cx0 || yy < cy0 || xx >= cx1 || yy >= cy1) continue;
                     int i = (H - 1 - yy) * W + xx;
                     px[i] = c;
                     solid[i] = false;
                 }
+            dirty = true;
+        }
+
+        /// <summary>A box with a one-pixel edge.</summary>
+        public void Box(int x, int y, int w, int h, Color32 fill, Color32 edge)
+        {
+            Rect(x, y, w, h, edge);
+            Rect(x + 1, y + 1, w - 2, h - 2, fill);
+        }
+
+        /// <summary>Lay a picture on the surface with its top left corner at (x, y): see-through where
+        /// the picture is clear, each of its pixels drawn scale by scale, darkened by shade, and only
+        /// the part of it from (sx, sy), w by h, if that is given.</summary>
+        public void Blit(Pic p, int x, int y, int scale = 1, float shade = 1f, int sx = 0, int sy = 0, int w = -1, int h = -1)
+        {
+            if (p == null) return;
+            if (w < 0) w = p.w - sx;
+            if (h < 0) h = p.h - sy;
+            int sh256 = Mathf.Clamp(Mathf.RoundToInt(shade * 256f), 0, 256);
+            for (int j = 0; j < h; j++)
+            {
+                int py = sy + j;
+                if (py < 0 || py >= p.h) continue;
+                for (int i = 0; i < w; i++)
+                {
+                    int qx = sx + i;
+                    if (qx < 0 || qx >= p.w) continue;
+                    var c = p.px[py * p.w + qx];
+                    if (c.a < 128) continue;
+                    if (sh256 != 256) c = new Color32((byte)(c.r * sh256 >> 8), (byte)(c.g * sh256 >> 8), (byte)(c.b * sh256 >> 8), 255);
+                    else c.a = 255;
+                    for (int v = 0; v < scale; v++)
+                    {
+                        int yy = y + j * scale + v;
+                        if (yy < 0 || yy >= H || yy < cy0 || yy >= cy1) continue;
+                        for (int u = 0; u < scale; u++)
+                        {
+                            int xx = x + i * scale + u;
+                            if (xx < 0 || xx >= W || xx < cx0 || xx >= cx1) continue;
+                            int k = (H - 1 - yy) * W + xx;
+                            px[k] = c;
+                            solid[k] = true;
+                        }
+                    }
+                }
+            }
             dirty = true;
         }
 

@@ -125,8 +125,15 @@ namespace Wakefire
             Story.I.ApplyItems();
             p.pos = Map.ToWorld(256, 236);
             p.Face(Facing.Up);
-            yield return new WaitForSeconds(6f);
-            t.Note("bull head broken=" + Story.Has("z2_bull") + " hp=" + p.health.hp);
+            // the shield has to be held up now: the action button, with nothing in front of him
+            Controls.FakeHold = Controls.Interact;
+            for (float held = 0; held < 7f && !Story.Has("z2_bull"); held += Time.deltaTime)
+            {
+                if (p.state == Player.State.Free) { p.Face(Facing.Up); Controls.FakePress = Controls.Interact; }
+                yield return null;
+            }
+            Controls.FakeHold = null;
+            t.Note("bull head broken=" + Story.Has("z2_bull") + " hp=" + p.health.hp + " guarding=" + p.Guarding);
             yield return t.Shot("06-bullhead", 0.2f);
         }
     }

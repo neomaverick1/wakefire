@@ -19,11 +19,11 @@ namespace Wakefire
         Vector2 roam;
         float roamClock;
 
-        public static Shade Spawn(Vector2 at) => Make<Shade>("priest", "idle", at, WorldLayer.Waking, 3, "shade");
+        public static Shade Spawn(Vector2 at) => Make<Shade>("priest", "idle", at, WorldLayer.Waking, 4, "shade");
 
         protected override void Init()
         {
-            speed = 1.55f; half = new Vector2(0.3f, 0.15f); touchDamage = 0;
+            speed = 1.8f; half = new Vector2(0.3f, 0.15f); touchDamage = 0;
             mat.SetFloat("_Ghost", 0.9f);
             mat.SetVector("_GhostFade", new Vector4(0.285f, 0.46f, 0, 0));
             mat.SetFloat("_Dissolve", thin);
@@ -77,7 +77,7 @@ namespace Wakefire
                         if (Present && Vector2.Distance(at, p.pos) < 0.95f && Dream.I.IsDreamAt(p.pos) == Dream.I.IsDreamAt(pos))
                             p.Hurt(new HitInfo { damage = 1, from = pos, knockback = 5f, kind = HitKind.Slash, source = gameObject });
                     }
-                    if (anim.Done || stateClock > 0.9f) { s = S.Drift; cool = 1.0f; }
+                    if (anim.Done || stateClock > 0.9f) { s = S.Drift; cool = 0.75f; }
                     break;
                 case S.Gone:
                     want = 1.05f;
@@ -127,9 +127,16 @@ namespace Wakefire
         Vector2 chargeDir;
         public bool Awake => s != S.Stand;
 
-        public static Ushabti Spawn(Vector2 at) => Make<Ushabti>("sentinel", "idle", at, WorldLayer.Both, 4, "ushabti");
+        public static Ushabti Spawn(Vector2 at) => Make<Ushabti>("sentinel", "idle", at, WorldLayer.Both, 5, "ushabti");
 
-        protected override void Init() { speed = 1.5f; half = new Vector2(0.32f, 0.16f); touchDamage = 0; }
+        protected override void Init() { speed = 1.7f; half = new Vector2(0.32f, 0.16f); touchDamage = 0; }
+
+        /// <summary>Clay on bronze: a charge that meets the mirror shield stops there, and the soldier with it.</summary>
+        public override void Blocked(Player p)
+        {
+            base.Blocked(p);
+            if (s == S.Charge) { s = S.Stuck; stateClock = 0; anim.Play("hurt", facing, true); PixelView.I.Shake(1, 0.15f); }
+        }
         protected override float KnockScale => 0.3f;
         protected override string HurtSound => "clay_hit";
         protected override Color BurstColor => new Color(0.72f, 0.44f, 0.30f);
@@ -190,7 +197,7 @@ namespace Wakefire
                     break;
                 }
                 case S.Aim:
-                    if (stateClock > 0.5f)
+                    if (stateClock > 0.44f)
                     {
                         s = S.Charge; stateClock = 0;
                         chargeDir = facing == Facing.Down ? Vector2.down : facing == Facing.Up ? Vector2.up : facing == Facing.Left ? Vector2.left : Vector2.right;
@@ -200,15 +207,15 @@ namespace Wakefire
                 case S.Charge:
                 {
                     var before = pos;
-                    Move(chargeDir * 5.6f, dt);
-                    if ((pos - before).magnitude < 5.6f * dt * 0.3f || stateClock > 1.5f)
+                    Move(chargeDir * 6.3f, dt);
+                    if ((pos - before).magnitude < 6.3f * dt * 0.3f || stateClock > 1.5f)
                     {
                         s = S.Stuck; stateClock = 0; PixelView.I.Shake(1, 0.15f); Sfx.Play("clay_hit"); anim.Play("hurt", facing, true);
                     }
                     break;
                 }
                 case S.Stuck:
-                    if (stateClock > 1.3f) { s = S.March; stateClock = 0; }
+                    if (stateClock > 1.1f) { s = S.March; stateClock = 0; }
                     break;
             }
         }
@@ -225,7 +232,7 @@ namespace Wakefire
 
         public static Scarab Spawn(Vector2 at) => Make<Scarab>("crab", "idle", at, WorldLayer.Waking, 1, "scarab");
 
-        protected override void Init() { speed = 4.4f; half = new Vector2(0.3f, 0.14f); next = Random.Range(0.2f, 1.2f); }
+        protected override void Init() { speed = 4.9f; half = new Vector2(0.3f, 0.14f); next = Random.Range(0.2f, 1.0f); }
         protected override Color BurstColor => new Color(0.16f, 0.24f, 0.56f);
         protected override float KnockScale => 1.6f;
 

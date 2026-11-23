@@ -67,9 +67,12 @@ namespace Wakefire
                 }
                 else if (fire)
                 {
-                    // stand and face the fire
+                    // face the fire and raise the mirror shield
                     want = Vector2.zero;
-                    if (p.state == Player.State.Free) p.Face(Mathf.Abs(d.x) > Mathf.Abs(d.y) ? (d.x > 0 ? Facing.Right : Facing.Left) : (d.y > 0 ? Facing.Up : Facing.Down));
+                    if (p.state == Player.State.Free || p.state == Player.State.Guard)
+                        p.Face(Mathf.Abs(d.x) > Mathf.Abs(d.y) ? (d.x > 0 ? Facing.Right : Facing.Left) : (d.y > 0 ? Facing.Up : Facing.Down));
+                    Controls.FakeHold = Controls.Interact;
+                    if (p.state == Player.State.Free) Controls.FakePress = Controls.Interact;
                 }
                 else
                 {
@@ -85,6 +88,7 @@ namespace Wakefire
                     if (bull.Charging && d.magnitude < 7f) want = new Vector2(-d.y, d.x).normalized;   // sidestep
                     if (want.magnitude < 0.3f) want = Vector2.zero;
                 }
+                if (!fire || bull.Stunned) Controls.FakeHold = null;
                 Controls.Fake = p.state == Player.State.Free ? (want.sqrMagnitude > 0 ? want.normalized : Vector2.zero) : Vector2.zero;
                 if (Time.time - start > shots * 20f)
                 {
@@ -94,6 +98,7 @@ namespace Wakefire
                 yield return null;
             }
             Controls.Fake = Vector2.zero;
+            Controls.FakeHold = null;
             t.Note($"bull dead: {bull == null || bull.health.Dead} in {Time.time - start:0.0}s, stuns {stuns}, Azar lost {hpStart - p.health.hp} half-flames");
             float e0 = Time.time;
             while (!Story.Has("chapter_done") && Time.time - e0 < 60f) yield return null;

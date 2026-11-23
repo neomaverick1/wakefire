@@ -82,7 +82,7 @@ namespace Wakefire
         {
             { "idle", (3f, true) }, { "run", (14f, true) }, { "walk", (10f, true) }, { "attack1", (20f, false) }, { "attack2", (20f, false) },
             { "attack3", (17f, false) }, { "roll", (24f, false) }, { "hurt", (10f, false) }, { "death", (8f, false) }, { "nod", (12f, false) },
-            { "wake", (12f, false) }, { "use", (10f, false) }, { "itemget", (2f, false) }, { "push", (8f, true) }, { "block", (8f, false) },
+            { "wake", (12f, false) }, { "use", (10f, false) }, { "itemget", (2f, false) }, { "push", (8f, true) }, { "block", (8f, false) }, { "guard", (3f, true) }, { "throw", (15f, false) },
             { "doze", (9f, false) }, { "yawn", (7f, false) }, { "shrug", (2f, false) }, { "point", (2f, false) }, { "sigh", (3f, false) },
             { "idle_nod", (8f, false) }, { "open", (1f, false) },
             // townsfolk

@@ -114,6 +114,61 @@ namespace Wakefire
             Touch(5, UnityEngine.InputSystem.TouchPhase.Ended, at2);
             yield return new WaitForSecondsRealtime(0.5f);
             t.Note($"touched 'Not now': busy={DialogueBox.I.Busy} choice={DialogueBox.Choice} (want False, 1)");
+            // the action button: with the shield and nothing in front of him, Azar raises it for as long as the thumb stays down
+            yield return new WaitForSecondsRealtime(0.6f);
+            Story.Set("item_shield"); Story.I.ApplyItems();
+            foreach (var e in Enemy.All.ToArray()) if (e) Object.Destroy(e.gameObject);
+            foreach (var f in new[] { Facing.Down, Facing.Left, Facing.Right, Facing.Up })
+            {
+                p.Face(f);
+                yield return new WaitForSeconds(0.15f);
+                if (p.Action == Player.Act.Guard) break;
+            }
+            t.Note($"shield, nothing in front: the button says {p.Action} and wears '{TouchControls.ActFace}' (want Guard, act_guard)");
+            var actBtn = ScreenOf("Action");
+            Touch(6, UnityEngine.InputSystem.TouchPhase.Began, actBtn);
+            yield return new WaitForSeconds(0.5f);
+            t.Note($"thumb held on the action button: state {p.state} guarding={p.Guarding} (want Guard, True)");
+            yield return t.Shot("t5-shield-up", 0.0f);
+            Touch(6, UnityEngine.InputSystem.TouchPhase.Ended, actBtn);
+            yield return new WaitForSeconds(0.4f);
+            t.Note($"thumb lifted: state {p.state} (want Free)");
+            // the pause button opens the pack on the items; dragging the pages turns them
+            var pb = ScreenOf("Pause");
+            Touch(7, UnityEngine.InputSystem.TouchPhase.Began, pb);
+            yield return null; yield return null;
+            Touch(7, UnityEngine.InputSystem.TouchPhase.Ended, pb);
+            yield return new WaitForSecondsRealtime(0.5f);
+            t.Note($"tapped the pause button: open={Pause.Open} page={Pause.Page} (want True, 1)");
+            float stepX = Screen.width * 0.04f;
+            var a0 = new Vector2(Screen.width * 0.36f, Screen.height * 0.5f);
+            Touch(8, UnityEngine.InputSystem.TouchPhase.Began, a0);
+            yield return null;
+            for (int i = 1; i <= 8; i++) { Touch(8, UnityEngine.InputSystem.TouchPhase.Moved, a0 + new Vector2(i * stepX, 0)); yield return null; }
+            yield return t.Shot("t6-dragging-the-pages", 0.0f);
+            Touch(8, UnityEngine.InputSystem.TouchPhase.Ended, a0 + new Vector2(8 * stepX, 0));
+            yield return new WaitForSecondsRealtime(0.6f);
+            t.Note($"dragged the pages to the right: page={Pause.Page} (want 0, save and load)");
+            for (int n = 0; n < 2; n++)
+            {
+                var b0 = new Vector2(Screen.width * 0.64f, Screen.height * 0.5f);
+                Touch(9 + n, UnityEngine.InputSystem.TouchPhase.Began, b0);
+                yield return null;
+                for (int i = 1; i <= 8; i++) { Touch(9 + n, UnityEngine.InputSystem.TouchPhase.Moved, b0 - new Vector2(i * stepX, 0)); yield return null; }
+                Touch(9 + n, UnityEngine.InputSystem.TouchPhase.Ended, b0 - new Vector2(8 * stepX, 0));
+                yield return new WaitForSecondsRealtime(0.6f);
+            }
+            t.Note($"dragged them left twice: page={Pause.Page} (want 2, the map)");
+            yield return t.Shot("t7-map-page", 0.0f);
+            // a tap on "Carry on" closes it
+            var panel = Pause.Panel;
+            float px = PixelView.I.ScreenScale;
+            var carry = new Vector2((panel.xMax - 30) * px, Screen.height - (panel.yMax - 10) * px);
+            Touch(11, UnityEngine.InputSystem.TouchPhase.Began, carry);
+            yield return null; yield return null;
+            Touch(11, UnityEngine.InputSystem.TouchPhase.Ended, carry);
+            yield return new WaitForSecondsRealtime(0.5f);
+            t.Note($"tapped Carry on: open={Pause.Open} (want False)");
         }
     }
 }

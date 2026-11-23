@@ -68,6 +68,7 @@ namespace Wakefire
                 p.Face(mk.text == "up" ? Facing.Up : mk.text == "left" ? Facing.Left : mk.text == "right" ? Facing.Right : Facing.Down);
             CurrentMap = map;
             CurrentSpawn = mk.who;
+            Story.Set("seen_" + map);            // the world map shows where he has walked
             exitArmed = false;
             View.target = p.transform;
             View.bounds = m.bounds;
@@ -84,19 +85,31 @@ namespace Wakefire
             Title.Show();
         }
 
-        /// <summary>A fresh game or the saved one, from the title screen.</summary>
+        /// <summary>A fresh game or the saved one of the journey in play.</summary>
         public void Begin(bool resume) => Begin(resume ? Save.Read() : null);
 
-        /// <summary>Start from a save (the game's own or the player's), or from the beginning with none.</summary>
+        /// <summary>Start from a save, or from the beginning with none.</summary>
         public void Begin(SaveData d)
         {
             Story.Abort();
             Story.ResetAll();
+            Items.Chosen = d != null && !string.IsNullOrEmpty(d.item) ? d.item : "wakefire";
             if (d != null)
             {
                 foreach (var f in d.flags) Story.Set(f);
                 for (int i = 0; i < d.countKeys.Length; i++) Story.SetCount(d.countKeys[i], d.countVals[i]);
                 Save.PlayTime = d.playTime;
+                // a journey from before the world map was drawn: he has plainly walked the places his story has been through
+                bool any = false;
+                foreach (var f in d.flags) if (f.StartsWith("seen_")) { any = true; break; }
+                if (!any)
+                {
+                    foreach (var m in new[] { "ashkel", "lowtown" }) Story.Set("seen_" + m);
+                    if (d.flags.Length > 6) foreach (var m in new[] { "terraces", "cliffs" }) Story.Set("seen_" + m);
+                    if (Story.Has("gate_open")) Story.Set("seen_temple_yard");
+                    if (Story.Has("met_namtar")) Story.Set("seen_necro_road");
+                    if (Story.Has("king_door") || Story.Has("name_tar") || Story.Has("name_ash")) Story.Set("seen_necropolis");
+                }
             }
             var p = EnterMap(d != null ? d.map : "ashkel", d != null ? d.spawn : null);
             if (d != null) { p.coins = d.coins; p.keys = d.keys; p.health.max = Mathf.Max(6, d.maxHp); }

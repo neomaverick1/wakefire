@@ -17,6 +17,9 @@ namespace Wakefire
         Sprite flameFull, flameHalf, flameEmpty;
         RectInt shownSafe = new RectInt(-1, -1, -1, -1);
         Image item;
+        string shownItem;
+        PixelCanvas actCv;
+        Player.Act shownAct = (Player.Act)(-1);
         int shownLife = -1, shownMax = -1, shownCoins = -1, shownKeys = -1;
 
         public static Sprite UISprite(string name)
@@ -74,7 +77,21 @@ namespace Wakefire
             frt.anchoredPosition = new Vector2(11, -35);
             frt.sizeDelta = new Vector2(4, 24);
             Pixel(root, UISprite("itembox"), 22, 6, "itembox");
-            item = Pixel(root, UISprite("icon_lantern"), 27, 10, "item");
+            item = Pixel(root, Items.Icon(Items.Current) ?? UISprite("icon_lantern"), 25, 9, "item");
+            shownItem = Items.Current.id;
+            // what the action button would do this moment, as a word
+            actCv = new PixelCanvas(44, 13);
+            var ago = new GameObject("action", typeof(RectTransform));
+            ago.layer = PixelView.PixelUILayer;
+            ago.transform.SetParent(root, false);
+            var ari = ago.AddComponent<RawImage>();
+            ari.raycastTarget = false;
+            ari.texture = actCv.tex;
+            var art = (RectTransform)ago.transform;
+            art.anchorMin = art.anchorMax = new Vector2(0, 1);
+            art.pivot = new Vector2(0, 1);
+            art.sizeDelta = new Vector2(44, 13);
+            art.anchoredPosition = new Vector2(92, -7);
             Pixel(root, UISprite("coin"), 50, 5, "coin");
             coinDigits = new[] { Pixel(root, digits[0], 48, 14), Pixel(root, digits[0], 54, 14), Pixel(root, digits[0], 60, 14) };
             Pixel(root, UISprite("key"), 76, 4, "key");
@@ -126,6 +143,29 @@ namespace Wakefire
                 int k = Mathf.Clamp(p.keys, 0, 99);
                 keyDigits[0].sprite = digits[k / 10]; keyDigits[1].sprite = digits[k % 10];
                 shownKeys = p.keys;
+            }
+            if (Items.Current.id != shownItem)
+            {
+                shownItem = Items.Current.id;
+                var sp = Items.Icon(Items.Current);
+                if (sp) { item.sprite = sp; item.rectTransform.sizeDelta = new Vector2(sp.rect.width, sp.rect.height); }
+            }
+            var act = p.state == Player.State.Free || p.state == Player.State.Guard ? p.Action : Player.Act.None;
+            if (act != shownAct)
+            {
+                shownAct = act;
+                actCv.Clear(new Color32(0, 0, 0, 0));
+                if (act != Player.Act.None)
+                {
+                    string word = act.ToString();
+                    var f = PixelFont.Main;
+                    var dark = new Color32(6, 4, 12, 255);
+                    for (int ox = -1; ox <= 1; ox++)
+                        for (int oy = -1; oy <= 1; oy++)
+                            if (ox != 0 || oy != 0) f.DrawString(actCv, 2 + ox, 2 + oy, word, dark);
+                    f.DrawString(actCv, 2, 2, word, new Color32(246, 200, 90, 255));
+                }
+                actCv.Apply();
             }
             float lvl = Dream.I ? Dream.I.Drowsiness : 1;
             var frt = meterFill.rectTransform;

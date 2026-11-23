@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Wakefire
 {
-    public enum HitKind { Slash, Heavy, Fire, Reflected, Crush, Fall }
+    public enum HitKind { Slash, Heavy, Fire, Reflected, Crush, Fall, Thrown }
 
     public struct HitInfo
     {

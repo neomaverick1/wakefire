@@ -1,6 +1,8 @@
 // Azar. Tight 8-way movement with 4-way facing, a three-hit khopesh combo with a buffered
 // next swing, a dodge roll with invulnerable frames, nodding off into the dream and back,
-// holding out the Wakefire to light braziers, and talking to whoever is in front of him.
+// whatever is on the item button (the Wakefire to begin with), and the action button: it talks
+// to, opens, reads or looks at whatever is in front of him, and with nothing there it raises the
+// Bronze Mirror Shield for as long as it is held.
 using System;
 using UnityEngine;
 
@@ -9,7 +11,11 @@ namespace Wakefire
     public class Player : MonoBehaviour
     {
         public static Player I;
-        public enum State { Free, Attack, Roll, Nod, Use, Hurt, Dead, Talk, Cutscene, ItemGet }
+        public enum State { Free, Attack, Roll, Nod, Use, Hurt, Dead, Talk, Cutscene, ItemGet, Guard, Throw }
+        /// <summary>What the action button would do this moment.</summary>
+        public enum Act { None, Talk, Open, Read, Look, Guard }
+        public Act Action { get; private set; }
+        public bool Guarding => state == State.Guard;
 
         public State state = State.Free;
         public Vector2 pos;
@@ -21,6 +27,35 @@ namespace Wakefire
         public int coins, keys;
         public bool hasShield;
         public LightBlob lantern;
+        LightBlob mirror;               // the Wakefire's light thrown forward off the raised shield
+        SpriteRenderer glare;           // and the bright edge of the mirror itself, on whichever side it faces
+        static Sprite[] glareFrames;
+
+        /// <summary>The mirror's edge catching the light: a thin bright arc, drawn opening to the left
+        /// (it is turned to face the way he does).</summary>
+        static Sprite[] GlareFrames()
+        {
+            if (glareFrames != null) return glareFrames;
+            glareFrames = new Sprite[2];
+            for (int k = 0; k < 2; k++)
+            {
+                var t = new Texture2D(8, 17) { filterMode = FilterMode.Point };
+                var clear = new Color(0, 0, 0, 0);
+                for (int y = 0; y < 17; y++) for (int x = 0; x < 8; x++) t.SetPixel(x, y, clear);
+                for (int i = -30; i <= 30; i++)
+                {
+                    float a = i / 30f * 0.95f;
+                    int x = Mathf.RoundToInt(-3f + Mathf.Cos(a) * 9.4f), y = 8 + Mathf.RoundToInt(Mathf.Sin(a) * 9.4f);
+                    if (x < 0 || x >= 8 || y < 0 || y >= 17) continue;
+                    bool hot = Mathf.Abs(i - (k == 0 ? -8 : 10)) < 7;
+                    t.SetPixel(x, y, hot ? new Color(1f, 0.97f, 0.80f) : new Color(0.96f, 0.74f, 0.32f));
+                    if (x > 0 && t.GetPixel(x - 1, y).a == 0) t.SetPixel(x - 1, y, new Color(0.42f, 0.24f, 0.10f));
+                }
+                t.Apply();
+                glareFrames[k] = Sprite.Create(t, new Rect(0, 0, 8, 17), new Vector2(0.5f, 0.5f), 16f);
+            }
+            return glareFrames;
+        }
 
         int combo;
         bool queued;
@@ -140,6 +175,20 @@ namespace Wakefire
                     knock = Vector2.Lerp(knock, Vector2.zero, dt * 10f);
                     if (stateClock > 0.3f) ToFree();
                     break;
+                case State.Guard:
+                    // shield up: he keeps facing the way he was, gives ground slowly, and can cut or roll out of it
+                    Action = Act.Guard;
+                    knock = Vector2.Lerp(knock, Vector2.zero, dt * 9f);
+                    vel = Vector2.MoveTowards(vel, input * speed * 0.36f, 60f * dt) + knock;
+                    if (anim.anim == "block" && anim.Done) anim.Play("guard", facing, true);
+                    if (Controls.Down(Controls.Attack)) { combo = 0; StartAttack(); }
+                    else if (Controls.Down(Controls.Roll) && rollCd <= 0) StartRoll(input);
+                    else if (!Controls.Held(Controls.Interact) && stateClock > 0.14f) ToFree();
+                    break;
+                case State.Throw:
+                    vel = Vector2.Lerp(vel, Vector2.zero, dt * 14f);
+                    if (anim.Done) ToFree();
+                    break;
                 case State.Talk:
                 case State.Cutscene:
                 case State.ItemGet:
@@ -234,8 +283,54 @@ namespace Wakefire
             if (Controls.Down(Controls.Attack)) { combo = 0; StartAttack(); return; }
             if (Controls.Down(Controls.Roll) && rollCd <= 0) { StartRoll(input); return; }
             if (Controls.Down(Controls.Nod)) { StartNod(); return; }
-            if (Controls.Down(Controls.Item)) { StartUse(); return; }
-            if (Controls.Down(Controls.Interact)) TryInteract();
+            if (Controls.Down(Controls.Item)) { UseItem(); return; }
+            Action = WhatNow();
+            if (Controls.Down(Controls.Interact) && !TryInteract() && hasShield) StartGuard();
+        }
+
+        /// <summary>The item button: whatever was chosen on the item page.</summary>
+        void UseItem()
+        {
+            switch (Items.Current.id)
+            {
+                case "sling": StartThrow("sling"); break;
+                case "stick": if (Thrown.Out("stick") == 0) StartThrow("stick"); else Sfx.Play("deny", 0.5f); break;
+                default: StartUse(); break;
+            }
+        }
+
+        string throwing;
+        void StartThrow(string what)
+        {
+            throwing = what;
+            state = State.Throw;
+            stateClock = 0;
+            anim.Play("throw", facing, true);
+            Sfx.Play(what == "sling" ? "sling_whirl" : "stick_throw", 0.8f, 0.04f);
+        }
+
+        void StartGuard()
+        {
+            state = State.Guard;
+            stateClock = 0;
+            vel = Vector2.zero;
+            anim.Play("guard", facing, true);
+            Sfx.Play("shield_up", 0.6f, 0.03f);
+            Fx.Sparks(pos + Dir * 0.55f + new Vector2(0, 0.75f), new Color(1f, 0.92f, 0.62f), 3);
+        }
+
+        static bool Acts(Prop p) => p.Kind == "sign" || p.Kind == "well" || p.Kind == "gate" || p.Kind == "npc" || p.Kind == "pot" ||
+                                    p.Kind == "chest" || p.Kind == "lockdoor" || p.Kind == "bigdoor" || p.Kind == "look" || p.Kind == "stairs";
+
+        Act WhatNow()
+        {
+            var n = NpcInFront();
+            if (n != null && n.talk != null) return Act.Talk;
+            var pr = PropInFront(0.6f, Acts);
+            if (pr != null)
+                return pr.Kind == "chest" || pr.Kind == "lockdoor" || pr.Kind == "bigdoor" || pr.Kind == "gate" ? Act.Open
+                     : pr.Kind == "sign" ? Act.Read : pr.Kind == "npc" ? Act.Talk : Act.Look;
+            return hasShield ? Act.Guard : Act.None;
         }
 
         bool stepPuff;
@@ -286,16 +381,26 @@ namespace Wakefire
             else anim.Play("idle", facing, true);
         }
 
-        /// <summary>With the mirror shield, fire coming at Azar's face goes back where it came from.</summary>
+        /// <summary>With the mirror shield raised, fire coming at its face goes back where it came from.</summary>
         public bool TryReflect(Vector2 incomingDir)
         {
-            if (!hasShield) return false;
-            if (state != State.Free && state != State.Use && state != State.Talk) return false;
-            if (Vector2.Dot(-incomingDir.normalized, Dir) < 0.6f) return false;
-            if (state == State.Free) anim.Play("block", facing, true);
+            if (!hasShield || state != State.Guard) return false;
+            if (Vector2.Dot(-incomingDir.normalized, Dir) < 0.45f) return false;
+            anim.Play("block", facing, true);
+            knock = incomingDir.normalized * 2.2f;
             Sfx.Play("reflect");
             Fx.Sparks(pos + Dir * 0.5f + new Vector2(0, 0.6f), new Color(1f, 0.9f, 0.6f), 8);
             return true;
+        }
+
+        /// <summary>A blow that lands on the raised shield: anything with an edge or a claw, from in front.
+        /// What comes down with the weight of a bull or a mace does not stop for a shield.</summary>
+        bool Blocks(HitInfo h)
+        {
+            if (state != State.Guard || !hasShield) return false;
+            if (h.kind == HitKind.Crush) return false;
+            var from = (Vector2)h.from - pos;
+            return from.sqrMagnitude > 0.0001f && Vector2.Dot(from.normalized, Dir) > 0.3f;
         }
 
         void ToFree()
@@ -368,7 +473,11 @@ namespace Wakefire
             if (a == "nod" && f == 2) { Dream.I.Flip(pos, true); Sfx.Play("dream_in"); }
             if (a == "wake" && f == 1) { Dream.I.Flip(pos, false); Sfx.Play("dream_out"); }
             if (a == "use" && f == 1) UseLantern();
+            if (a == "throw" && f == ThrowFrame) { Thrown.Launch(throwing, this, Dir); }
         }
+
+        /// <summary>The frame of the throw on which the stone or the stick leaves his hand.</summary>
+        public const int ThrowFrame = 5;
 
         Prop PropInFront(float reach, Func<Prop, bool> filter)
         {
@@ -450,13 +559,14 @@ namespace Wakefire
             return c switch { 'g' => "step_grass" + i, 's' => "step_sand" + i, 'w' => "step_wood" + i, 'm' => "step_moon" + i, _ => "step" + i };
         }
 
-        void TryInteract()
+        /// <summary>The action button with something in front of him. False when there was nothing to act on.</summary>
+        bool TryInteract()
         {
             var n = NpcInFront();
-            if (n != null && n.talk != null) { Story.Run(n.talk(), n); return; }
-            var pr = PropInFront(0.6f, p => p.Kind == "sign" || p.Kind == "well" || p.Kind == "gate" || p.Kind == "npc" || p.Kind == "pot" ||
-                                            p.Kind == "chest" || p.Kind == "lockdoor" || p.Kind == "bigdoor" || p.Kind == "look");
-            if (pr != null) Interacted?.Invoke(pr);
+            if (n != null && n.talk != null) { Story.Run(n.talk(), n); return true; }
+            var pr = PropInFront(0.6f, Acts);
+            if (pr != null) { Interacted?.Invoke(pr); return true; }
+            return false;
         }
 
         Npc NpcInFront()
@@ -478,6 +588,19 @@ namespace Wakefire
 
         public void Hurt(HitInfo h)
         {
+            if (health.invulnerable <= 0 && Blocks(h))
+            {
+                // it stops on the bronze
+                health.invulnerable = 0.3f;
+                knock = (pos - (Vector2)h.from).normalized * Mathf.Min(4.5f, h.knockback * 0.6f);
+                anim.Play("block", facing, true);
+                Sfx.Play("shield_block", 0.9f, 0.05f);
+                Fx.Sparks(pos + Dir * 0.5f + new Vector2(0, 0.6f), new Color(1f, 0.86f, 0.55f), 7);
+                PixelView.I.Shake(1, 0.1f);
+                HitStop.Do(0.04f);
+                if (h.source && h.source.GetComponent<Enemy>() is Enemy foe) foe.Blocked(this);
+                return;
+            }
             if (!health.Take(h)) return;
             knock = ((pos - (Vector2)h.from).normalized + Vector2.zero) * h.knockback;
             state = State.Hurt;
@@ -498,6 +621,33 @@ namespace Wakefire
             shadow.sortingOrder = Map.Order(pos.y) - 1;
             shadow.transform.localPosition = new Vector3(0, 0.02f, 0);
             Vector2 lo = facing == Facing.Left ? new Vector2(-0.35f, 0.5f) : facing == Facing.Right ? new Vector2(0.35f, 0.5f) : new Vector2(0.45f, 0.55f);
+            // the Bronze Mirror up: it catches the Wakefire and throws it ahead of him, so there is no
+            // doubting which way is covered
+            if (state == State.Guard || (mirror && mirror.intensity > 0.01f))
+            {
+                if (!mirror) { mirror = LightBlob.Create(transform, pos, 3.0f, new Color(1f, 0.86f, 0.52f), 0f, false); mirror.height = 0.7f; }
+                mirror.transform.position = (Vector3)(pos + Dir * 1.15f + new Vector2(0, 0.55f));
+                mirror.intensity = Mathf.MoveTowards(mirror.intensity, state == State.Guard ? 0.85f : 0f, Time.deltaTime * 5f);
+            }
+            if (state == State.Guard)
+            {
+                if (!glare)
+                {
+                    var go = new GameObject("Glare");
+                    go.transform.SetParent(transform, false);
+                    glare = go.AddComponent<SpriteRenderer>();
+                    glare.sharedMaterial = Map.SpriteMat;
+                }
+                glare.enabled = true;
+                glare.sprite = GlareFrames()[((int)(Time.time * 7f)) % 2];
+                // in front of him, wherever that is on the screen: beside him, low before him, or showing past his helmet
+                var off = facing == Facing.Right ? new Vector2(0.66f, 0.66f) : facing == Facing.Left ? new Vector2(-0.66f, 0.66f)
+                        : facing == Facing.Up ? new Vector2(0, 1.74f) : new Vector2(0, 0.34f);
+                glare.transform.position = (Vector3)(pos + off);
+                glare.transform.rotation = Quaternion.Euler(0, 0, facing == Facing.Right ? 0 : facing == Facing.Up ? 90 : facing == Facing.Left ? 180 : 270);
+                glare.sortingOrder = Map.Order(pos.y) + (facing == Facing.Up ? -1 : 1);
+            }
+            else if (glare && glare.enabled) glare.enabled = false;
             if (lantern && anim.model) anim.model.ownLight = lantern;
             if (lantern && anim.model && anim.model.props.TryGetValue("lantern", out var carried))
                 lantern.transform.position = (Vector3)(pos + anim.model.Offset(carried.TransformPoint(0, -0.19f * anim.model.def.scale, 0)));

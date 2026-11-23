@@ -21,5 +21,18 @@ namespace Wakefire
             "tomb_3" => "The King's Chamber",
             _ => "Ashkel",
         };
+
+        /// <summary>The same places as the world map letters them.</summary>
+        public static string Short(string map) => map switch
+        {
+            "ashkel" => "Temple Gate",
+            "lowtown" => "Lower Town",
+            "terraces" => "Olive Terraces",
+            "cliffs" => "Sea Cliffs",
+            "temple_yard" => "Temple Yard",
+            "necro_road" => "Dead Road",
+            "necropolis" => "Hill of Sleepers",
+            _ => Name(map),
+        };
     }
 }

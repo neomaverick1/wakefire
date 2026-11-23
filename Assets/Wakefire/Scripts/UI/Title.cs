@@ -1,5 +1,6 @@
-// The title screen: Ashkel asleep under the moon, the logo, and the choice to carry on or begin
-// again. Keyboard, pad or a tap on the words all work.
+// The title screen: Ashkel asleep under the moon, the logo, and the three journeys. Pick one that
+// has been begun to carry on with it, or an empty one to begin; "Rub one out" clears a journey for
+// good, after asking. Keyboard, pad or a tap on a line all work.
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -17,11 +18,14 @@ namespace Wakefire
 
         [System.Serializable] class HeroInfo { public int frames, w, h, x, y; }
         PixelCanvas menu;
-        string[] options;
-        int sel;
+        int sel;                    // 0..2 the journeys, 3 the line under them
         float clock;
         bool leaving;
         int off;
+        enum Mode { Pick, Erase, Sure }
+        Mode mode;
+        int target, sureSel;        // which journey is about to go, and whether "rub it out" is lit
+        const int RowW = 204, Row0 = 13, RowStep = 18, LineY = 70;
 
         public static void Show()
         {
@@ -109,40 +113,29 @@ namespace Wakefire
             var lt = Resources.Load<Texture2D>("UI/title_logo");
             lt.filterMode = FilterMode.Point;
             logo = Img("logo", lt, Mathf.Round((W - lt.width) / 2f), Mathf.Max(3, 18 + off));
-            options = MakeOptions();
+            sel = Save.Slot;
             menu = new PixelCanvas(W, 96);
             menuImg = Img("menu", menu.tex, 0, 96 + off);
             Redraw();
         }
 
-        bool sure;          // New Game asked once already
-        /// <summary>Test runs choose a line by its first words through here.</summary>
+        /// <summary>Test runs choose through here: "1", "2" or "3" picks that journey (carrying on or
+        /// beginning, as it stands), "erase 2" rubs the second one out, "Continue" picks the journey last
+        /// played and "New Game" the first empty one.</summary>
         public static string TestPick;
-        public string[] Lines => options;
-
-        string chapter = "Chapter One: The Sleeping God";
-
-        string[] MakeOptions()
+        /// <summary>What the screen is offering, line by line (for test runs).</summary>
+        public string[] Lines
         {
-            // the line under the name follows the saved game: whichever chapter it has got to
-            var at = Save.Read();
-            chapter = at != null && System.Array.IndexOf(at.flags, "ch2") >= 0 ? "Chapter Two: The Sleepless Dead" : "Chapter One: The Sleeping God";
-            var o = new System.Collections.Generic.List<string>();
-            if (Save.Exists) o.Add("Continue");
-            if (Save.HasManual) o.Add("Load game");
-            o.Add(o.Count == 0 ? "Begin" : sure ? "New Game: sure?" : "New Game");
-            return o.ToArray();
+            get
+            {
+                var l = new System.Collections.Generic.List<string>();
+                for (int i = 0; i < Save.Slots; i++) l.Add((i + 1) + " " + (Save.Has(i) ? Save.Describe(Save.Read(i)) : "Begin a new journey"));
+                l.Add(LastLine());
+                return l.ToArray();
+            }
         }
 
-        /// <summary>Under the list: what the chosen line would bring back.</summary>
-        string Hint()
-        {
-            string s = options[sel];
-            if (s == "Continue") return Save.Describe(Save.Read());
-            if (s == "Load game") return Save.Describe(Save.ReadManual());
-            if (s.StartsWith("New Game: sure")) return "Continue would be lost. Your save stays.";
-            return "";
-        }
+        string LastLine() => mode == Mode.Pick ? (Save.Any ? "Rub one out" : "") : mode == Mode.Erase ? "Never mind" : "";
 
         void Redraw()
         {
@@ -150,33 +143,54 @@ namespace Wakefire
             menu.Clear(new Color32(0, 0, 0, 0));
             var gold = new Color32(246, 200, 90, 255);
             var ink = new Color32(244, 234, 216, 255);
-            var dim = new Color32(150, 140, 170, 255);
             var sh = new Color32(6, 4, 12, 255);
-            // every line is cut out of the picture behind it with a dark edge all round, so it reads over anything
-            void Line(string t, int y, Color32 col)
+            var soft = new Color32(196, 188, 214, 255);
+            var red = new Color32(240, 110, 80, 255);
+            // every loose line is cut out of the picture behind it with a dark edge all round, so it reads over anything
+            void Line(string t, int y, Color32 col, int cx = -1)
             {
-                int x = (menu.W - f.Measure(t)) / 2;
+                int x = (cx < 0 ? menu.W / 2 : cx) - f.Measure(t) / 2;
                 for (int ox = -1; ox <= 1; ox++)
                     for (int oy = -1; oy <= 2; oy++)
                         if (ox != 0 || oy != 0) f.DrawString(menu, x + ox, y + oy, t, sh);
                 f.DrawString(menu, x, y, t, col);
             }
-            var soft = new Color32(196, 188, 214, 255);
-            Line(chapter, 1, soft);
-            for (int i = 0; i < options.Length; i++)
+            int at = Mathf.Min(sel, Save.Slots - 1);
+            string head = mode == Mode.Erase ? "Rub out which journey?" : mode == Mode.Sure ? "Journey " + (target + 1) + " will be gone for good."
+                        : Save.Chapter(Save.Read(mode == Mode.Sure ? target : at));
+            Line(head, 1, mode == Mode.Pick ? soft : red);
+            int x0 = (menu.W - RowW) / 2;
+            for (int i = 0; i < Save.Slots; i++)
             {
-                string s = options[i];
-                int x = (menu.W - f.Measure(s)) / 2, y = 22 + i * 14;
-                Line(s, y, i == sel ? gold : ink);
-                if (i == sel && ((int)(clock * 2.5f)) % 2 == 0)
+                bool on = mode == Mode.Sure ? i == target : i == sel;
+                SlotRow.Draw(menu, x0, Row0 + i * RowStep, RowW, i, on, false, clock, compact: true, danger: on && mode != Mode.Pick);
+            }
+            if (mode == Mode.Sure)
+            {
+                Line("Keep it", LineY + 2, sureSel == 0 ? gold : ink, menu.W / 2 - 44);
+                Line("Rub it out", LineY + 2, sureSel == 1 ? red : ink, menu.W / 2 + 44);
+                int cx = menu.W / 2 + (sureSel == 0 ? -44 : 44), tw = f.Measure(sureSel == 0 ? "Keep it" : "Rub it out");
+                if (((int)(clock * 2.5f)) % 2 == 0)
                 {
-                    f.Draw(menu, x - 12, y, '>', gold, sh);
-                    f.Draw(menu, x + f.Measure(s) + 6, y, '<', gold, sh);
+                    f.Draw(menu, cx - tw / 2 - 10, LineY + 2, '>', gold, sh);
+                    f.Draw(menu, cx + tw / 2 + 5, LineY + 2, '<', gold, sh);
                 }
             }
-            string hint = Hint();
-            if (hint != "") Line(hint, 24 + options.Length * 14, soft);
-            Line("Randy Kundinger 2026", 82, soft);
+            else
+            {
+                string last = LastLine();
+                if (last != "")
+                {
+                    Line(last, LineY, sel == Save.Slots ? gold : soft);
+                    if (sel == Save.Slots && ((int)(clock * 2.5f)) % 2 == 0)
+                    {
+                        int tw = f.Measure(last);
+                        f.Draw(menu, menu.W / 2 - tw / 2 - 12, LineY, '>', gold, sh);
+                        f.Draw(menu, menu.W / 2 + tw / 2 + 6, LineY, '<', gold, sh);
+                    }
+                }
+                Line("Randy Kundinger 2026", 84, soft);
+            }
             menu.Apply();
         }
 
@@ -193,49 +207,76 @@ namespace Wakefire
             else if (hero) hero.uvRect = new Rect(((int)(clock * 5f) % heroFrames) / (float)heroFrames, 0, 1f / heroFrames, 1);
             if (TestPick != null)
             {
-                int ti = System.Array.FindIndex(options, o => o.StartsWith(TestPick));
-                TestPick = null;
-                if (ti >= 0) { if (ti != sel) { sel = ti; sure = false; options = MakeOptions(); } Choose(); return; }
+                string tp0 = TestPick; TestPick = null;
+                if (tp0.StartsWith("erase ")) { Save.Erase(int.Parse(tp0.Substring(6)) - 1); mode = Mode.Pick; Redraw(); return; }
+                int pick = tp0 == "Continue" ? (Save.Has(Save.Slot) ? Save.Slot : FirstWith(true)) : tp0 == "New Game" || tp0 == "Begin" ? FirstWith(false)
+                         : int.TryParse(tp0, out int n) ? n - 1 : -1;
+                if (pick >= 0 && pick < Save.Slots) { sel = pick; mode = Mode.Pick; Choose(); return; }
             }
-            var mv = Controls.MoveVector;
-            int before = sel;
-            if (Controls.Move.WasPerformedThisFrame() || Keyboard.current != null && (Keyboard.current.upArrowKey.wasPressedThisFrame || Keyboard.current.downArrowKey.wasPressedThisFrame))
-            {
-                if (mv.y > 0.5f) sel = Mathf.Max(0, sel - 1);
-                if (mv.y < -0.5f) sel = Mathf.Min(options.Length - 1, sel + 1);
-            }
-            // a tap on a word picks it
+            int last = LastLine() != "" ? Save.Slots : Save.Slots - 1;
+            var step = Controls.Step();
+            int before = sel, sureBefore = sureSel;
+            if (mode == Mode.Sure) { if (step != Vector2Int.zero) sureSel = 1 - sureSel; }
+            else if (step.y != 0) sel = Mathf.Clamp(sel - step.y, 0, last);
+            // a tap on a line picks it
             var tp = Pointer.current;
             if (tp != null && tp.press.wasPressedThisFrame)
             {
                 var pos = tp.position.ReadValue();
-                float py = PixelView.Height - pos.y / PixelView.I.ScreenScale;   // render pixels from the top
-                for (int i = 0; i < options.Length; i++)
-                    if (Mathf.Abs(py - (96 + off + 22 + i * 14 + 4)) < 7)
-                    {
-                        if (i != sel) { sel = i; sure = false; options = MakeOptions(); }
-                        Choose(); return;
-                    }
+                float k = PixelView.I.ScreenScale;
+                float pxl = pos.x / k, py = PixelView.Height - pos.y / k - (96 + off);   // render pixels, from the top of the list
+                if (mode == Mode.Sure)
+                {
+                    if (py >= LineY - 4 && py < LineY + 16) { sureSel = pxl < menu.W / 2 ? 0 : 1; Choose(); return; }
+                }
+                else
+                {
+                    for (int i = 0; i < Save.Slots; i++)
+                        if (py >= Row0 + i * RowStep && py < Row0 + i * RowStep + SlotRow.Short && Mathf.Abs(pxl - menu.W / 2) < RowW / 2) { sel = i; Choose(); return; }
+                    if (last == Save.Slots && py >= LineY - 4 && py < LineY + 13 && Mathf.Abs(pxl - menu.W / 2) < 60) { sel = Save.Slots; Choose(); return; }
+                }
+                Redraw();
+                return;         // a tap that lands on nothing chooses nothing
             }
-            if (before != sel) { Sfx.Play("menu_move", 0.6f, 0); if (sure) { sure = false; options = MakeOptions(); } }
+            if (before != sel || sureBefore != sureSel) Sfx.Play("menu_move", 0.6f, 0);
             Redraw();
+            if (Controls.Down(Controls.Back) && mode != Mode.Pick) { mode = Mode.Pick; sel = Mathf.Min(sel, last); Sfx.Play("menu_move", 0.6f, 0); return; }
             if (Controls.Down(Controls.Confirm) || Controls.Down(Controls.Interact)) Choose();
+        }
+
+        static int FirstWith(bool saved)
+        {
+            for (int i = 0; i < Save.Slots; i++) if (Save.Has(i) == saved) return i;
+            return saved ? -1 : Save.Slot;
         }
 
         void Choose()
         {
-            string s = options[sel];
             Sfx.Play("menu_ok", 0.8f, 0);
-            // starting over wipes the journey so far: ask once
-            if (s == "New Game" && Save.Exists) { sure = true; options = MakeOptions(); Redraw(); return; }
-            leaving = true;
-            StartCoroutine(Leave(s == "Continue" ? Save.Read() : s == "Load game" ? Save.ReadManual() : null));
+            switch (mode)
+            {
+                case Mode.Pick:
+                    if (sel == Save.Slots) { mode = Mode.Erase; sel = Mathf.Max(0, FirstWith(true)); Redraw(); return; }
+                    leaving = true;
+                    StartCoroutine(Leave(sel));
+                    return;
+                case Mode.Erase:
+                    if (sel == Save.Slots) { mode = Mode.Pick; sel = Save.Slot; Redraw(); return; }
+                    if (!Save.Has(sel)) { Sfx.Play("deny", 0.6f, 0); return; }
+                    target = sel; sureSel = 0; mode = Mode.Sure; Redraw();
+                    return;
+                default:
+                    if (sureSel == 1) { Save.Erase(target); Sfx.Play("pot_break", 0.5f, 0); }
+                    mode = Mode.Pick; sel = target; Redraw();
+                    return;
+            }
         }
 
-        System.Collections.IEnumerator Leave(SaveData from)
+        System.Collections.IEnumerator Leave(int slot)
         {
             yield return Fade.Out(0.5f);
-            if (from == null) Save.Clear();
+            Save.Use(slot);
+            var from = Save.Read(slot);
             if (heroHost) Destroy(heroHost);
             Destroy(gameObject);
             I = null;

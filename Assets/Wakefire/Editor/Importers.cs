@@ -47,7 +47,7 @@ namespace Wakefire.EditorTools
             t.npotScale = TextureImporterNPOTScale.None;
             t.alphaIsTransparency = !assetPath.Contains("_lin");      // normal maps keep the height in alpha: don't let the importer repaint them
             t.maxTextureSize = 8192;
-            t.isReadable = assetPath.Contains("/Resources/Fonts/");
+            t.isReadable = assetPath.Contains("/Resources/Fonts/") || assetPath.Contains("/Resources/Menu/");      // the menus paint with these
             if (assetPath.Contains("/Resources/UI/"))
             {
                 t.textureType = TextureImporterType.Sprite;

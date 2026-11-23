@@ -30,6 +30,9 @@ namespace Wakefire
         readonly Vector2 half = new Vector2(1.45f, 0.5f);
         public System.Action Defeated;
         public bool Enraged => health.hp <= health.max / 2;
+        /// <summary>Near the end it stops stopping: a charge that misses turns straight into another.</summary>
+        public bool Desperate => health.hp <= health.max / 3;
+        bool chained;
         public bool Stunned => s == S.Stun;
         public bool Charging => s == S.Charge || s == S.Aim;
         public bool Fighting => s != S.Wait && s != S.Dying;
@@ -53,7 +56,7 @@ namespace Wakefire
             b.anim.sheet = SpriteSheet.Load("bull");
             b.anim.Play("idle", Facing.Down, true);
             b.health = go.AddComponent<Health>();
-            b.health.max = b.health.hp = 16;
+            b.health.max = b.health.hp = 20;
             b.shadow = Npc.MakeShadow(go.transform, WorldLayer.Both, 44);
             b.glow = LightBlob.Create(go.transform, at + new Vector2(0, 1.6f), 6f, new Color(1f, 0.55f, 0.22f), 0.75f, true);
             b.Place();
@@ -133,7 +136,7 @@ namespace Wakefire
                     anim.Play("walk", facing);
                     anim.SetFacing(facing);
                     pos = Solids.Move(pos, d.normalized * 1.6f * speedK * dt, half, this);
-                    if (clock > (Enraged ? 0.7f : 1.3f))
+                    if (clock > (Enraged ? 0.6f : 1.1f))
                     {
                         clock = 0;
                         if (Random.value < (Enraged ? 0.45f : 0.38f)) { s = S.Shoot; fired = false; anim.Play("shoot", facing, true); }
@@ -143,7 +146,7 @@ namespace Wakefire
                 case S.Aim:
                     facing = FaceOf(d);
                     anim.SetFacing(facing);
-                    if (clock > (Enraged ? 0.35f : 0.6f))
+                    if (clock > (Enraged ? 0.3f : 0.5f))
                     {
                         dir = d.normalized;
                         s = S.Charge; clock = 0;
@@ -154,7 +157,7 @@ namespace Wakefire
                 case S.Charge:
                 {
                     var before = pos;
-                    float sp = 9.5f * speedK;
+                    float sp = 10.2f * speedK;
                     pos = Solids.Move(pos, dir * sp * dt, half, this);
                     if (((int)(clock * 20)) % 2 == 0) Fx.Dust(pos, 1);
                     if (Enraged && ((int)(clock * 30)) % 3 == 0) Fx.Embers(pos + new Vector2(0, 0.8f), 1);
@@ -165,14 +168,22 @@ namespace Wakefire
                         PixelView.I.Shake(pillar ? 4 : 2, 0.35f);
                         Sfx.Play("bull_crash");
                         charges++;
-                        if (pillar || charges % 3 == 0) { s = S.Stun; clock = 0; stunDamage = 0; anim.Play("stun", facing, true); Sfx.Play("bull_daze"); }
-                        else { s = S.Idle; clock = Enraged ? 0.3f : 0; }
+                        if (pillar || charges % 3 == 0) { chained = false; s = S.Stun; clock = 0; stunDamage = 0; anim.Play("stun", facing, true); Sfx.Play("bull_daze"); }
+                        else if (Desperate && !chained)
+                        {
+                            // it wheels where it stopped and comes again
+                            chained = true;
+                            s = S.Aim; clock = 0.08f;
+                            anim.Play("idle", facing, true);
+                            Sfx.Play("bull_snort");
+                        }
+                        else { chained = false; s = S.Idle; clock = Enraged ? 0.3f : 0; }
                     }
                     break;
                 }
                 case S.Stun:
                     if (((int)(clock * 8)) % 4 == 0) Fx.Sparks(pos + new Vector2(0, 3.2f), new Color(1f, 0.9f, 0.5f), 1);
-                    if (clock > 2.6f) { s = S.Idle; clock = 0; grace = 0.5f; }
+                    if (clock > 2.3f) { s = S.Idle; clock = 0; grace = 0.5f; }
                     break;
                 case S.Shoot:
                     if (!fired && (anim.Frame >= 2 || clock > 0.5f))
