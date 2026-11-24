@@ -185,6 +185,13 @@ namespace Wakefire
         {
             var r = new Rect(pos - new Vector2(0.34f, 0.3f), new Vector2(0.68f, 0.9f));
             var map = Map.Current;
+            if (map && !living && !home)
+            {
+                // a walled-up doorway does not stand up to it either
+                Prop wall = null;
+                foreach (var pr in map.props) if (pr && pr.Kind == "crack" && pr.sr.enabled && pr.Bounds.Overlaps(new Rect(r.x - 0.2f, r.y - 0.2f, r.width + 0.4f, r.height + 0.4f))) { wall = pr; break; }
+                if (wall) Secrets.Break(wall);
+            }
             if (map && !living)
             {
                 for (int i = map.props.Count - 1; i >= 0; i--)

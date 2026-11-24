@@ -47,7 +47,7 @@ namespace Wakefire
             var p = Player.I;
             p.SetState(Player.State.Free, "idle");
             yield return new WaitForSeconds(0.5f);
-            Check($"the floor has rooms ({(Rooms.I ? Rooms.I.all.Count : 0)}) and he starts in the hall ({Rooms.I?.current?.id})", Rooms.I && Rooms.I.all.Count == 8 && Rooms.I.current.id == "hall");
+            Check($"the floor has rooms ({(Rooms.I ? Rooms.I.all.Count : 0)}) and he starts in the hall ({Rooms.I?.current?.id})", Rooms.I && Rooms.I.all.Count == 9 && Rooms.I.current.id == "hall");
             Check($"only the hall's own are out (hall {Count("hall")}, west {Count("west")}, stair {Count("stair")})", Count("hall") == 2 && Count("west") == 0 && Count("stair") == 0);
             yield return t.Shot("r1-hall", 0.2f);
             // west, through the side doorway

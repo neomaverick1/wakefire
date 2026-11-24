@@ -854,12 +854,15 @@ namespace Wakefire
             bool cur = fl.map == here;
             int fx = -1, fy = -1;
             bool Found(string id) => forked && Story.Has(Fork.FoundFlag(fl.map, id));
-            bool Known(string id) => !string.IsNullOrEmpty(id) && (scroll || Found(id) || Story.Has(Rooms.VisitedFlag(fl.map, id)));
+            bool Walked(string id) => !string.IsNullOrEmpty(id) && Story.Has(Rooms.VisitedFlag(fl.map, id));
+            bool Hidden(string id) { foreach (var q in fl.rooms) if (q.id == id) return q.secret; return false; }
+            // (a room that is on no plan is not on the scroll either: only where he has stood, or where the fork has heard a chest)
+            bool Known(string id) => !string.IsNullOrEmpty(id) && ((scroll && !Hidden(id)) || Found(id) || Walked(id));
             foreach (var rm in fl.rooms)
             {
                 bool seen = Story.Has(Rooms.VisitedFlag(fl.map, rm.id));
                 bool found = Found(rm.id);
-                if (!seen && !scroll && !found) continue;
+                if (!seen && !found && (!scroll || rm.secret)) continue;
                 int x0 = gx + rm.c * cw, y0 = gy + rm.r * ch, w = rm.cw * cw - 1, h = rm.ch * ch - 1;
                 bool me = cur && rm.id == room;
                 var box = RoomShape(rm, x0, y0, w, h);
@@ -907,6 +910,8 @@ namespace Wakefire
                 if (both)
                 {
                     if (!Known(l.a) && !Known(l.b)) continue;
+                    // a doorway the wall does not show is not drawn until he has stood on both sides of it
+                    if ((l.kind == "crack" || l.kind == "dream") && !(Walked(l.a) && Walked(l.b))) continue;
                     bool locked = (l.kind == "lock" || l.kind == "big") && !Story.Has("door_" + l.id);
                     var col = locked ? Gold : l.kind == "bars" ? Dim : RoomLit;
                     if (l.side == "n") cv.Rect(gx + l.c * cw + cw / 2 - 2, gy + l.r * ch - 2, 4, 3, col);

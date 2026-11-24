@@ -31,13 +31,13 @@ SQUARES = [(c, r) for r in range(3) for c in range(8) if r == 1 or c not in (4, 
 ROSETTES = [(0, 0), (0, 2), (3, 1), (6, 0), (6, 2)]
 
 
-def wall(length, doors, sides):
+def wall(length, doors, sides, clear=()):
     """A north wall of mud brick: a plastered band with shields hung along it (sides: which army's,
     in turn), a red line and a blue line under the coping."""
     m = Model()
 
     def near(x, margin):
-        return any(abs(x - dx) < DW / 2 + margin for dx in doors)
+        return any(abs(x - dx) < DW / 2 + margin for dx in tuple(doors) + tuple(clear))
     h, d = 2.75, 0.25
     foot = M('mud', 3.0, m_brick(8, 4))
     body = M('mud', 3.6, m_brick(8, 4))
@@ -65,8 +65,8 @@ def wall(length, doors, sides):
 class Barrow(Floor):
     """A floor of the barrow: mud brick, packed earth, a herringbone walk."""
 
-    def wall_model(self, rm, length, doors):
-        return wall(length, doors, {'red': ['red'], 'blue': ['blue']}.get(rm.id, ['red', 'blue']))
+    def wall_model(self, rm, length, doors, clear=()):
+        return wall(length, doors, {'red': ['red'], 'blue': ['blue']}.get(rm.id, ['red', 'blue']), clear=clear)
 
     def floor_look(self, T, rm, sd, whole, fx, fy, fw, fh):
         H, W = self.H, self.W
@@ -159,6 +159,8 @@ def barrow():
     board = F.room("board", 1, 0, name="The Board", opts="dim")
     nod = F.room("nod", 0, 0, name="Nod's Post", opts="dim")
     truce = F.room("truce", 2, 0, name="The Truce Wall", opts="dim")
+    gallery = F.room("gallery", 0, 1, name="The Gallery", opts="dim")
+    gallery.secret = True
     board.mark = "mini"
     F.link(1, 3, 's', 'out', to="necropolis", spawn="barrow", name="south")
     F.link(1, 3, 'n')
@@ -170,15 +172,23 @@ def barrow():
            far={"id": "bw_shut", "when": "clear:board", "opts": "shut:board"})
     F.link(1, 0, 'w', 'bars', id="bw_west", when="flag:dead_bw_piece")
     F.link(1, 0, 'e', 'bars', id="bw_east", when="flag:dead_bw_piece")
+    # the gallery: off the head of the passage, through a doorway only a dreamer has
+    F.link(1, 1, 'w', 'dream', id="bw_gallery")
     # no two rooms the same shape: an eight-sided hall, two arms of a passage, camps with their corners built up, an L
     F.corners(door, 32)
     F.passage(pass1, 'ns', 96, stubs='w')
-    F.passage(pass2, 'ns', 96, stubs='e')
+    F.passage(pass2, 'ns', 96, stubs='e w')
     F.corners(blue, 32)
     F.corners(red, 32)
     F.shape(nod, [(16, 48, 400, 132), (168, 132, 400, 208)])
+    F.shape(gallery, [(96, 48, 400, 208)])
     F.lay()
     F.board(board)
+    # the head of the passage climbs to the board: a flight the width of it
+    F.platform(pass2, 160, 48, 256, 84, h=12, steps=[(160, 256)], run=12)
+    # the gallery: two tiers of mud brick, the lower said first
+    F.platform(gallery, 128, 96, 368, 148, h=12, steps=[(232, 264)], run=12, back=False)
+    F.platform(gallery, 128, 48, 368, 96, h=12, steps=[(232, 264)], run=12)
     F.bake()
     m = F.m
 
@@ -217,6 +227,28 @@ def barrow():
     for k, (x, y) in enumerate(((244, 190), (380, 150))):
         kit.bones(m, *pass2.p(x, y), k)
     kit.pot(m, *pass2.p(244, 70))
+
+    # (the arm of it that goes west, and stops: both armies' drums, side by side, in front of a wall)
+    X, Y = pass2.p(40, 110); m.model("drum_red", bprops.drum('red'), X, Y, box=(-6, -8, 6, 0))
+    X, Y = pass2.p(58, 112)
+    m.model("drum_blue", bprops.drum('blue'), X, Y, box=(-6, -8, 6, 0), kind="look",
+            data={"id": "say", "text": "A red drum and a blue drum, side by side, at the end of a passage that stops at a wall.^Nowhere else in the barrow do the two colours stand this close.| "
+                                       "The masons were paid by the cubit. That is the kindest reason for a passage to nowhere.~~"
+                                       "In the dream the wall is not there. There is a doorway, and beyond it somebody is being told, quietly, that he should have moved the other piece."})
+
+    # ---------------------------------------------------------------- the gallery
+    # where the two armies' off-duty went to watch the game: seating by rank, facing a wall, by order of both generals
+    F.plaque(gallery, 250, "{g}'THE GALLERY. SEATING BY RANK. ADVICE BY NOBODY.'{/}^Under it, in two hands: {g}'HE STARTED IT.'{/}| {g}'I DID NOT.'{/}")
+    F.look("stele_bw", town.stele(1.25, 1), gallery, 112, 196, (-5, -5, 5, 0),
+           "{g}'THE GALLERY FACES THE WALL BY ORDER OF BOTH GENERALS.'{/}^{g}'IT IS THE ONLY ORDER THEY EVER SIGNED TOGETHER.'{/}| "
+           "The board is on the other side of that wall. The gallery has been watching the wall for three hundred and ninety-one years, and every man in it has a view on how the game is going.")
+    for k, (x, y, side) in enumerate(((160, 80, 'red'), (200, 80, 'blue'), (296, 80, 'red'), (336, 80, 'blue'), (176, 130, 'blue'), (320, 130, 'red'))):
+        m.marker("enemy", gallery.ox + x, gallery.oy + y, who=f"clay_{side}", id=f"bw_g{k}", text="hold:bw_gallery_row")
+    F.chest(gallery, 248, 72, "bw_gallery", "shekels:50")
+    F.torch(gallery, 112, 84); F.torch(gallery, 384, 84)
+    X, Y = gallery.p(384, 196); m.model("drum_blue", bprops.drum('blue'), X, Y, box=(-6, -8, 6, 0))
+    for (x, y) in ((108, 150), (124, 200)):
+        kit.pot(m, *gallery.p(x, y))
 
     # ---------------------------------------------------------------- the red camp: spearmen, and the standard behind them
     cage(F, red, 208, 108, "bw_redcage", "clear:red", say="The last of Ushur's spearmen goes to pieces.^The grille in front of his standard lifts. Nobody is left to mind.")

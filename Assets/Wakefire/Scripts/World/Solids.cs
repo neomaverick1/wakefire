@@ -11,6 +11,9 @@ namespace Wakefire
         public WorldLayer layer;
         public bool enabled = true;
         public bool pit;          // water or a drop: walls you can't enter, that swallow you if the world changes under you
+        public bool low;          // the edge of a raised floor: it stops feet, and nothing that is in the air
+        public Vector2 drop;      // ...the way down off it (zero: there is none), and how far down that is, in tiles
+        public float fall;
         public Object owner;
     }
 
@@ -45,11 +48,19 @@ namespace Wakefire
             return false;
         }
 
-        /// <summary>For things in the air: walls and furniture stop them, water and drops do not.</summary>
+        /// <summary>For things in the air: walls and furniture stop them; water, drops and the edges of raised floors do not.</summary>
         public static bool Blocks(Rect r, Vector2 at, Object ignore = null)
         {
             foreach (var s in all)
-                if (!s.pit && s.owner != ignore && s.r.Overlaps(r) && Active(s, at)) return true;
+                if (!s.pit && !s.low && s.owner != ignore && s.r.Overlaps(r) && Active(s, at)) return true;
+            return false;
+        }
+
+        /// <summary>Standing in the edge of a raised floor, which nothing should be (the world moved under him).</summary>
+        public static bool InEdge(Rect r)
+        {
+            foreach (var s in all)
+                if (s.low && s.enabled && s.r.Overlaps(r)) return true;
             return false;
         }
 

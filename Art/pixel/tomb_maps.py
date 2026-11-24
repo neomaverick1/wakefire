@@ -14,6 +14,7 @@ import dprops
 import bprops
 import tprops
 import necro_maps as NM
+from forge import Model, M, m_mottle
 from dkit import Floor, NW
 
 SPIRIT = (0.45, 1.0, 0.85)
@@ -54,6 +55,43 @@ def heap(F, rm, x, y, k, text="A king's treasure, heaped where the bearers set i
     F.m.model(f"treasure_{k % 4}", necro.treasure(k % 4), X, Y, box=(-12, -8, 12, 0), kind="look", data={"id": "say", "text": text})
 
 
+def tablets(n=5, seed=0):
+    """Clay tablets, stacked: requests, receipts, and requests about the receipts."""
+    m = Model()
+    rng = np.random.default_rng(seed + 2)
+    clay = [M('clay', 4.2, m_mottle(4, 0.5)), M('clay', 3.6, m_mottle(4, 0.5)), M('sandstone', 4.3, m_mottle(4, 0.4))]
+    z = 0.0
+    for k in range(n):
+        m.part()
+        m.push(at=(rng.uniform(-0.04, 0.04), rng.uniform(-0.03, 0.03), z), rot=rng.uniform(-9, 9))
+        m.box(-0.2, 0.0, 0, 0.2, 0.3, 0.07, clay[k % 3], top=clay[(k + 1) % 3])
+        m.pop()
+        z += 0.07
+    return m
+
+
+def tablet_shelf(seed=0, w=1.9):
+    """Shelves of them against a wall: the origin is the middle of the foot of the shelves."""
+    m = Model()
+    rng = np.random.default_rng(seed + 9)
+    wood = M('cedar', 3.4)
+    clay = [M('clay', 4.2, m_mottle(4, 0.5)), M('clay', 3.5, m_mottle(4, 0.5)), M('sandstone', 4.2, m_mottle(4, 0.4))]
+    m.part()
+    for sx in (-w / 2, w / 2 - 0.06):
+        m.box(sx, 0.0, 0, sx + 0.06, 0.3, 1.7, wood)
+    for z in (0.08, 0.6, 1.12, 1.64):
+        m.box(-w / 2, 0.0, z, w / 2, 0.3, z + 0.05, wood)
+    for row, z in enumerate((0.13, 0.65, 1.17)):
+        x = -w / 2 + 0.12
+        m.part()
+        while x < w / 2 - 0.16:
+            t = rng.uniform(0.07, 0.11); h = rng.uniform(0.3, 0.42)
+            if rng.uniform() > 0.14:
+                m.box(x, 0.04, z, x + t, 0.26, z + h, clay[int(rng.integers(0, 3))])
+            x += t + 0.02
+    return m
+
+
 def parked(F):
     """Pictures the game asks for by name while it runs (a bearer's lamp, the Sun Roller's sun), parked off the map's edge."""
     m = F.m
@@ -68,8 +106,9 @@ def parked(F):
 # ---------------------------------------------------------------------------------------------- 1F
 def tomb_1():
     """1F, the Outer Halls: the antechamber the thieves got as far as, the servants in their one
-    doorway, the offering store, the pillared hall and its stair, the treasury behind a lock with
-    no waking key, the lamp walk, and the well."""
+    doorway, the offering store, the pillared hall and its stair (on a terrace), the treasury behind
+    a lock with no waking key, the lamp walk, and the well; and under the well, where the plan shows
+    nothing, the cistern: the way in is the well, and the way out is a ladder."""
     F = Floor("tomb_1", 4, 3, 'tomb', dungeon='tomb', label='1F', order=1, music='tomb', seed=301)
     door = F.room("door", 1, 2, name="The Antechamber")
     serv = F.room("servants", 1, 1, name="The Hall of Servants")
@@ -78,6 +117,8 @@ def tomb_1():
     tre = F.room("treasury", 0, 0, name="The Treasury")
     walk = F.room("lampwalk", 2, 0, name="The Lamp Walk")
     well = F.room("well", 3, 0, name="The Well")
+    cist = F.room("cistern", 3, 1, name="The Cistern")
+    cist.secret = True
     F.link(1, 2, 's', 'out', to="necropolis", spawn="door", name="south")
     F.link(1, 2, 'n')
     F.link(1, 1, 'w')
@@ -97,10 +138,13 @@ def tomb_1():
     walk.passage = True
     F.shape(walk, [(16, 88, 400, 168), (96, 48, 176, 88), (240, 168, 320, 208)])
     F.corners(well, 32)
+    F.shape(cist, [(112, 48, 304, 184)])
     T = F.lay()
+    # the pillared hall: the stair to the inner halls stands on a terrace a tile above the floor
+    F.platform(hall, 16, 48, 400, 88, h=16, steps=[(168, 248)], run=16)
     F.carpet(door, 196, 60, 24, 148, seed=1)
     F.carpet(serv, 196, 48, 24, 160, seed=2)
-    F.carpet(hall, 196, 110, 24, 98, seed=3)
+    F.carpet(hall, 196, 120, 24, 88, seed=3)
     F.bake()
     m = F.m
     parked(F)
@@ -159,9 +203,9 @@ def tomb_1():
     for x in (72, 136, 280, 344):
         Xn, Yn = hall.p(x, NW)
         m.model("sentinel_niche", necro.sentinel_niche(), Xn, Yn + 4, box=None)
-    F.torch(hall, 44, 100); F.torch(hall, 372, 100)
+    F.torch(hall, 44, 86); F.torch(hall, 372, 86)
     F.plaque(hall, 106, "{g}'KURASHTAR, KING OF ASHKEL, WHO DID NOT SLEEP.'{/}^Scratched under it, by somebody on his staff: {g}'AND WOULD NOT LET ANYONE ELSE.'{/}")
-    F.chest(hall, 340, 186, "t1_fork", "fork_tomb")
+    F.chest(hall, 340, 68, "t1_fork", "fork_tomb")
     F.enemy(hall, "ushabti", 150, 150, "t1_g1", once=True)
     F.enemy(hall, "ushabti", 270, 140, "t1_g2", once=True)
 
@@ -190,7 +234,12 @@ def tomb_1():
         kit.urn(m, *walk.p(x, y), i + 1)
 
     # ---------------------------------------------------------------- the well
-    F.pit(well, 152, 48, 264, 208, bridges=[[(146, 128), (270, 128)]], seed=41)
+    # (the well has a floor: whoever goes down it comes down in the cistern, and climbs out on the side he went in from)
+    F.drop(well, 152, 48, 264, 208, "tomb_1", "cistern", seed=41, glow=SPIRIT, bridges=[[(146, 128), (270, 128)]])
+    m.spawn("well_top", *well.p(112, 168), "down")
+    X, Y = well.p(138, 176)
+    m.model("rope_post", tprops.rope_post(), X, Y, box=None, kind="look",
+            data={"id": "say", "text": "A post at the lip of the well, and a rope made fast to it, going down.^The rope is new. The dead do not drink.| Somebody goes down there. Regularly."})
     F.chest(well, 336, 104, "t1_vessel", "vessel")
     F.torch(well, 60, 84); F.torch(well, 356, 196)
     F.look("stele_t1", town.stele(1.25, 1), well, 96, 180, (-5, -5, 5, 0),
@@ -198,6 +247,22 @@ def tomb_1():
     F.enemy(well, "scarab", 320, 160, "t1_s3"); F.enemy(well, "scarab", 100, 110, "t1_s4")
     for i, (x, y) in enumerate(((300, 64), (370, 120))):
         kit.urn(m, *well.p(x, y), i)
+
+    # ---------------------------------------------------------------- the cistern, under the well
+    F.landing(cist, 208, 150, "cistern")
+    F.ladder(cist, 150, "cistern_foot", "well_top")
+    X, Y = cist.p(256, 104)
+    m.model("well_low", town.well(), X, Y, box=(-13, -12, 13, 0), kind="look",
+            data={"id": "say", "text": "Under the well, a cistern. In the cistern, a well.^Nobody on the staff has had the nerve to look down it."})
+    X, Y = cist.p(140, 150)
+    m.model("offering_table_c", town.offering_table(2, food=False), X, Y, box=(-12, -7, 12, 0), kind="look",
+            data={"id": "say", "text": "A stool, a cup, and a bucket on a rope.^Somebody has been coming down here to drink. In a tomb. For four hundred years.| "
+                                       "The dead do not drink. The staff, it turns out, were never told they had died."})
+    F.chest(cist, 270, 160, "t1_cistern", "shekels:60")
+    F.torch(cist, 128, 84); F.torch(cist, 290, 130)
+    for i, (x, y) in enumerate(((124, 176), (288, 60))):
+        kit.urn(m, *cist.p(x, y), i + 2)
+    F.enemy(cist, "scarab", 220, 110, "t1_s5"); F.enemy(cist, "scarab", 170, 168, "t1_s6")
     F.save()
 
 
@@ -231,6 +296,8 @@ def tomb_2():
     ward = F.room("wardens", 3, 1, name="The Wardens' Hall")
     queen = F.room("queen", 3, 2, name="The Queen's Room")
     brink = F.room("brink", 4, 0, 1, 2, name="The Brink")
+    far = F.room("faraway", 4, 2, name="Further Away")
+    far.secret = True
     roller.mark = "mini"
     F.link(2, 2, 's', 'stairs', to="tomb_1", spawn="top", name="south")
     F.link(2, 1, 'n', 'stairs', to="tomb_hi", spawn="south", name="top", door='sun', id="t2_seal", need="door_t2_seal")
@@ -243,14 +310,20 @@ def tomb_2():
     F.link(3, 1, 'e', 'bars', id="t2_brinkbars", when="clear:wardens",
            say="The last warden goes to pieces behind his door.^East of here, a grille lifts. Nobody is left to stand in front of it.")
     F.link(3, 1, 's')
+    F.link(4, 2, 'w', 'crack', id="t2_crack",
+           text="This stretch of wall is newer than the room, and somebody was paid for it not to look it.^It very nearly doesn't.| "
+                "A cut will not shift it. Your whole weight might, or something thrown that does not care about walls.")
     wpass.passage = True
     F.shape(wpass, [(16, 104, 230, 152), (186, 64, 230, 152), (186, 64, 400, 112), (354, 64, 400, 152)])
     F.corners(roller, 32)
     # the sun court: a low hall, and a chimney off its north-east corner with a wall across the mouth of it
     F.shape(court, [(16, 112, 400, 208), (336, 48, 400, 112)])
     F.corners(ward, 32)
-    F.shape(queen, [(112, 48, 304, 176)])
+    F.shape(queen, [(112, 48, 304, 176), (304, 104, 400, 152)])
+    F.shape(far, [(16, 100, 312, 180), (112, 48, 312, 180)])
     T = F.lay()
+    # the brink: the last of the four fires stands on a terrace over the drop
+    F.platform(brink, 16, 48, 400, 140, h=16, steps=[(176, 240)], run=16)
     F.carpet(lyre, 196, 60, 24, 166, seed=1)
     F.carpet(lyre, 196, 270, 24, 162, seed=2)
     # where to stand in the sun court, let into the floor in gold
@@ -347,6 +420,25 @@ def tomb_2():
     F.torch(brink, 44, 300); F.torch(brink, 372, 300); F.torch(brink, 44, 100); F.torch(brink, 372, 100)
     for i, (x, y) in enumerate(((60, 410), (350, 400), (120, 290))):
         kit.urn(m, *brink.p(x, y), i)
+
+    # ---------------------------------------------------------------- further away
+    # she asked to be buried further away, and this was as far as the king would allow. So she had a room of her own
+    # walled off the week she went in, and paid the mason twice: once for the wall, and once to forget where it was
+    F.plaque(far, 170, "{g}'THE QUEEN IS NOT IN.'{/}^Under it, smaller, in her own hand: {g}'TO THE KING, ESPECIALLY.'{/}")
+    X, Y = far.p(256, 86)
+    m.model("couch_far", dprops.stone_bed(False, 1), X, Y, box=(-8, -26, 8, 0), kind="look",
+            data={"id": "say", "text": "A couch, a lamp, and a board set up for a game for one.^She had this room walled off the week she was buried, and paid the mason twice: once to build the wall, and once to forget where.| "
+                                       "It is the only room in the tomb that anybody chose."})
+    F.pool(far, 150, 120, r=9)
+    X, Y = far.p(140, 84)
+    m.model("planter_far", town.planter(3, 1.5), X, Y, box=(-12, -9, 12, 0), kind="look",
+            data={"id": "say", "text": "A garden, in troughs and jars, under a hole in the roof the size of a plate.^Everything in it has been dead for four hundred years, except one myrtle that is doing it out of spite."})
+    for k, (x, y) in enumerate(((60, 150), (196, 78))):
+        X, Y = far.p(x, y); m.model(f"dead_tree_far{k}", town.dead_tree(4 + k, 0.6 + 0.1 * k), X, Y, box=(-3, -3, 3, 0))
+    F.chest(far, 280, 150, "t2_far", "shekels:80")
+    F.torch(far, 296, 170)
+    for i, (x, y) in enumerate(((40, 112), (296, 60))):
+        kit.urn(m, *far.p(x, y), i + 1)
     F.save()
 
 
@@ -372,6 +464,10 @@ def tomb_hi():
     epass = F.room("eastpass", 2, 1, name="The Falconers' Way")
     mews = F.room("mews", 2, 0, 2, 1, name="The King's Mews")
     roost = F.room("roost", 3, 1, name="The Roost")
+    dead = F.room("letters", 2, 2, name="The Dead Letter Room")
+    dead.secret = True
+    # (off the stair head, through a doorway only a dreamer has: the clerk who filed himself)
+    F.link(2, 2, 'w', 'dream', id="t3_letters")
     F.link(1, 2, 's', 'stairs', to="tomb_2", spawn="top", name="south")
     F.link(1, 2, 'n')
     F.link(1, 2, 'w')
@@ -394,9 +490,12 @@ def tomb_hi():
     F.shape(epass, [(16, 88, 264, 168), (152, 48, 264, 168)])
     F.corners(mews, 32)
     F.corners(roost, 32)
+    F.shape(dead, [(16, 100, 320, 180), (88, 48, 320, 208)])
     T = F.lay()
+    # the king's threshold: his door stands on a terrace, and what keeps it stands at the foot of the steps
+    F.platform(thr, 16, 48, 400, 88, h=12, steps=[(168, 248)], run=12)
     F.carpet(head, 196, 60, 24, 148, seed=1)
-    F.carpet(thr, 196, 96, 24, 112, seed=2)
+    F.carpet(thr, 196, 112, 24, 96, seed=2)
     # where to stand in the steward's rest (he has seen this sign before, one floor down)
     X, Y = stew.p(96, 183)
     NM.sun_floor(T, X, Y, 14)
@@ -413,6 +512,11 @@ def tomb_hi():
     F.enemy(head, "scarab", 150, 110, "t3_s0"); F.enemy(head, "scarab", 290, 120, "t3_s1"); F.enemy(head, "scarab", 300, 180, "t3_s2")
     # (the thieves carried a burning glass up from the temple to open the king's door with, and could not get it to stop)
     F.enemy(head, "glass", 322, 82, "t3_glass", once=True)
+    X, Y = head.p(382, 150)
+    m.model("tablet_dropped", tablets(1, 3), X, Y, box=None, kind="look", shadow=False,
+            data={"id": "say", "text": "A clay tablet, face down, where somebody dropped it on his way through the wall.^{g}'RE: THE KEY. THIRD REQUEST.'{/}| "
+                                       "There is no doorway in this wall. There is a tablet in front of it. One of those two facts is not trying hard enough.~~"
+                                       "Asleep, you can see what the clerk saw: a doorway.^He went through it to file a request, and filed himself."})
 
     # ---------------------------------------------------------------- the clerks' passage
     F.look("stele_t3", town.stele(1.25, 1), wpass, 360, 150, (-5, -5, 5, 0),
@@ -464,7 +568,7 @@ def tomb_hi():
     F.enemy(thr, "ushabti", 90, 130, "t3_g1", once=True)
     F.enemy(thr, "ushabti", 326, 130, "t3_g2", once=True)
     # (the king's own doorkeeper: he had her sent up from the temple)
-    F.enemy(thr, "medusa", 208, 84, "t3_med", once=True)
+    F.enemy(thr, "medusa", 208, 132, "t3_med", once=True)
     heap(F, thr, 70, 190, 2)
     heap(F, thr, 350, 186, 0)
 
@@ -502,6 +606,22 @@ def tomb_hi():
     vulture(F, roost, 76, 150, "t3_v5")
     F.plaque(roost, 110, "{g}'THE ROOST. OLD BIRDS ARE NOT PUT DOWN. OLD BIRDS ARE PUT HERE.'{/}")
     F.torch(roost, 44, 196); F.torch(roost, 372, 196)
+
+    # ---------------------------------------------------------------- the dead letter room
+    # every request for the key, in writing, as the notice says; handed to nobody, because the steward is not to be disturbed
+    F.plaque(dead, 150, "{g}'REQUESTS FOR THE KEY: RECEIVED.'{/}^{g}'REQUESTS FOR THE KEY: ANSWERED.'{/}| The second shelf is empty. It has a label, and four hundred years of dust in the shape of nothing.")
+    for k, x in enumerate((216, 256, 296)):
+        X, Y = dead.p(x, NW)
+        m.model(f"tablet_shelf_{k}", tablet_shelf(k), X, Y + 6, box=(-15, -6, 15, 0), kind="look",
+                data={"id": "say", "text": "Four hundred years of requests for the key, filed in order of receipt.^The one on top is from the king.| It is marked {g}'PENDING'{/}."})
+    X, Y = dead.p(150, 140)
+    m.model("offering_table_d", town.offering_table(5, food=False), X, Y, box=(-12, -7, 12, 0), kind="look",
+            data={"id": "say", "text": "A clerk's desk. The clerk is not at it.^He went to hand a tablet to the steward, four hundred years ago, and the steward was not to be disturbed.| "
+                                       "He is presumably still waiting. You did not pass him on the way in. You try not to think about that."})
+    for k, (x, y) in enumerate(((120, 190), (200, 160), (290, 190), (60, 160))):
+        X, Y = dead.p(x, y); m.model(f"tablets_{k}", tablets(3 + k, k), X, Y, box=(-4, -5, 4, 0))
+    F.chest(dead, 270, 130, "t3_letters", "vessel")
+    F.torch(dead, 100, 84); F.torch(dead, 40, 170)
     F.save()
 
 

@@ -8,6 +8,8 @@
 //   lit:A,B,C                              every one of those fires is burning
 //   clear:ROOM                             nothing is left alive in that room
 //   flag:NAME  noflag:NAME                 anything else the story knows
+// A stair hidden under a floor (a "hatch" with a condition) answers to the same things, the other way
+// round: it is not there until they hold, and once it has shown itself it stays ("open_" + its id).
 // Several, joined with ';', must all hold. A grille marked "shut" stands open until Azar walks
 // into its room with something still alive in it; then it drops behind him, and stays down until
 // what it answers to holds. Its room is the one it waits on ("clear:ROOM"), or the one it is told
@@ -27,7 +29,7 @@ namespace Wakefire
             public string id, say;
             public readonly List<Prop> props = new List<Prop>();
             public string[] conds;
-            public bool shutter, armed, open;
+            public bool shutter, armed, open, hatch;
             public string room;
         }
 
@@ -54,6 +56,7 @@ namespace Wakefire
             if (Story.Has("bars_z1")) Story.Set("on_z1_plate");           // a journey from before there were rooms
             var byId = new Dictionary<string, Gate>();
             var broken = new List<Prop>();
+            var down = new List<Prop>();
             foreach (var pr in map.props)
             {
                 if (!pr) continue;
@@ -76,6 +79,25 @@ namespace Wakefire
                     case "brazier":
                         if (!string.IsNullOrEmpty(pr.data.id) && Story.Has("on_" + pr.data.id)) pr.Ignite();
                         break;
+                    case "hatch":
+                        // (whoever comes up it from below has found it, whatever the room over it thinks; and if a stone
+                        // was standing on it, the stone goes first)
+                        if (!string.IsNullOrEmpty(pr.data.who) && !string.IsNullOrEmpty(pr.data.id) && Game.I.CurrentSpawn == pr.data.who)
+                        {
+                            Story.Set("open_" + pr.data.id);
+                            StartCoroutine(ShoveOff(pr));
+                        }
+                        if (string.IsNullOrEmpty(pr.data.text) || string.IsNullOrEmpty(pr.data.id)) break;      // a stair that was never hidden
+                        var hg = new Gate { id = pr.data.id, conds = pr.data.text.Split(';'), say = pr.data.say, hatch = true };
+                        hg.props.Add(pr);
+                        gates.Add(hg);
+                        break;
+                    case "crack":
+                        if (Story.Has("door_" + pr.data.id)) down.Add(pr);
+                        break;
+                    case "breach":
+                        pr.sr.enabled = Story.Has("door_" + pr.data.id);
+                        break;
                     case "bullhead":
                         if (string.IsNullOrEmpty(pr.data.id)) break;
                         if (Story.Has(pr.data.id)) { broken.Add(pr); break; }
@@ -91,6 +113,7 @@ namespace Wakefire
                 }
             }
             foreach (var pr in broken) { map.props.Remove(pr); Destroy(pr.gameObject); }
+            foreach (var pr in down) { map.props.Remove(pr); pr.Clear(); }          // a wall he brought down on an earlier visit
             foreach (var mk in map.data.markers)
                 if (mk.kind == "pool")
                 {
@@ -102,6 +125,18 @@ namespace Wakefire
             if (Player.I) Player.I.Interacted += OnNotify;
             Rooms.Entered += OnRoom;
             Twins();
+        }
+
+        IEnumerator ShoveOff(Prop hatch)
+        {
+            yield return null;
+            var well = new Rect(hatch.basePos.x, hatch.basePos.y - hatch.data.h / 16f, hatch.data.w / 16f, hatch.data.h / 16f);
+            foreach (var pr in map.props)
+            {
+                if (!pr || pr.Kind != "block" || pr.solid == null || !pr.solid.r.Overlaps(well)) continue;
+                foreach (var d in new[] { Vector2.right, Vector2.left, Vector2.up, Vector2.down })
+                    if (pr.Slide(d)) { Sfx.Play("block_push"); break; }
+            }
         }
 
         void OnDestroy()
@@ -176,6 +211,7 @@ namespace Wakefire
 
         bool Holds(Gate g)
         {
+            if (g.hatch && Story.Has("open_" + g.id)) return true;
             if (g.shutter && !g.armed) return true;
             foreach (var c in g.conds) if (!Cond(g, c)) return false;
             return true;
@@ -184,6 +220,19 @@ namespace Wakefire
         void Put(Gate g, bool open, bool quiet)
         {
             g.open = open;
+            if (g.hatch)
+            {
+                foreach (var pr in g.props) if (pr) pr.sr.enabled = open;
+                if (!open) return;
+                Story.Set("open_" + g.id);
+                if (quiet) return;
+                Sfx.Play("stone_door", 0.9f, 0.03f);
+                Sfx.Play("secret", 0.8f, 0);
+                PixelView.I.Shake(2, 0.25f);
+                foreach (var pr in g.props) if (pr) Fx.Dust(pr.basePos + new Vector2(0.9f, -0.7f), 9);
+                if (!string.IsNullOrEmpty(g.say) && Story.Bump("said_" + g.id) == 0) Story.Run(Story.Narrate(g.say));
+                return;
+            }
             Prop near = null;
             foreach (var pr in g.props)
             {

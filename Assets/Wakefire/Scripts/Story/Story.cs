@@ -72,6 +72,12 @@ namespace Wakefire
                 Run(Narrate(say));
                 return;
             }
+            // a wall with a crack in it says what it is hiding, more or less
+            if (pr.Kind == "crack" && pr.data != null && !string.IsNullOrEmpty(pr.data.text))
+            {
+                Run(Narrate(pr.data.text));
+                return;
+            }
             propHandler?.Invoke(pr);
         }
 

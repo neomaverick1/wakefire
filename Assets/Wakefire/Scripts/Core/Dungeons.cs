@@ -11,7 +11,8 @@ namespace Wakefire
     {
         /// <summary>shape: where the room's floor is, when it is not the whole box: x0, y0, x1, y1 of each rectangle, as
         /// fractions of the box (a passage, an L, a hall with its corners cut).</summary>
-        [Serializable] public class Room { public string id, name, mark; public int c, r, cw, ch; public float[] shape; public bool pass; }
+        /// secret: on no plan. The scroll does not show it; his own feet do, or a fork that has heard a chest through its wall.
+        [Serializable] public class Room { public string id, name, mark; public int c, r, cw, ch; public float[] shape; public bool pass, secret; }
         [Serializable] public class Link { public int c, r; public string side, kind, to, a, b, id; }
         [Serializable] public class Chest { public string id, room; public bool big; }
         [Serializable] public class Floor { public string map, label; public int order, cols, rows; public Room[] rooms; public Link[] links; public Chest[] chests; }

@@ -49,6 +49,9 @@ namespace Wakefire
         /// <summary>Walking into a place: its name comes up for a moment.</summary>
         public static void Place(string map) => Banner(Places.Name(map));
 
+        /// <summary>...and for a room that is on no plan, the first time he stands in it.</summary>
+        public static void Room(string name) => Banner(name);
+
         /// <summary>The same banner for the turn of a chapter: "Chapter One: The Sleeping God".</summary>
         public static void Chapter(string number, string name) => Banner(number + ": " + name);
 

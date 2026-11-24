@@ -1,7 +1,7 @@
 """The Crypt of the First Watch, under the old shrine on the olive terraces: where the night
 watch of Ashkel buried its own, and kept two things for the night the city would not wake.
 
-  den    run     lamps     .      .
+  den    run     lamps   larder   .
   arms   walk    stair    beds  (beds)
 
 The stair comes down from the shrine. West, along the watch's own walk, is the armoury, and the
@@ -10,11 +10,17 @@ watch was: the key is in it, behind olive roots only a blade cuts, with the jack
 through the locked door, the hall of lamps, a stone and a plate; west of that the jackals' run,
 which doubles back on itself, and at the end of it the den, its mother, and the Wakefire in its
 cage. The way back out of the den was bricked up long ago. The dream never heard about the
-bricks."""
+bricks.
+
+The stair hall is on two levels: the locked door stands on a terrace, up a flight of steps. And
+behind the dormitory is the watch's old larder, on no plan since the jackals found it: one way
+in is the way the jackals go, through a hole at the foot of the dormitory wall; the other is
+the larder's own stair, which comes up under the stone in the hall of lamps."""
 import sys
 sys.path.insert(0, '/srv/Wakefire/Art/pixel')
 import kit
 import dprops
+from forge import Model, M
 from dkit import Floor, NW
 
 BED = (-8, -26, 8, 0)
@@ -29,6 +35,23 @@ def rack(F, rm, x, text):
     F.m.model("spear_rack", dprops.spear_rack(), X, Y + 2, box=(-13, -4, 13, 0), kind="look", data={"id": "say", "text": text}, shadow=False)
 
 
+def sandals():
+    """What the jackals have been taking, one at a time, for four hundred years."""
+    import numpy as np
+    m = Model()
+    rng = np.random.default_rng(3)
+    hide = [M('wood', 3.4), M('wood', 4.0), M('cedar', 3.6)]
+    m.part()
+    for k in range(16):
+        a = rng.uniform(0, 6.283); r = rng.uniform(0, 0.42); z = 0.03 + 0.03 * (k // 4) + rng.uniform(0, 0.03)
+        x, y = r * np.cos(a), r * 0.6 * np.sin(a)
+        m.push(at=(x, y, z), rot=rng.uniform(0, 180))
+        m.blob(0, 0, 0, 0.17, 0.075, 0.02, hide[k % 3], n=8, rings=3, seed=k)
+        m.box(-0.02, -0.07, 0.01, 0.02, 0.07, 0.035, M('cedar', 2.6))
+        m.pop()
+    return m
+
+
 def crypt():
     F = Floor("crypt", 5, 2, 'crypt', dungeon='crypt', label='B1', order=1, music='crypt', seed=141)
     stair = F.room("stair", 2, 1, name="The Watch Stair", opts="dim")
@@ -39,6 +62,10 @@ def crypt():
     run = F.room("run", 1, 0, name="The Jackals' Run", opts="dim")
     den = F.room("den", 0, 0, name="The Den", opts="dim")
     den.mark = "mini"
+    larder = F.room("larder", 3, 0, name="The Larder", opts="dim")
+    larder.secret = True
+    # (its own stair comes up under the stone in the hall of lamps: the watch stood a stone on it, and then lost the list of stones)
+    F.link(3, 0, 'n', 'stairs', to="crypt", spawn="lamps_hatch", name="larder_stair")
     F.link(2, 1, 's', 'out', to="terraces", spawn="crypt", name="south")
     F.link(2, 1, 'w'); F.link(2, 1, 'e')
     F.link(1, 1, 'w')
@@ -52,7 +79,12 @@ def crypt():
     # the run: it goes round a pier of the living rock, the way a jackal would rather than a mason
     run.passage = True
     F.shape(run, [(16, 104, 150, 152), (104, 56, 150, 152), (104, 56, 312, 100), (266, 56, 312, 152), (266, 104, 400, 152)])
+    # the larder: a store the watch walled up when the jackals found it, which was the wrong order to do it in
+    F.shape(larder, [(96, 80, 320, 176), (56, 104, 360, 156), (168, 48, 248, 80)])
+    F.burrow(beds, 410, "burrow_beds", "burrow_larder")
     F.lay()
+    # the stair hall: the locked door stands on a terrace a tile above the floor, up a flight of steps
+    F.platform(stair, 16, 48, 400, 88, h=16, steps=[(176, 240)], run=16)
     F.bake()
     m = F.m
 
@@ -65,7 +97,7 @@ def crypt():
                          "Underneath, smaller: {g}'WIPE YOUR FEET.'{/}")
     rack(F, stair, 312, "The First Watch's spears, racked for the night.^The bronze has gone green, and the shafts would not survive being picked up.| "
                         "One is missing. Somebody signed for it, presumably.")
-    F.chest(stair, 340, 186, "crypt_map", "map_crypt")
+    F.chest(stair, 350, 68, "crypt_map", "map_crypt")
     for (x, y) in ((40, 198), (56, 202), (376, 120)):
         kit.pot(m, *stair.p(x, y))
 
@@ -124,6 +156,21 @@ def crypt():
     for (x, y) in ((40, 196), (56, 200)):
         kit.pot(m, *beds.p(x, y))
 
+    # ---------------------------------------------------------------- the larder, and the only way into it
+    F.burrow_floor(larder, 150, 140, "burrow_larder", "burrow_beds")
+    F.chest(larder, 286, 112, "crypt_larder", "shekels:40")
+    F.look("crypt_sandals", sandals(), larder, 230, 150, (-8, -6, 8, 0),
+           "Sandals. Four hundred years of them, and every one of them a left.^The First Watch was buried in its boots. The jackals have been correcting this, a night at a time.| "
+           "Nobody knows what they have against the right foot.")
+    for k, (x, y) in enumerate(((120, 100), (300, 160), (200, 96), (90, 140), (330, 128), (250, 168))):
+        kit.bones(m, *larder.p(x, y), k)
+    for k, (x, y) in enumerate(((110, 162), (306, 92))):
+        kit.urn(m, *larder.p(x, y), k + 1)
+    for (x, y) in ((70, 112), (346, 150), (130, 88)):
+        kit.pot(m, *larder.p(x, y))
+    F.enemy(larder, "jackal", 250, 140, "crypt_j9")
+    F.enemy(larder, "jackal", 196, 110, "crypt_j10")
+
     # ---------------------------------------------------------------- the watch walk, and the jackals' run
     F.torch(walk, 60, 100); F.torch(walk, 356, 100)
     rack(F, walk, 208, "The spare spears, in the niche where the watch kept what it was not using.^Also in the niche: a stool, a gaming board scratched on the floor, and four hundred years of somebody else's turn.")
@@ -141,6 +188,8 @@ def crypt():
         F.pillar(lamps, x, y)
     for (x, y) in ((60, 150), (150, 196), (266, 196), (356, 150)):
         F.torch(lamps, x, y, light=3.8)
+    # (under the stone, where it has stood for four hundred years: the head of the larder stair)
+    F.hatch(lamps, 240, 170, "crypt_hatch", "crypt", "larder_stair", "lamps_hatch", w=20, d=14)
     F.block(lamps, 240, 168, "crypt_block2")
     F.plate(lamps, 176, 136, "crypt_plate")
     F.brazier(lamps, 152, 84, uid="crypt_l0"); F.brazier(lamps, 264, 84, uid="crypt_l1")

@@ -123,14 +123,14 @@ namespace Wakefire
             Check("and the crypt has something to say about its lamps", Story.I.Running);
             yield return Scene();
             Check($"the crypt has rooms ({(Rooms.I ? Rooms.I.all.Count : 0)}), he is on the stair ({Rooms.I?.current?.id}), and it is dim (light {PixelView.I.ambient.r:0.00})",
-                Rooms.I && Rooms.I.all.Count == 7 && Rooms.I.current.id == "stair" && PixelView.I.ambient.r < 0.5f);
+                Rooms.I && Rooms.I.all.Count == 8 && Rooms.I.current.id == "stair" && PixelView.I.ambient.r < 0.5f);
             Check($"its music is its own ({Map.Current.data.music})", Map.Current.data.music == "crypt" && Resources.Load<AudioClip>("Music/crypt") && Resources.Load<AudioClip>("Music/crypt_dream"));
             yield return t.Shot("n05-stair", 0.3f);
             yield return Pack(t, "n05a-pack-empty", Pause.ItemPage);
             yield return Pack(t, "n05b-plan-no-scroll", Pause.MapPage);
             Check($"the pack closes again and the game goes on ({Game.Paused})", !Game.Paused);
             // the watch roll
-            p.pos = InRoom("stair", 340, 194); p.Face(Facing.Up);
+            p.pos = InRoom("stair", 350, 78); p.Face(Facing.Up);          // (it stands on the terrace now, up the steps)
             yield return new WaitForSeconds(0.2f);
             Check($"at a chest the action button says {p.Action}", p.Action == Player.Act.Open);
             yield return Press(Controls.Interact);

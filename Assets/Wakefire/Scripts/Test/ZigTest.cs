@@ -156,7 +156,7 @@ namespace Wakefire
             p.SetState(Player.State.Free, "idle");
             yield return new WaitForSeconds(0.5f);
             Check($"the second floor has rooms ({(Rooms.I ? Rooms.I.all.Count : 0)}), and he is on the landing ({Rooms.I?.current?.id}) with no shield ({p.hasShield})",
-                Rooms.I && Rooms.I.all.Count == 8 && Rooms.I.current.id == "landing" && !p.hasShield);
+                Rooms.I && Rooms.I.all.Count == 9 && Rooms.I.current.id == "landing" && !p.hasShield);
             yield return t.Shot("z01-landing", 0.2f);
             yield return Stand("landing", 208, 60, Facing.Up);
             yield return Walk(Vector2.up, 0.5f);
@@ -191,6 +191,8 @@ namespace Wakefire
             Check($"north of the walk is the counting room ({Rooms.I.current.id}), with {Count<Sentinel>()} sentinels", Rooms.I.current.id == "count" && Count<Sentinel>() == 2);
             KillAll();
             yield return new WaitForSeconds(0.6f);
+            yield return Scene(0.6f);
+            Check($"with nobody left to see who uses it, the stair under the counting room's floor shows itself ({Story.Has("open_z2_hatch")})", Story.Has("open_z2_hatch"));
             int coins0 = p.coins;
             yield return Open("z2_coins");
             Check($"what the temple was owed ({coins0} -> {p.coins})", p.coins > coins0);

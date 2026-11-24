@@ -145,9 +145,23 @@ namespace Wakefire
             var v = PixelView.I;
             v.bounds = r.rect;
             if (first) { Fill(r); v.ambient = Light(r); }
+            if (r.Is("secret") && !Story.Has(VisitedFlag(Game.I.CurrentMap, r.id))) Secrets.Found(r);
             Story.Set(VisitedFlag(Game.I.CurrentMap, r.id));
             PlaceDark();
             Entered?.Invoke(r);
+        }
+
+        /// <summary>He has come out somewhere else on this floor (a burrow, a ladder, a hole with a floor under it):
+        /// there was no doorway, so there is no slide. The room he left is put away and this one laid out.</summary>
+        public void Jump(Vector2 at)
+        {
+            var to = At(at);
+            if (to == null || to == current) return;
+            ClearTheAir();
+            Empty(current);
+            Fill(to);
+            Arrive(to, false);
+            PixelView.I.ambient = Light(to);
         }
 
         /// <summary>What light a room has before anything in it burns.</summary>

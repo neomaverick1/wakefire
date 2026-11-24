@@ -48,17 +48,85 @@ namespace Wakefire
             bool inside = false;
             foreach (var mk in m.data.markers)
             {
-                if (mk.kind != "exit") continue;
+                // a way out to another place; or a way that comes out somewhere else in this one (a burrow, a ladder)
+                bool warp = mk.kind == "warp";
+                if (mk.kind != "exit" && !warp) continue;
                 var a = Map.ToWorld(mk.x, mk.y + mk.h);
                 var r = new Rect(a.x, a.y, mk.w / 16f, mk.h / 16f);
                 if (!r.Contains(p.pos)) continue;
                 inside = true;
                 if (!exitArmed) continue;
                 if (!string.IsNullOrEmpty(mk.who) && !Story.Has(mk.who)) continue;
-                Go(mk.id, mk.text);
+                if (warp) StartCoroutine(WarpRoutine(mk));
+                else Go(mk.id, mk.text);
                 return;
             }
             if (!inside) exitArmed = true;
+        }
+
+        /// <summary>Through a burrow or up a ladder: in at one end, and out at the other end of it on the same floor.</summary>
+        IEnumerator WarpRoutine(MarkerJson mk)
+        {
+            Busy = true;
+            var p = Player.I;
+            bool ladder = mk.id == "ladder";
+            p.SetState(Player.State.Cutscene, ladder ? "idle" : "roll");
+            Sfx.Play(ladder ? "step_wood0" : "roll", 0.7f, 0.05f);
+            yield return Fade.Out(0.2f);
+            var sp = Map.Current.Marker("spawn", mk.text);
+            if (sp != null)
+            {
+                var at = Map.ToWorld(sp.x, sp.y);
+                p.pos = at;
+                p.transform.position = new Vector3(at.x, at.y, 0);
+                p.Face(Facing.Down);
+                if (Rooms.I) Rooms.I.Jump(at);
+                View.SnapTo(at);
+            }
+            exitArmed = false;
+            if (ladder) Sfx.Play("step_wood1", 0.7f, 0.05f);
+            yield return null;
+            yield return Fade.In(0.22f);
+            p.SetState(Player.State.Free, "idle");
+            Busy = false;
+            if (!ladder && Story.I) Story.I.Burrowed();
+        }
+
+        /// <summary>He has gone down a hole that has a floor under it: he comes down on that floor, on another
+        /// map or in another room of this one.</summary>
+        public void Drop(string map, string spawn)
+        {
+            if (!Busy) StartCoroutine(DropRoutine(map, spawn));
+        }
+
+        IEnumerator DropRoutine(string map, string spawn)
+        {
+            Busy = true;
+            var p = Player.I;
+            yield return Fade.Out(0.22f);
+            if (map == CurrentMap)
+            {
+                var sp = Map.Current.Marker("spawn", spawn) ?? Map.Current.Marker("spawn");
+                var at = Map.ToWorld(sp.x, sp.y);
+                p.pos = at;
+                p.transform.position = new Vector3(at.x, at.y, 0);
+                if (Rooms.I) Rooms.I.Jump(at);
+                View.SnapTo(at);
+                exitArmed = false;
+            }
+            else
+            {
+                EnterMap(map, spawn);
+                Save.Write(map, spawn);
+                Notices.Place(map);
+            }
+            p.SetState(Player.State.Cutscene, "hurt");
+            yield return null;
+            var fade = StartCoroutine(Fade.In(0.25f));
+            yield return p.Land();
+            yield return fade;
+            Busy = false;
+            if (Story.I) Story.I.CameDown();
         }
 
         IEnumerator Respawn()

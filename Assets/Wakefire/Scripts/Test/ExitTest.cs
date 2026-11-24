@@ -52,7 +52,10 @@ namespace Wakefire
                     p.SetState(Player.State.Free, "idle");
                     yield return new WaitForSeconds(0.2f);      // let the exit arm
                     float w = 0;
-                    while (Game.I.CurrentMap == map && w < 4f)
+                    // (a stair from one room of a floor to another room of the same floor does not leave the map:
+                    //  there he has arrived when he stands at its far end, and walking on would only take him back down it)
+                    bool within = ex.id == map;
+                    while ((within ? Game.I.CurrentSpawn != ex.text : Game.I.CurrentMap == map) && w < 4f)
                     {
                         Controls.Fake = p.state == Player.State.Free ? dir : Vector2.zero;
                         w += Time.deltaTime;

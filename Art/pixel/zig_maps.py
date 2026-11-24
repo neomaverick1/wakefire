@@ -2,6 +2,8 @@
 
 1F  the first hall and what opens off it: a block and a plate, a wall the dream does not have,
     a locked door, a chasm only moonlight crosses, and a vault that waits for the mirror shield.
+    The stair to 2F stands on a terrace. West of the weighing room, behind a doorway somebody
+    walled up, is a room that is on no plan; its own stair goes up to the counting room.
 2F  the Halls of the Bull: a walk of fire to the key, the Bronze Herdsman and the Mirror Shield he
     keeps, and the bull's head that shuts the stair to anyone without a mirror.
 3F  the High Halls: two sun discs for the last hall, three mouths for the Bull Key, the great door.
@@ -34,6 +36,12 @@ def zig_1():
     low = F.room("low", 1, 0, name="The Low Passage")
     gap = F.room("gap", 0, 0, name="The Broken Floor")
     vault = F.room("vault", 3, 0, name="The Vessel Vault")
+    twelfth = F.room("twelfth", 0, 2, name="The Twelfth Room")
+    twelfth.secret = True
+    F.link(1, 2, 'w', 'crack', id="z1_crack",
+           text="A crack runs down the wall here, and a draught comes through it.^The draught smells of roast lamb.| "
+                "It is a wall with something to hide, and it is not good at it. A cut will not shift it. Something with your whole weight behind it might.")
+    F.link(0, 2, 'n', 'stairs', to="zig_2", spawn="count_hatch", name="twelfth")
     F.link(2, 2, 's', 'out', to="temple_yard", spawn="door", name="south")
     F.link(2, 2, 'w'); F.link(2, 2, 'e')
     F.link(2, 2, 'n', 'lock', id="z1_door")
@@ -48,9 +56,13 @@ def zig_1():
     low.passage = True
     F.shape(low, [(16, 96, 400, 160)])
     F.corners(vault, 32)
+    F.shape(twelfth, [(96, 48, 320, 160), (96, 104, 400, 152)])
     F.lay()
+    # the stair hall: the way up stands on a terrace a tile above the floor
+    F.platform(stair, 16, 48, 400, 104, h=16, steps=[(168, 248)], run=16)
     F.carpet(hall, 196, 60, 24, 148, seed=1)
-    F.carpet(stair, 196, 86, 24, 122, seed=2)
+    F.carpet(stair, 196, 136, 24, 72, seed=2)
+    F.carpet(twelfth, 180, 80, 56, 60, seed=7)
     F.carpet(proc, 196, 48, 24, 160, seed=4)
     F.dais(vault, 168, 96, 80, 52, seed=92)
     F.bake()
@@ -87,8 +99,8 @@ def zig_1():
     for (x, y) in ((120, 150), (296, 150)):
         F.pillar(stair, x, y)
     F.torch(stair, 150, 84); F.torch(stair, 266, 84)
-    F.enemy(stair, "sentinel", 70, 100, "z1_s3", once=True)
-    F.enemy(stair, "sentinel", 346, 100, "z1_s4", once=True)
+    F.enemy(stair, "sentinel", 70, 150, "z1_s3", once=True)
+    F.enemy(stair, "sentinel", 346, 176, "z1_s4", once=True)
     F.chest(stair, 60, 186, "z1_fork", "fork_zig")
     F.disc(stair, 350, "z1_disc")
     F.pool(stair, 350, 142, r=15)
@@ -106,6 +118,17 @@ def zig_1():
     F.torch(vault, 60, 180); F.torch(vault, 356, 180)
     # (the vault only opens to whoever carries the mirror, and whoever carries the mirror can deal with its doorkeeper)
     F.enemy(vault, "medusa", 208, 84, "z1_med", once=True)
+    # the twelfth room: the plans show eleven. The plans were drawn by the priest who had this one built
+    F.plaque(twelfth, 150, "{g}'THIS IS NOT A ROOM.'{/}^The temple's plans show eleven rooms on this floor. The plans were drawn by the priest who had this one built.| "
+                           "It is a very comfortable not-a-room.")
+    X, Y = twelfth.p(136, 120)
+    F.m.model("offering_table_z", town.offering_table(4, food=True), X, Y, box=(-12, -7, 12, 0), kind="look",
+              data={"id": "say", "text": "A table laid for one: roast lamb, dates, and a jar that is not lamp oil.^Somebody on the temple staff worked very hard for the right to do nothing in here.| "
+                                         "The lamb is four hundred years old. You have smelled worse in the barracks."})
+    for (x, y) in ((276, 76), (292, 72), (300, 148), (112, 150)):
+        kit.pot(F.m, *twelfth.p(x, y), big=(x % 32 == 20))
+    F.chest(twelfth, 268, 124, "z1_twelfth", "shekels:60")
+    F.torch(twelfth, 112, 84); F.torch(twelfth, 304, 84)
     F.save()
 
 
@@ -123,6 +146,8 @@ def zig_2():
     climb = F.room("climb", 2, 1, name="The Herdsman's Stair")
     herd = F.room("herd", 2, 0, name="The Herdsman's Hall")
     gate = F.room("gate", 4, 1, name="The Bull's Gate")
+    oil = F.room("oil", 3, 1, name="The Oil Store")
+    oil.secret = True
     herd.mark = "mini"
     F.link(2, 2, 's', 'stairs', to="zig_1", spawn="top", name="south")
     F.link(2, 2, 'w'); F.link(2, 2, 'e')
@@ -132,22 +157,28 @@ def zig_2():
     F.link(1, 2, 'n')
     F.link(4, 2, 'n', 'bars', id="z2_gate", when="flag:dead_z2_herdsman")
     F.link(4, 1, 'n', 'stairs', to="zig_hi", spawn="south", name="top")
+    F.link(3, 2, 'n', 'crack', id="z2_crack",
+           text="This stretch of wall was put up later than the rest, by somebody in a hurry.^It has cracked down the join. Lamp oil has been weeping through it for longer than the city has had a wall.| "
+                "A cut will not shift it. Something with your whole weight behind it might.")
     F.corners(land, 32)
     F.corners(count, 32)
     climb.passage = True
     F.shape(climb, [(160, 48, 256, 208)])
     feed.passage = True
-    F.shape(feed, [(16, 88, 400, 168), (150, 168, 266, 208)])
+    F.shape(feed, [(16, 88, 400, 168), (150, 168, 266, 208), (168, 48, 248, 88)])
+    F.shape(oil, [(104, 48, 312, 208)])
     F.lay()
+    # the Herdsman's stair is one: a flight the whole width of it, up to his door
+    F.platform(climb, 160, 48, 256, 112, h=16, steps=[(160, 256)], run=16)
     F.carpet(land, 196, 60, 24, 148, seed=1)
     F.carpet(herd, 196, 150, 24, 58, seed=2)
     F.dais(herd, 164, 52, 88, 50, seed=92)
     F.carpet(gate, 196, 152, 24, 56, seed=3)
-    F.carpet(climb, 196, 48, 24, 160, seed=5)
+    F.carpet(climb, 196, 146, 24, 62, seed=5)
     F.bake()
     m = F.m
     # the Herdsman's stair: his own way up, and his own opinion of visitors cut over the door at the top
-    F.torch(climb, 172, 120); F.torch(climb, 244, 120)
+    F.torch(climb, 172, 100); F.torch(climb, 244, 100)
     F.look("stele_herd", town.stele(1.3, 2), climb, 240, 190, (-5, -5, 5, 0),
            "{g}'ABOVE: THE HERDSMAN. HE DOES NOT RECEIVE.'{/}^{g}'HE HAS NOT RECEIVED SINCE THE BULLS WERE CAST. HE HAS BEEN TOLD THIS IS NOT THE SAME AS RECEIVING NOBODY.'{/}")
     # the feed way: jars down one side of it, in a bay of their own, and what lives on what is in them
@@ -174,6 +205,10 @@ def zig_2():
     F.torch(count, 60, 180); F.torch(count, 356, 180)
     F.enemy(count, "sentinel", 120, 160, "z2_s1", once=True)
     F.enemy(count, "sentinel", 296, 160, "z2_s2", once=True)
+    # (...and a third: a stair under the floor, which only shows itself when nobody is left to see who uses it)
+    F.hatch(count, 208, 186, "z2_hatch", "zig_1", "twelfth", "count_hatch", when="clear:count",
+            say="The second sentinel comes apart.^In the middle of the floor, a slab that has been pretending to be floor stops pretending.| "
+                "A stair goes down. It is on no plan. Somebody counted very carefully who knew about it.")
     # the feed store: jars, moths, a sentinel, and a wall only the waking world keeps
     F.partition_ns(store, 280, 48, 208, layer=1)
     F.chest(store, 340, 128, "z2_vessel", "vessel")
@@ -202,6 +237,16 @@ def zig_2():
     F.torch(gate, 150, 84); F.torch(gate, 266, 84)
     # (north of the head, where only somebody with the shield gets to: a thurifer on his round)
     F.enemy(gate, "thurifer", 118, 96, "z2_th1", once=True)
+    # the oil store: walled up when the Herdsman was found to be drinking it. The chute from the high halls still works
+    F.landing(oil, 208, 150, "chute")
+    X, Y = oil.p(208, 132)
+    m.model("sacks_oil", town.sacks(3), X, Y, box=None, kind="look", shadow=False,
+            data={"id": "say", "text": "Sacks of chaff, under the mouth of the chute.^It was not kindness. The jars are worth more than whoever fell on them."})
+    F.plaque(oil, 150, "{g}'LAMP OIL. KEEP FROM FLAME.'{/}^{g}'KEEP FROM THE HERDSMAN, WHO DRINKS IT.'{/}| The second line is in a different hand, and is underlined.")
+    for (x, y) in ((120, 84), (136, 80), (152, 84), (264, 80), (280, 84), (296, 80), (120, 196), (296, 196), (136, 200)):
+        kit.pot(m, *oil.p(x, y), big=(x % 32 == 24))
+    F.chest(oil, 276, 132, "z2_oil", "shekels:80")
+    F.torch(oil, 120, 150)
     F.save()
 
 
@@ -236,12 +281,17 @@ def zig_hi():
     lamp.passage = True
     F.shape(lamp, [(16, 100, 230, 156), (186, 60, 230, 156), (186, 60, 400, 104), (354, 60, 400, 156)])
     F.lay()
+    # the great door stands on a terrace, at the head of a flight as broad as the door
+    F.platform(door, 16, 48, 400, 108, h=16, steps=[(160, 256)], run=16)
     F.carpet(land, 196, 60, 24, 148, seed=1)
-    F.carpet(door, 196, 86, 24, 122, seed=2)
+    F.carpet(door, 196, 140, 24, 68, seed=2)
     F.dais(keyr, 168, 96, 80, 52, seed=102)
     F.carpet(last, 196, 48, 24, 160, seed=6)
     F.bake()
     m = F.m
+    # the oil chute: how the lamps of the high halls were filled from the store below. It still goes where it went
+    F.drop(land, 320, 88, 352, 112, "zig_2", "chute", seed=103)
+    F.plaque(land, 336, "{g}'OIL CHUTE. JARS ONLY.'{/}^{g}'NOT ACOLYTES.'{/}| Under it, cut deeper: {g}'NOT ACOLYTES AGAIN.'{/}")
     # the last stair: broad, carpeted, a pillar either side, and nobody on it but what was left to mind it
     for (x, y) in ((160, 110), (256, 110), (160, 176), (256, 176)):
         F.pillar(last, x, y)
@@ -288,9 +338,9 @@ def zig_hi():
     for (x, y) in ((120, 150), (296, 150)):
         F.pillar(door, x, y)
     F.torch(door, 150, 84); F.torch(door, 266, 84)
-    F.enemy(door, "sentinel", 70, 110, "zh_s3", once=True)
-    F.enemy(door, "sentinel", 346, 110, "zh_s4", once=True)
-    F.enemy(door, "thurifer", 208, 104, "zh_th2", once=True)
+    F.enemy(door, "sentinel", 70, 160, "zh_s3", once=True)
+    F.enemy(door, "sentinel", 346, 160, "zh_s4", once=True)
+    F.enemy(door, "thurifer", 208, 96, "zh_th2", once=True)
     F.save()
 
 

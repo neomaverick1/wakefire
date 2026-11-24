@@ -109,6 +109,15 @@ namespace Wakefire
                 var a = ToWorld(b.x0, b.y1);
                 var sol = Solids.Add(new Rect(a.x, a.y, (b.x1 - b.x0) / 16f, (b.y1 - b.y0) / 16f), (WorldLayer)b.layer);
                 sol.pit = b.kind == "pit";
+                if (!string.IsNullOrEmpty(b.kind) && b.kind.StartsWith("ledge_"))
+                {
+                    // the edge of a raised floor: "ledge_s:16" drops south, sixteen pixels; "ledge_x" has no way down it
+                    sol.low = true;
+                    char way = b.kind.Length > 6 ? b.kind[6] : 'x';
+                    sol.drop = way == 's' ? Vector2.down : way == 'e' ? Vector2.right : way == 'w' ? Vector2.left : Vector2.zero;
+                    int colon = b.kind.IndexOf(':');
+                    if (colon > 0 && float.TryParse(b.kind.Substring(colon + 1), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float px)) sol.fall = px / 16f;
+                }
             }
             foreach (var l in data.lights)
             {

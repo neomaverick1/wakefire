@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Wakefire
 {
-    public class Player : MonoBehaviour
+    public partial class Player : MonoBehaviour
     {
         public static Player I;
         public enum State { Free, Attack, Roll, Nod, Use, Hurt, Dead, Talk, Cutscene, ItemGet, Guard, Throw, Stone }
@@ -239,7 +239,7 @@ namespace Wakefire
             }
 
             var before = pos;
-            if ((state == State.Free || state == State.Guard) && Solids.Blocks(new Rect(pos - half, half * 2), pos, this)) Unstick();
+            if ((state == State.Free || state == State.Guard) && (Solids.Blocks(new Rect(pos - half, half * 2), pos, this) || Solids.InEdge(new Rect(pos - half, half * 2)))) Unstick();
             pos = Solids.Move(pos, vel * dt, half, this);
             CheckGround();
             if (anim.model)
@@ -279,6 +279,7 @@ namespace Wakefire
         void FreeUpdate(Vector2 input, float dt)
         {
             bool moving = input.sqrMagnitude > 0.01f;
+            if (!moving) ledgeClock = 0;
             // weight: a short run-up, a short slide to a stop, a skid when he doubles back
             var want = input * speed;
             var was = vel;
@@ -304,6 +305,8 @@ namespace Wakefire
                     if (pushClock > 0.38f && block.Slide(Dir)) { pushClock = 0; Sfx.Play("block_push"); }
                     return;
                 }
+                // the edge of a raised floor, or the lip of a hole that has a floor under it: lean on it, and over he goes
+                if (Lean(input, dt)) return;
                 pushClock = 0;
                 anim.Play("run", facing);
                 anim.SetFacing(facing);
@@ -408,7 +411,7 @@ namespace Wakefire
 
         static bool Acts(Prop p) => p.Kind == "sign" || p.Kind == "well" || p.Kind == "gate" || p.Kind == "npc" || p.Kind == "pot" || p.Kind == "roots" ||
                                     p.Kind == "chest" || p.Kind == "bigchest" || p.Kind == "lockdoor" || p.Kind == "bigdoor" || p.Kind == "look" || p.Kind == "stairs" ||
-                                    p.Kind == "dreamlock" || p.Kind == "plankgap" || p.Kind == "bluelamp" || p.Kind == "standard" || p.Kind == "scale" ||
+                                    p.Kind == "dreamlock" || p.Kind == "plankgap" || p.Kind == "bluelamp" || p.Kind == "standard" || p.Kind == "scale" || p.Kind == "crack" ||
                                     (p.Kind == "dreamthing" && Pocket.There(p));
 
         Act WhatNow()
@@ -447,6 +450,9 @@ namespace Wakefire
 
         System.Collections.IEnumerator Fall()
         {
+            // (a hole with a floor under it is not a fall: he comes down on whatever is below)
+            var hole = HoleAt(pos);
+            if (hole != null) { yield return Plunge(hole, pos); yield break; }
             state = State.Cutscene;
             vel = Vector2.zero;
             Sfx.Play("fall");
@@ -627,6 +633,10 @@ namespace Wakefire
             var map = Map.Current;
             if (map)
             {
+                // a doorway somebody walled up: a cut rings on it, and the blow with his whole weight behind it brings it down
+                Prop wall = null;
+                foreach (var pr in map.props) if (pr && pr.Kind == "crack" && pr.Bounds.Overlaps(r)) { wall = pr; break; }
+                if (wall) { if (heavy) { Secrets.Break(wall); hitAny = true; } else Secrets.Ring(wall); }
                 for (int i = map.props.Count - 1; i >= 0; i--)
                 {
                     var pr = map.props[i];
