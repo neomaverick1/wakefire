@@ -19,6 +19,12 @@ namespace Wakefire
             StartCoroutine(GoRoutine(map, spawn));
         }
 
+        /// <summary>The insides of a town's houses are a map of their own: rooms, not a place with a name.</summary>
+        public static bool Houses(string map) => !string.IsNullOrEmpty(map) && map.EndsWith("_in");
+
+        /// <summary>The place a map belongs to on the world map: itself, or for the rooms of a town's houses, the town.</summary>
+        public static string Outer(string map) => Houses(map) ? map.Substring(0, map.Length - 3) : map;
+
         IEnumerator GoRoutine(string map, string spawn)
         {
             Busy = true;
@@ -26,9 +32,14 @@ namespace Wakefire
             if (p) p.SetState(Player.State.Cutscene);
             yield return Fade.Out(0.22f);
             bool newPlace = map != CurrentMap;
+            string was = CurrentMap;
+            // (going indoors: where the door was, for the world map)
+            if (p && Houses(map) && !Houses(was)) { Story.SetCount("outer_x", Mathf.RoundToInt(p.pos.x * 16f)); Story.SetCount("outer_y", Mathf.RoundToInt(-p.pos.y * 16f)); }
             EnterMap(map, spawn);
             Save.Write(map, spawn);
-            if (newPlace) Notices.Place(map);
+            // into a house, or from one room of it to another: the room says what it is; out of one, the town does not need to
+            if (Houses(map)) { if (Rooms.I && Rooms.I.current != null && !string.IsNullOrEmpty(Rooms.I.current.name)) Notices.Room(Rooms.I.current.name); }
+            else if (newPlace && !Houses(was)) Notices.Place(map);
             yield return null;
             yield return Fade.In(0.22f);
             if (p) p.SetState(Player.State.Free, "idle");

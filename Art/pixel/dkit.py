@@ -761,6 +761,9 @@ class Floor:
             self._overlay(f"{self.name}_jamb_{i}", bx - EW, gy + SIDE0 - 18, bx + EW, gy + SIDE0, gy + SIDE1 + 2)
             if kind in SECRET:
                 self._secret_w(i, l, uid)
+            elif kind == 'lock':
+                # a grille with a lock in it across the way through: a small key, and it is a doorway again
+                m.model("bars_ns", bars_ns(2.0, 1.4), bx - EW + 3, gy + SIDE1, box=(-3, -(SIDE1 - SIDE0), 3, 0), kind="lockdoor", data={"id": uid})
             elif kind == 'bars':
                 data = {"id": uid, "text": l.get("when", ""), "who": l.get("opts", "")}
                 if l.get("say"):

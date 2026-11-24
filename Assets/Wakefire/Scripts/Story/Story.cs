@@ -72,6 +72,15 @@ namespace Wakefire
                 Run(Narrate(say));
                 return;
             }
+            // a house door that stands shut says why
+            if (Player.HouseDoor(pr))
+            {
+                string why = pr.data.who.Substring(5);
+                // (on the first night nobody has been away from anything for forty of them yet)
+                if (FirstNight && (why.Contains("forty") || why.Contains("years"))) why = "Shut. Whoever shut it did it an hour ago, and has not been awake to think better of it.";
+                Run(Narrate(why));
+                return;
+            }
             // a wall with a crack in it says what it is hiding, more or less
             if (pr.Kind == "crack" && pr.data != null && !string.IsNullOrEmpty(pr.data.text))
             {

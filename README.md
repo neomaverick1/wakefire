@@ -16,8 +16,18 @@ In chapter two he climbs the Hill of Sleepers for the Dawn Horn, the one thing t
 
 ## Screens
 
+![The Lower Town](docs/screens/43-the-lower-town.png)
+
+*The Lower Town, forty nights in: eight houses, no two alike, each on its own plot.*
+
 | | |
 |---|---|
+| ![Up the stair](docs/screens/37-up-the-stair.png) | ![The goat's roof](docs/screens/38-the-goats-roof.png) |
+| The stair up the front of the bakery is a stair. A roof is a place: go in at the door up there, or leave by the nearest edge | The house the goat stands on. The street door is barred from inside; the ladder is somebody else's, borrowed forty nights ago |
+| ![The Seven Jars](docs/screens/39-the-seven-jars.png) | ![The weavers'](docs/screens/40-the-weavers.png) |
+| The Seven Jars: the alewife with her chin on the counter, a regular under the table, and a dog who has never run up a slate | The weavers, who are sisters and do not speak, at looms as far apart as the room allows |
+| ![The sisters' room](docs/screens/41-the-sisters-room.png) | ![What she sees](docs/screens/42-what-she-sees.png) |
+| The room they share, with a line chalked down the middle of it. The stool on the line belongs to both of them | In the oracle's house there is a door that is only there when your eyes are shut |
 | ![The Great Door](docs/screens/31-the-great-door.png) | ![The way the jackals go](docs/screens/32-the-way-the-jackals-go.png) |
 | Floors above the floor: the Great Door on its terrace, at the head of a flight as broad as the door | A hole at the foot of the dormitory wall that no mason made. It is exactly as wide as a jackal |
 | ![The stair that waits](docs/screens/33-the-stair-that-waits.png) | ![Out through the wall](docs/screens/34-out-through-the-wall.png) |
@@ -102,6 +112,14 @@ Every tomb door, gravestone and coffin on the hill has something to say if you s
 
 And the goat. The goat is everywhere.
 
+## The Lower Town
+
+- **Every house is its own house.** Eight buildings, no two alike, each on its own walled plot with a paved path from its door to the street: Hesha's bakery with its hatch of loaves and the bedroom over the shop; the Seven Jars, long and low, with a roof to drink on; the weavers', with forty nights of dry cloth still hanging from the gallery; the counting house, in dressed stone to the height of a man, because the first two were of brick; Ummi the oracle's, under a beehive dome; Kesh's pottery and the loft he keeps the sacred jars in; the net loft on the quay, roofed with the hull of a boat; and the house the goat stands on.
+- **You can go in.** Fifteen rooms behind those doors, each its own screen with its own walls, floor and furniture. Somebody is home in most of them: Hesha's husband, asleep on his feet with a coin in each hand (he was counting the takings, and had got as far as four); her grandmother, who has slept through three kings; the alewife with her chin on the counter; the weavers, who are sisters and do not speak, at looms as far apart as the room allows; the collector's clerk, face down in the tablets; a client on the oracle's mat who has not liked her answer once in forty nights; and a cat, who was asleep before any of this.
+- **Stairs, ladders, roofs.** The stair up the front of a house is a stair: walk on at its foot and Azar climbs to the roof. Ladders too. A roof is a place. Walk about on it, go in at the door up there, and leave by whichever edge is nearest: he hops down.
+- **Some doors are shut.** The counting house opens to its gong, for people who have come to pay. The weavers bolted their street door ten years ago and come and go by the roof, like the cats. The goat's house is barred from inside, by somebody who then left through the roof. The board behind the counter of the Seven Jars is bolted from underneath: the way under it is the cellar door in the alley, or the hole at the foot of the sea cliffs that the crabs use.
+- **Things worth finding.** The goat keeps a key. The collector keeps a strongroom. The potter walled up his own cash room from the inside, and the plaster is still soft in one place. Under the flour bin in the bakery there is a stair. And in the oracle's house there is a door that is only there when your eyes are shut.
+
 ## Controls
 
 | | Keyboard | Gamepad | Touch |
@@ -115,6 +133,8 @@ And the goat. The goat is everywhere.
 | Pack | Esc / P | Start | Pause button |
 
 **One button for whatever is in front of you.** The action button talks to a person, opens a chest or a door, reads a sign and looks at anything worth a look. When there is nothing in front of Azar and he carries the Bronze Mirror Shield, holding the button raises it. He walks slowly and keeps facing the way he faced, a blow from the front glances off, and fire goes back where it came from. What comes down from above, like a mace, does not stop for a shield.
+
+**Stairs, ladders and roofs.** Walk on at the foot of a stair that runs up the front of a house, or up at the foot of a ladder, and Azar climbs it; walk back on at the top and he comes down. On a roof, lean on the edge and he hops to the street.
 
 **Edges and holes.** Walk into the edge of a raised floor from above, lean on it for a moment, and Azar hops down; the way back up is the steps. Lean on the lip of a hole that has light coming up it and he jumps: there is a floor under it. A hole with nothing coming up it is still a hole.
 
@@ -135,6 +155,7 @@ On phones the buttons stay clear of notches and rounded corners, and they step a
 - **The animals** have no stock rig: the goat, the dog, the jackals, the crabs, the moths, the scarabs, the king's vultures and the Brazen Bull are skeletons built and walked by code. The Bull is one body drawn through its cross-sections, squared off like cast bronze, with gold belts, a furnace grille in its flanks and a lapis beard. The jackals are drawn the same way: a keel of a chest, a waist tucked up behind it, a wedge of a head, and legs that are thigh, shank and paw. A crab's claw has a thumb on a bone of its own, so it opens before it shuts. A Medusa's hair is eleven snakes of two bones each on a stock head. A thurifer's censer and a burning glass on its three legs are built the same way, so they are lit and outlined like everything else (`Scripts/Actors/HallProps.cs`). The tomb scarabs walk on the crab's six legs under a beetle's shell. Every foot is planted and stays put while the body passes over it, legs fold at knee and hock to reach, and the goat's head follows Azar wherever he goes (`Scripts/Actors/Beast.cs`).
 - **Dungeons are floors of rooms, and no floor is a block of boxes.** A floor is one map laid out on a grid of cells, with as many cells left as rock as the plan wants; a room takes one cell or several, and its floor can be any union of rectangles inside them (a passage, an L, a hall with its corners cut), with a wall's face drawn wherever rock stands north of floor. The game shows one room at a time and slides the picture across when Azar walks through a doorway, carrying him through it. What lives in a room is put there when he walks in and taken away when he leaves. Bars and doors name what lifts them (a plate weighted, fires lit, a sun disc lit off the mirror shield, a room cleared, anything the story knows), so a floor is built by saying what answers to what (`Art/pixel/dkit.py`, `Scripts/World/Rooms.cs`, `Scripts/World/Mech.cs`).
 - **Height and secrets come out of the same kit.** A raised floor is paved where it is walked, its front is a model set into the ground, and its edges are one-way: down. A walled-up doorway is the room's own wall built twice, once whole and once with the door in it, so the doorway that appears fits the wall it appears in to the brick. The check that walks every map before a build knows that a ledge is crossed one way only, that a burrow comes out somewhere else, and that a hole with a floor under it is a way down and not a wall.
+- **A house is a building outside and rooms inside.** Each of the town's houses is its own model (`Art/pixel/houses.py`), stood on the map by a kit that knows which of it is wall and which is roof (`Art/pixel/hkit.py`): its picture is drawn under everything that stands on it or in front of it, the edges of its roof are one-way like any ledge, and its stair and ladders are rails a walker rides between the street and the roof. Indoors, every room is a cell of its own on a floor of rooms (`Art/pixel/hin.py`), with its own plaster, painted dado, floor and furniture, and its doors lead back to the same door outside.
 - **Light and shadow.** Everything that stands up throws a moon shadow of its own shape, people included. Every building, prop and paving stone carries a normal map and a height, so a fire lights the faces turned towards it and nothing else: a wall behind a brazier glows, the roof above it stays in moonlight, and cobbles catch the Wakefire on their near edges as Azar walks past (`Shaders/WFSprite.shader`, `FireShape`). Whatever burns nearby also lights the side of a figure that faces it. The sea moves, and trees and bushes sway in the night wind.
 - **Nothing just stops.** Wherever the ground runs on but Azar can't, something stands there and says why: a yard wall, a wrecked handcart, a cypress windbreak, a fall of boulders, the harbour quay, the edge of the hill falling away into mist. Walk up and look, and most of them have a line about it.
 - **The touch buttons are metalwork.** Each is a small relief worked out as heights and lit like bronze under a lamp (`Art/ui/touch_art.py`): a hoop, gold beading, blue enamel, the sign raised in gold.

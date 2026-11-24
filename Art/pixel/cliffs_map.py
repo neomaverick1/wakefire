@@ -83,7 +83,12 @@ def build():
     m.set_into_ground(town.cliff(15.0, h=1.85, seed=27), 0, 414, seed=27)
     m.set_into_ground(town.cliff(238 / 16.0, h=1.85, seed=28), 282, 414, seed=28)
     m.set_into_ground(town.steps(38 / 16.0, n=5, rise=1.0, run=1.1), 242, 414)
-    m.solid(0, 380, 240, 414); m.solid(282, 380, 520, 414)
+    # (a hole at the foot of the low cliff: the way the crabs go under the town, and so can a man on his knees)
+    m.solid(0, 380, 112, 414); m.solid(128, 380, 240, 414); m.solid(112, 380, 128, 404); m.solid(282, 380, 520, 414)
+    import hkit
+    m.model("cave_mouth", hkit.cave_mouth(3), 120, 415, box=None, shadow=False, lights=False)
+    m.exit(114, 404, 126, 411, "lowtown_in", "beer_cave_in")
+    m.spawn("beer_cave", 120, 428, "down")
     m.solid(520, 0, W, 96)
     m.solid(520, 96, 560, 414)     # the clifftop ends at the sea
     boxes(m, water & ~bridge, 0)

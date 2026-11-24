@@ -32,7 +32,8 @@ namespace Wakefire
         readonly HashSet<string> fallen = new HashSet<string>();
         readonly Transform[] dark = new Transform[4];
         Rect shown;
-        static readonly Color Moonlit = new Color(0.80f, 0.82f, 0.97f), Unlit = new Color(0.085f, 0.08f, 0.14f), Dim = new Color(0.36f, 0.33f, 0.46f);
+        static readonly Color Moonlit = new Color(0.80f, 0.82f, 0.97f), Unlit = new Color(0.085f, 0.08f, 0.14f), Dim = new Color(0.36f, 0.33f, 0.46f),
+                              Lamplit = new Color(0.70f, 0.60f, 0.52f);          // a room of a house with its lamps burning: warm, and not as bright as the moon makes the street
 
         public static string VisitedFlag(string mapName, string room) => "room_" + mapName + "_" + room;
 
@@ -143,13 +144,17 @@ namespace Wakefire
             current = r;
             shown = r.rect;
             var v = PixelView.I;
-            v.bounds = r.rect;
+            v.bounds = Held(r);
             if (first) { Fill(r); v.ambient = Light(r); }
             if (r.Is("secret") && !Story.Has(VisitedFlag(Game.I.CurrentMap, r.id))) Secrets.Found(r);
             Story.Set(VisitedFlag(Game.I.CurrentMap, r.id));
             PlaceDark();
             Entered?.Invoke(r);
         }
+
+        /// <summary>What the picture may show of a room: all of it; of a room of a house ("snug"), a screen's width about its
+        /// middle, so that a small room sits still in the dark round it instead of sliding about.</summary>
+        static Rect Held(Room r) => r.Is("snug") ? new Rect(r.rect.center.x - 10f, r.rect.yMin, 20f, r.rect.height) : r.rect;
 
         /// <summary>He has come out somewhere else on this floor (a burrow, a ladder, a hole with a floor under it):
         /// there was no doorway, so there is no slide. The room he left is put away and this one laid out.</summary>
@@ -165,7 +170,7 @@ namespace Wakefire
         }
 
         /// <summary>What light a room has before anything in it burns.</summary>
-        Color Light(Room r) => Dark(r) ? Unlit : r != null && r.Is("dim") ? Dim : Moonlit;
+        Color Light(Room r) => Dark(r) ? Unlit : r != null && r.Is("dim") ? Dim : r != null && r.Is("lamp") ? Lamplit : Moonlit;
 
         /// <summary>A room with no light of its own until its fires are lit.</summary>
         public bool Dark(Room r) => r != null && r.Is("dark") && !Story.Has("lit_" + Game.I.CurrentMap + "_" + r.id);

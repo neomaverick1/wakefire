@@ -255,7 +255,8 @@ namespace Wakefire
             bool leafy = n.StartsWith("olive") || n.StartsWith("cypress") || n.StartsWith("palm") || n.StartsWith("bush");
             string k = Kind;
             bool casts = (data.solid && k != "bars" && k != "bigdoor" && k != "lockdoor" && k != "gate" && k != "bullhead" && data.h >= 10) || n == "wall_temple" || k == "banner";
-            float sway = n.StartsWith("bush") ? 0.045f : n.StartsWith("palm") ? 0.035f : leafy ? 0.026f : 0f;
+            float sway = n.StartsWith("bush") ? 0.045f : n.StartsWith("palm") ? 0.035f : leafy ? 0.026f
+                       : n.StartsWith("tub_") || n.StartsWith("washing") ? 0.028f : n.StartsWith("hedge") ? 0.012f : 0f;
             if (sway > 0)
             {
                 if (swayBlock == null) swayBlock = new MaterialPropertyBlock();

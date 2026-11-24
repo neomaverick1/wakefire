@@ -660,10 +660,12 @@ namespace Wakefire
         bool Where(out WorldPlace place, out Vector2 at)
         {
             place = null; at = Vector2.zero;
-            string map = Game.I.CurrentMap;
+            string map = Game.Outer(Game.I.CurrentMap);
             var p = Player.I;
+            // (inside a house he is, as far as the world map cares, standing at its door)
+            Vector2 w = Game.Houses(Game.I.CurrentMap) ? new Vector2(Story.Count("outer_x") / 16f, -Story.Count("outer_y") / 16f) : p ? p.pos : Vector2.zero;
             foreach (var pl in world.places)
-                if (pl.map == map) { place = pl; at = p ? new Vector2(p.pos.x * 16f, -p.pos.y * 16f) : Vector2.zero; return true; }
+                if (pl.map == map) { place = pl; at = new Vector2(w.x * 16f, -w.y * 16f); return true; }
             foreach (var ins in world.inside)
                 if (ins.map == map)
                     foreach (var pl in world.places)
@@ -717,7 +719,7 @@ namespace Wakefire
                 int tx = mx + pl.x + (pl.w - tw) / 2, ty = my + pl.y + pl.h - 11;
                 if (marked && here.map == pl.map && hy > ty - 13 && hx > tx - 14 && hx < tx + tw + 14) ty = my + pl.y + 2;
                 cv.Rect(tx - 3, ty - 1, tw + 5, 11, Frame);
-                f.DrawString(cv, tx, ty, name, pl.map == Game.I.CurrentMap ? Gold : Ink);
+                f.DrawString(cv, tx, ty, name, pl.map == Game.Outer(Game.I.CurrentMap) ? Gold : Ink);
             }
             if (marked) HereFlame(hx, hy, true);
             // more of the sheet above or below

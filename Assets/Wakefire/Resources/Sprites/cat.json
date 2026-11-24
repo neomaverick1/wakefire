@@ -1,0 +1,1 @@
+{"size": 80, "pivot": [40, 62], "anims": [{"name": "sleep", "dir": "down", "row": 0, "frames": 2}, {"name": "sleep", "dir": "left", "row": 1, "frames": 2}, {"name": "idle", "dir": "down", "row": 2, "frames": 4}, {"name": "idle", "dir": "left", "row": 3, "frames": 4}, {"name": "walk", "dir": "down", "row": 4, "frames": 4}, {"name": "walk", "dir": "left", "row": 5, "frames": 4}]}

@@ -11,7 +11,7 @@ namespace Wakefire
     public partial class Player : MonoBehaviour
     {
         public static Player I;
-        public enum State { Free, Attack, Roll, Nod, Use, Hurt, Dead, Talk, Cutscene, ItemGet, Guard, Throw, Stone }
+        public enum State { Free, Attack, Roll, Nod, Use, Hurt, Dead, Talk, Cutscene, ItemGet, Guard, Throw, Stone, Rail }
         /// <summary>What the action button would do this moment.</summary>
         public enum Act { None, Talk, Open, Read, Look, Guard, Take, Lower }
         public Act Action { get; private set; }
@@ -176,6 +176,9 @@ namespace Wakefire
                 case State.Free:
                     FreeUpdate(input, dt);
                     break;
+                case State.Rail:
+                    RailUpdate(input, dt);
+                    break;
                 case State.Attack:
                     vel = Vector2.Lerp(vel, Vector2.zero, dt * 14f);
                     if (Controls.Down(Controls.Attack)) queued = true;
@@ -305,6 +308,8 @@ namespace Wakefire
                     if (pushClock > 0.38f && block.Slide(Dir)) { pushClock = 0; Sfx.Play("block_push"); }
                     return;
                 }
+                // the foot of a stair or a ladder, or the head of one: he is on it
+                if (TakeRail(input)) return;
                 // the edge of a raised floor, or the lip of a hole that has a floor under it: lean on it, and over he goes
                 if (Lean(input, dt)) return;
                 pushClock = 0;
@@ -409,10 +414,14 @@ namespace Wakefire
             Fx.Sparks(pos + Dir * 0.55f + new Vector2(0, 0.75f), new Color(1f, 0.92f, 0.62f), 3);
         }
 
-        static bool Acts(Prop p) => p.Kind == "sign" || p.Kind == "well" || p.Kind == "gate" || p.Kind == "npc" || p.Kind == "pot" || p.Kind == "roots" ||
+        static bool Acts(Prop p) => HouseDoor(p) || HandGong(p) || p.Kind == "latch" || p.Kind == "sign" || p.Kind == "well" || p.Kind == "gate" || p.Kind == "npc" || p.Kind == "pot" || p.Kind == "roots" ||
                                     p.Kind == "chest" || p.Kind == "bigchest" || p.Kind == "lockdoor" || p.Kind == "bigdoor" || p.Kind == "look" || p.Kind == "stairs" ||
                                     p.Kind == "dreamlock" || p.Kind == "plankgap" || p.Kind == "bluelamp" || p.Kind == "standard" || p.Kind == "scale" || p.Kind == "crack" ||
                                     (p.Kind == "dreamthing" && Pocket.There(p));
+
+        /// <summary>A house door standing shut (the map gives it something to say for itself), and a gong that is rung by hand.</summary>
+        public static bool HouseDoor(Prop p) => p.Kind == "bars" && p.data.who != null && p.data.who.StartsWith("door|");
+        public static bool HandGong(Prop p) => p.Kind == "gong" && p.data.who == "hand";
 
         Act WhatNow()
         {
@@ -422,7 +431,7 @@ namespace Wakefire
             if (pr != null && pr.Kind == "dreamthing") return Act.Take;
             if (pr != null && pr.Kind == "standard" && !Story.Has(pr.data.id)) return Act.Lower;
             if (pr != null)
-                return pr.Kind == "chest" || pr.Kind == "bigchest" || pr.Kind == "lockdoor" || pr.Kind == "bigdoor" || pr.Kind == "gate" ? Act.Open
+                return pr.Kind == "chest" || pr.Kind == "bigchest" || pr.Kind == "lockdoor" || pr.Kind == "bigdoor" || pr.Kind == "gate" || pr.Kind == "latch" ? Act.Open
                      : pr.Kind == "sign" ? Act.Read : pr.Kind == "npc" ? Act.Talk : Act.Look;
             return hasShield ? Act.Guard : Act.None;
         }
@@ -636,6 +645,8 @@ namespace Wakefire
                 // a doorway somebody walled up: a cut rings on it, and the blow with his whole weight behind it brings it down
                 Prop wall = null;
                 foreach (var pr in map.props) if (pr && pr.Kind == "crack" && pr.Bounds.Overlaps(r)) { wall = pr; break; }
+                // a gong that stands where a hand can reach it answers to a blade as well
+                foreach (var pr in map.props) if (pr && HandGong(pr) && pr.Bounds.Overlaps(r)) { Interacted?.Invoke(pr); hitAny = true; break; }
                 if (wall) { if (heavy) { Secrets.Break(wall); hitAny = true; } else Secrets.Ring(wall); }
                 for (int i = map.props.Count - 1; i >= 0; i--)
                 {
@@ -802,6 +813,7 @@ namespace Wakefire
 
         public void SetState(State s, string animName = null)
         {
+            if (s != State.Rail) rail = null;
             state = s;
             stateClock = 0;
             if (animName != null) anim.Play(animName, facing, true);

@@ -29,7 +29,7 @@ namespace Wakefire
             public string id, say;
             public readonly List<Prop> props = new List<Prop>();
             public string[] conds;
-            public bool shutter, armed, open, hatch;
+            public bool shutter, armed, open, hatch, door;
             public string room;
         }
 
@@ -67,7 +67,8 @@ namespace Wakefire
                         if (!byId.TryGetValue(pr.data.id, out var g))
                         {
                             g = new Gate { id = pr.data.id, conds = pr.data.text.Split(';'), say = pr.data.say };
-                            g.shutter = !string.IsNullOrEmpty(pr.data.who) && pr.data.who.Contains("shut");
+                            g.door = Player.HouseDoor(pr);
+                            g.shutter = !g.door && !string.IsNullOrEmpty(pr.data.who) && pr.data.who.Contains("shut");
                             foreach (var c in g.conds) if (c.StartsWith("clear:")) g.room = c.Substring(6);
                             if (g.shutter)
                                 foreach (var w in pr.data.who.Split(' ')) if (w.StartsWith("shut:")) g.room = w.Substring(5);
@@ -94,6 +95,9 @@ namespace Wakefire
                         break;
                     case "crack":
                         if (Story.Has("door_" + pr.data.id)) down.Add(pr);
+                        break;
+                    case "latch":
+                        if (!string.IsNullOrEmpty(pr.data.id) && Story.Has("on_" + pr.data.id)) { pr.Bar(false); pr.data.kind = "open"; }
                         break;
                     case "breach":
                         pr.sr.enabled = Story.Has("door_" + pr.data.id);
@@ -167,6 +171,18 @@ namespace Wakefire
 
         void OnNotify(Prop pr)
         {
+            if (pr && pr.Kind == "latch")
+            {
+                // the bar on the inside of a door: lifted once, and the door is a door again
+                if (string.IsNullOrEmpty(pr.data.id) || Story.Has("on_" + pr.data.id)) return;
+                Story.Set("on_" + pr.data.id);
+                Sfx.Play("unlock", 1f, 0.02f);
+                Fx.Dust(pr.basePos + new Vector2(0, 0.3f), 6);
+                pr.Bar(false);
+                pr.data.kind = "open";
+                if (!string.IsNullOrEmpty(pr.data.say) && Story.I && !Story.I.Running) Story.Run(Story.Narrate(pr.data.say));
+                return;
+            }
             if (!pr || pr.Kind != "gong") return;
             Sfx.Play("gong", 1f, 0.02f);
             PixelView.I.Shake(1, 0.12f);
@@ -241,6 +257,13 @@ namespace Wakefire
                 if (!near || (Player.I && Vector2.Distance(pr.basePos, Player.I.pos) < Vector2.Distance(near.basePos, Player.I.pos))) near = pr;
             }
             if (quiet || !near) return;
+            if (g.door)
+            {
+                Sfx.Play("gate_open", 0.8f, 0.03f);
+                Fx.Dust(near.basePos, 6);
+                if (open && !string.IsNullOrEmpty(g.say) && Story.Bump("said_" + g.id) == 0) Story.Run(Story.Narrate(g.say));
+                return;
+            }
             Sfx.Play(open ? "bars_up" : "bars_down", 0.9f, 0.03f);
             PixelView.I.Shake(open ? 1 : 2, 0.18f);
             foreach (var pr in g.props) if (pr) Fx.Dust(pr.basePos, 5);

@@ -363,6 +363,18 @@ namespace Wakefire
             tailLen = 0.24f, tailRise = 38f, tailThick = 0.028f, earLen = 0.085f, stride = 0.46f, stepHeight = 0.06f,
         };
 
+        /// <summary>A cat is put together from the same parts as a dog, and would not thank you for saying so: smaller,
+        /// longer in the tail, ears up, the colour of smoke.</summary>
+        public static Shape Cat => new Shape
+        {
+            coat = new Color(0.46f, 0.43f, 0.42f), belly = new Color(0.86f, 0.83f, 0.78f), dark = new Color(0.12f, 0.11f, 0.12f),
+            back = new Color(0.26f, 0.24f, 0.25f), muzzle = new Color(0.90f, 0.87f, 0.82f), sock = new Color(0.90f, 0.87f, 0.82f),
+            length = 0.40f, height = 0.24f, girth = 0.085f, chest = 0.088f, rump = 0.088f, legThick = 0.026f, stance = 0.06f,
+            neckLen = 0.07f, neckRise = 40f, neckThick = 0.058f, headLen = 0.115f, headThick = 0.072f, headTilt = 8f,
+            tailLen = 0.36f, tailRise = 18f, tailThick = 0.02f, earLen = 0.058f, earsUp = true, stride = 0.3f, stepHeight = 0.04f,
+            eye = new Color(0.72f, 0.92f, 0.36f), eyeGlow = 0.8f,
+        };
+
         protected override void Style(ModelActor a, string anim, float n, float speed)
         {
             switch (anim)

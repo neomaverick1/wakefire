@@ -45,6 +45,15 @@ namespace Wakefire
                 // standing somewhere can set a scene going; this is a look, not a playthrough
                 if (Story.I && Story.I.Running) { Story.Abort(); p.SetState(Player.State.Free, "idle"); yield return new WaitForSeconds(0.2f); }
                 if (Boot.Flag("-wfBare") && Hud.I) Hud.I.gameObject.SetActive(false);
+                // -wfGhost: the place without him in it (for a picture of a whole town, taken a screen at a time)
+                if (Boot.Flag("-wfGhost"))
+                {
+                    foreach (var sr in p.GetComponentsInChildren<SpriteRenderer>()) sr.enabled = false;
+                    if (p.anim.model) p.anim.model.gameObject.SetActive(false);
+                    if (p.lantern) p.lantern.gameObject.SetActive(false);
+                    foreach (var e in Enemy.All.ToArray()) if (e) Object.Destroy(e.gameObject);
+                    yield return null;
+                }
                 yield return t.Shot($"{n:00}-{parts[0]}-{(int)x}-{(int)y}", 0.4f);
                 n++;
             }

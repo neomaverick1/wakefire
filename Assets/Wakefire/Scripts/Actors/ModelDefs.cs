@@ -160,6 +160,7 @@ namespace Wakefire
             Add("god", god);
             Add("goat", Built(1.30f, a => Beast.Make<Goat>(a, Goat.Body)));
             Add("dog", Built(1.30f, a => Beast.Make<Dog>(a, Dog.Body)));
+            Add("cat", Built(1.30f, a => Beast.Make<Dog>(a, Dog.Cat)));
             Add("jackal", Built(1.62f, a => Beast.Make<JackalBeast>(a, JackalBeast.Body)));
             Add("den_mother", Built(2.3f, a => Beast.Make<JackalBeast>(a, JackalBeast.Mother), 2));
             Add("bull", Built(1.60f, a => Beast.Make<BullBeast>(a, BullBeast.Body), 2));

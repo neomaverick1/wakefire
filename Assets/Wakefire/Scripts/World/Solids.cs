@@ -48,11 +48,15 @@ namespace Wakefire
             return false;
         }
 
-        /// <summary>For things in the air: walls and furniture stop them; water, drops and the edges of raised floors do not.</summary>
+        /// <summary>An edge with more than this much air under it (tiles) is the top of a wall: the side of a house, not a kerb.</summary>
+        public const float TallEdge = 1.3f;
+
+        /// <summary>For things in the air: walls and furniture stop them; water, drops and the edges of raised floors do not
+        /// (the edge of a roof does: under it is the wall of the house).</summary>
         public static bool Blocks(Rect r, Vector2 at, Object ignore = null)
         {
             foreach (var s in all)
-                if (!s.pit && !s.low && s.owner != ignore && s.r.Overlaps(r) && Active(s, at)) return true;
+                if (!s.pit && !(s.low && s.fall <= TallEdge) && s.owner != ignore && s.r.Overlaps(r) && Active(s, at)) return true;
             return false;
         }
 

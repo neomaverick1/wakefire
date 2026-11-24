@@ -73,6 +73,7 @@ namespace Wakefire
             Rooms.Setup(m, at);
             Populate(m);
             Mech.Setup(m);
+            Smoke.Setup(m);
             Pocket.Setup(m);
             Board.Setup(m);
             Story.Ensure().Setup(map, m);

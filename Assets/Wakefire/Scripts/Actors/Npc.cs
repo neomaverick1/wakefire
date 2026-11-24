@@ -61,7 +61,7 @@ namespace Wakefire
             n.anim.Play(anim, facing, true);
             n.anim.time = UnityEngine.Random.value * 3f;   // sleepers breathe out of step
             n.shadow = MakeShadow(go.transform, layer);
-            if (layer == WorldLayer.Waking) n.snore = sheet == "dog" ? "snore_small" : "snore";
+            if (layer == WorldLayer.Waking) n.snore = sheet == "dog" || sheet == "cat" ? "snore_small" : "snore";
             if (solid) n.solid = Solids.Add(new Rect(at.x - 0.3f, at.y - 0.12f, 0.6f, 0.36f), layer, n);
             All.Add(n);
             n.Place();

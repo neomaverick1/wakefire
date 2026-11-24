@@ -16,9 +16,10 @@ namespace Wakefire
             DialogueBox.AutoAdvance = 0.05f;
             foreach (var f in new[] { "gate_open", "door_z2_bigdoor", "door_z2_door", "dead_z2_herdsman", "z2_bull", "yard_bridge", "key", "item_oil", "item_shield", "bigkey", "door_z1_door",
                                       "bull_seen", "bull_dead", "chapter_done", "ch2", "item_hillkey", "hill_gate", "met_namtar", "queue_passed", "king_door",
-                                      "door_t1_door", "door_t2_seal", "door_t3_kingdoor", "door_t3_lock", "ghostkey", "item_wheel", "king_seen", "king_done", "item_horn", "chapter2_done" })
+                                      "door_t1_door", "door_t2_seal", "door_t3_kingdoor", "door_t3_lock", "ghostkey", "item_wheel", "king_seen", "king_done", "item_horn", "chapter2_done",
+                                      "on_lt_tax_gong", "on_lt_goat_latch", "open_beer_hatch" })
                 Story.Set(f);
-            string[] maps = { "ashkel", "lowtown", "cliffs", "terraces", "crypt", "temple_yard", "zig_1", "zig_2", "zig_hi", "zig_3", "necro_road", "necropolis", "barrow", "tomb_1", "tomb_2", "tomb_hi", "tomb_3" };
+            string[] maps = { "ashkel", "lowtown", "lowtown_in", "cliffs", "terraces", "crypt", "temple_yard", "zig_1", "zig_2", "zig_hi", "zig_3", "necro_road", "necropolis", "barrow", "tomb_1", "tomb_2", "tomb_hi", "tomb_3" };
             int bad = 0, n = 0;
             foreach (var map in maps)
             {
@@ -40,6 +41,13 @@ namespace Wakefire
                     float min = Mathf.Min(Mathf.Min(dl, dr), Mathf.Min(du, dd));
                     Vector2 dir = min == dl ? Vector2.left : min == dr ? Vector2.right : min == du ? Vector2.up : Vector2.down;
                     if (ex.id == "barrow") dir = Vector2.up;            // a door in a mound in the middle of the hill, not at an edge of the map
+                    // the doors of houses are anywhere on a map: walked in at going north (a door, a hatch, a stair), and
+                    // out of going south (the street door of a room, at the foot of its cell)
+                    if (map == "lowtown" || map == "lowtown_in" || ex.id == "lowtown_in")
+                    {
+                        bool edge = map == "lowtown" && min <= 24f;
+                        if (!edge) dir = map == "lowtown_in" && (ex.y + ex.h) % 224 == 0 ? Vector2.down : Vector2.up;
+                    }
                     var inside = new Vector2(cx, cy) - new Vector2(dir.x, -dir.y) * 22f;
                     p.pos = Map.ToWorld(inside.x, inside.y);
                     p.SetState(Player.State.Free, "idle");

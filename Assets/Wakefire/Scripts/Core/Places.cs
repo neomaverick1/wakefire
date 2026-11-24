@@ -8,6 +8,7 @@ namespace Wakefire
         {
             "ashkel" => "The Temple Gate",
             "lowtown" => "The Lower Town",
+            "lowtown_in" => "The Lower Town",
             "terraces" => "The Olive Terraces",
             "cliffs" => "The Sea Cliffs",
             "temple_yard" => "The Temple Yard",

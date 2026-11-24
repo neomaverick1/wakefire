@@ -49,6 +49,7 @@ namespace Wakefire
 
         void SpawnRegion(string who, Vector2 at)
         {
+            if (SpawnHouse(who, at)) return;
             switch (who)
             {
                 case "hesha":

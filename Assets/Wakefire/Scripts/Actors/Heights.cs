@@ -80,7 +80,9 @@ namespace Wakefire
             else if (d.x < -0.5f) foot = new Vector2(s.r.xMin - half.x - 0.14f, pos.y - s.fall);
             else return false;
             var room = Rooms.Of(pos);
-            for (float extra = 0; extra <= 1.5f; extra += 0.25f)
+            // (off a roof he comes down clear of the wall under it, however high that is)
+            float reach = 1.5f + (d.y < -0.5f ? s.fall : 0f);
+            for (float extra = 0; extra <= reach; extra += 0.25f)
             {
                 var q = foot + d * extra;
                 if (room != null && !room.rect.Contains(q)) break;
@@ -100,7 +102,8 @@ namespace Wakefire
             vel = Vector2.zero;
             health.invulnerable = Mathf.Max(health.invulnerable, 0.5f);
             Vector2 from = pos;
-            float time = 0.26f + 0.03f * Mathf.Max(0, from.y - to.y);
+            float down = Mathf.Max(0, from.y - to.y);
+            float time = 0.26f + (down > 1.5f ? 0.055f : 0.03f) * down;
             var t = anim.sr.transform;
             var rest = t.localPosition;
             anim.Play("run", facing, true);
@@ -116,8 +119,8 @@ namespace Wakefire
             t.localPosition = rest;
             Place();
             Sfx.Play(StepSound(0), 0.9f, 0.05f);
-            Fx.Dust(pos, 5);
-            PixelView.I.Shake(1, 0.08f);
+            Fx.Dust(pos, down > 1.5f ? 9 : 5);
+            PixelView.I.Shake(down > 1.5f ? 2 : 1, down > 1.5f ? 0.14f : 0.08f);
             lastSafe = pos;
             state = State.Free;
             stateClock = 0;
