@@ -1,0 +1,33 @@
+# Publishes a release whenever this branch is pushed. The game is built with Unity on a build
+# machine; the finished files (the Android APK and the Google Play bundle) live on this
+# `binaries` branch. This job checks them and attaches them to a release named after the
+# VERSION file.
+name: Release
+
+on:
+  push:
+    branches: [binaries]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the files
+        run: |
+          sha256sum -c checksums.txt
+          ls -la
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="$(cat VERSION)"
+          if gh release view "v$v" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "v$v" --repo "$GITHUB_REPOSITORY" --clobber WAKEFIRE.apk WAKEFIRE-Play.aab
+          else
+            gh release create "v$v" --repo "$GITHUB_REPOSITORY" --target main --title "WAKEFIRE $v" --notes-file notes.md \
+              WAKEFIRE.apk WAKEFIRE-Play.aab
+          fi
