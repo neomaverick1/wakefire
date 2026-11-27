@@ -116,7 +116,7 @@ namespace Wakefire
                         break;
                 }
             }
-            foreach (var pr in broken) { map.props.Remove(pr); Destroy(pr.gameObject); }
+            foreach (var pr in broken) { map.props.Remove(pr); pr.Clear(); }             // (its block of wall goes with it: Clear takes the solid too)
             foreach (var pr in down) { map.props.Remove(pr); pr.Clear(); }          // a wall he brought down on an earlier visit
             foreach (var mk in map.data.markers)
                 if (mk.kind == "pool")

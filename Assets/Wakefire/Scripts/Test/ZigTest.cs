@@ -283,6 +283,19 @@ namespace Wakefire
             Controls.Fake = Vector2.zero;
             yield return new WaitForSeconds(0.8f);
             Check($"and the stair behind it goes up to {Game.I.CurrentMap} ({Rooms.I?.current?.id})", Game.I.CurrentMap == "zig_hi" && Rooms.I && Rooms.I.current.id == "landing");
+            // ...and on another visit the gap where the head was is still a gap (it used to leave its block of wall behind)
+            Game.I.EnterMap("zig_2", "south");
+            Fade.Set(0);
+            yield return Scene();
+            KillAll();
+            yield return Stand("gate", 208, 196, Facing.Up);
+            KillAll();
+            Controls.Fake = Vector2.up;
+            ww = 0;
+            while (Game.I.CurrentMap == "zig_2" && ww < 4f) { ww += Time.deltaTime; yield return null; }
+            Controls.Fake = Vector2.zero;
+            yield return new WaitForSeconds(0.8f);
+            Check($"come back later, and he walks through where the head was, up to {Game.I.CurrentMap}", Game.I.CurrentMap == "zig_hi");
             // ------------------------------------------------ the high halls
             Fade.Set(0);
             yield return Scene();

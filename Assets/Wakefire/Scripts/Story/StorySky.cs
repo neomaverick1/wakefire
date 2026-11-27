@@ -162,7 +162,7 @@ namespace Wakefire
             int n = Bump("ubar");
             if (n == 0)
             {
-                yield return Say("Ubar", "Eleven! Eleven! Eleven!| ...Forgive me. I cannot stop on eleven. It is unlucky, and it is also raining.", "man", true);
+                yield return Say("Ubar", "Eleven! Eleven! Eleven!| ...Forgive me. I cannot stop on eleven. It is unlucky, and out there it is raining on me.", "man", true);
                 yield return AzarSays("Then stop on twelve.");
                 yield return Say("Ubar", "Twelve wants the drum. One beat, as the cane comes up.^The drum wants its stick. The stick went home with Kessi, and Kessi went home to the Seven Jars.| You see the difficulty. I have had forty nights to see it.", "man", true);
             }
@@ -270,7 +270,7 @@ namespace Wakefire
             Sky.Set("cold", false);
             if (dancerSelf) dancerSelf.Play("dance");
             yield return Wait(2.2f);
-            yield return Narrate("The thirteenth step puts back exactly as much cloud as a city needs to sleep under.^The snow stops. The cold goes out of the ground like a guest who has been told the time.| Forty thousand sleepers stop shivering, all at once, and none of them will ever know.");
+            yield return Narrate("The thirteenth step puts back exactly as much cloud as a city needs to sleep under.^The snow stops. The cold goes out of the ground like a guest who has been told the time.| A whole city stops shivering in its sleep, all at once, and not one of them will ever know.");
             p.coins += 80;
             Sfx.Play("coin_big", 0.9f, 0.02f);
             yield return Say("Ubar", "The temple has never paid for a thirteenth. Nobody has ever done one.| So I am paying you myself. Eighty. Do not tell the clerk: he will want it written down, and he is asleep.", "man", true);
