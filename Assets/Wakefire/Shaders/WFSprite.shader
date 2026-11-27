@@ -96,6 +96,19 @@ Shader "Wakefire/Sprite"
                 return shaped / assumed;
             }
 
+            // How near a fire this piece of ground is (0..1). Snow does not lie beside one, and the Wakefire is one.
+            float WF_Warm(float2 world)
+            {
+                float w = 0.0;
+                for (int k = 0; k < 12; k++)
+                {
+                    if (k >= _WF_LightCount) break;
+                    float4 L = _WF_Lights[k];
+                    w = max(w, saturate(1.0 - length(world - L.xy) / (L.z * 0.55)));
+                }
+                return w;
+            }
+
             // A figure keeps its own colours beside a fire: the flat wash of the light layer is turned
             // down on it (the model is lit from the fire's side instead, in its own shader).
             float3 FireOnFigure(float2 world, float2 pix)
@@ -201,18 +214,52 @@ Shader "Wakefire/Sprite"
                 {
                     half4 nt = SAMPLE_TEXTURE2D(_NormalTex, sampler_PointClamp, i.uv);
                     float3 n = nt.xyz * 2.0 - 1.0;
+                    float open = _WF_Sky.w * (1.0 - dream);
                     if (nt.a < 0.002)
                     {
-                        // the sea (marked by a zero in the height): moonlight breaking on the swell
                         float2 p = floor(i.world * 16.0) / 16.0;
                         float t = _Time.y;
-                        float a = sin(p.x * 2.3 + sin(p.y * 1.7 + t * 0.6) * 1.4 + t * 0.9);
-                        float b = sin(p.y * 5.1 - t * 1.1 + sin(p.x * 0.9 + t * 0.4) * 2.0);
-                        col += step(1.55, a + b) * float3(0.10, 0.16, 0.26);
-                        col *= 1.0 - step(a + b, -1.7) * 0.2;
+                        if (open * _WF_Sky.y > 0.5)
+                        {
+                            // the cold has it: ice the colour of the sky it stopped under, cracked where it stopped
+                            float2 q = floor(i.world * 16.0);
+                            float crack = step(0.955, WF_Hash2(floor((q + float2(q.y * 0.5, 0.0)) / float2(9.0, 2.0))));
+                            float sheen = step(0.80, frac((q.x + q.y * 2.0) / 61.0)) * 0.05;
+                            col = lerp(col, float3(0.46, 0.60, 0.74) + sheen - crack * 0.16, 0.86);
+                        }
+                        else
+                        {
+                            // the sea (marked by a zero in the height): moonlight breaking on the swell
+                            float a = sin(p.x * 2.3 + sin(p.y * 1.7 + t * 0.6) * 1.4 + t * 0.9);
+                            float b = sin(p.y * 5.1 - t * 1.1 + sin(p.x * 0.9 + t * 0.4) * 2.0);
+                            col += step(1.55, a + b) * float3(0.10, 0.16, 0.26);
+                            col *= 1.0 - step(a + b, -1.7) * 0.2;
+                            // ...and rain coming down on it
+                            col += WF_Rings(i.world, t) * float3(0.16, 0.20, 0.26) * _WF_Sky.x * open;
+                        }
                     }
                     // flames and lit windows carry no normal: they are light, they don't take it
-                    else if (_WF_LightCount > 0.5 && dot(n, n) > 0.25) col *= FireShape(normalize(n), max(nt.a * 255.0 - 1.0, 0.0) / 24.0, i.world, i.positionCS.xy);
+                    else if (dot(n, n) > 0.25)
+                    {
+                        float h = max(nt.a * 255.0 - 1.0, 0.0) / 24.0;
+                        float3 nn = normalize(n);
+                        if (_WF_LightCount > 0.5) col *= FireShape(nn, h, i.world, i.positionCS.xy);
+                        // what the sky is doing lands on whatever faces the sky
+                        float up = smoothstep(0.78, 0.94, nn.z) * open;
+                        if (up > 0.0 && _WF_Sky.x + _WF_Sky.y > 0.01)
+                        {
+                            float2 q = floor(i.world * 16.0);
+                            // wet stone is darker, and the rain makes rings on the flat of it
+                            col *= 1.0 - 0.16 * _WF_Sky.x * up;
+                            col += WF_Rings(i.world, _Time.y) * up * step(h, 0.2) * float3(0.10, 0.13, 0.18) * _WF_Sky.x;
+                            // snow lies on it: thin at the edge of anything, and it keeps the shape of what is under it
+                            // (it drifts: deep in one place and worn thin in the next; and none lies beside a fire)
+                            float drift = 0.5 + 0.5 * sin(i.world.x * 1.7 + sin(i.world.y * 1.3) * 1.5) * sin(i.world.y * 2.1 + sin(i.world.x * 0.9) * 1.5);
+                            float lie = step(WF_Hash2(q), (_WF_Sky.y * 1.25 - 0.12) * up * (0.74 + 0.36 * drift) * (1.0 - smoothstep(0.0, 0.5, WF_Warm(i.world) * step(0.01, _WF_Sky.y))));
+                            float l = dot(col, float3(0.30, 0.59, 0.11));
+                            col = lerp(col, lerp(float3(0.66, 0.74, 0.90), float3(0.94, 0.97, 1.0), saturate(l * 1.6 + 0.25)), lie);
+                        }
+                    }
                 }
                 float3 dcol = lerp(WF_DreamPalette(col) + col * _DreamGlow, col * 1.08, _DreamKeep);
                 col = lerp(col, dcol, dream);

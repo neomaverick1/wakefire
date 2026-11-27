@@ -367,6 +367,7 @@ namespace Wakefire
                     StartThrow("wheel");
                     break;
                 case "fork": StartFork(); break;
+                case "horn": if (Story.I && !Story.I.Running) Story.Run(Story.I.BlowHorn()); break;
                 case "pocket": if (Pocket.Reach(this)) StartPocket(); break;
                 default: StartUse(); break;
             }
@@ -700,6 +701,8 @@ namespace Wakefire
         {
             flare = 0.55f;
             var b = PropInFront(0.7f, p => p.Kind == "brazier" && !p.lit);
+            // (under open sky, in the rain, a bowl will not take)
+            if (b != null && Story.I && Story.I.RainOnBowl(b)) return;
             if (b != null && b.Ignite())
             {
                 Sfx.Play("ignite");

@@ -80,6 +80,7 @@ namespace Wakefire
             floorShown = HereFloor();
             row = Save.Slot;
             cell = Mathf.Max(0, System.Array.IndexOf(Items.Usable, Items.Current));
+            if (cell > 3) cell = 1;                 // (the horn sits in the fork's box)
             Layout();
             CentreMap();
             Draw();
@@ -367,7 +368,12 @@ namespace Wakefire
         {
             var l = new List<Cell>();
             for (int i = 0; i < 4; i++)
-                l.Add(new Cell { r = new RectInt(ix + ox + 6 + i * 40, iy + 15, 36, 36), def = i < Items.Usable.Length ? Items.Usable[i] : null, use = true });
+            {
+                var def = i < Items.Usable.Length ? Items.Usable[i] : null;
+                // (a tuning fork is only in the pack inside its own house, and the Dawn Horn is no use under a roof: they share a box)
+                if (i == 1 && def != null && !def.have() && Items.Usable.Length > 4 && Items.Usable[4].have()) def = Items.Usable[4];
+                l.Add(new Cell { r = new RectInt(ix + ox + 6 + i * 40, iy + 15, 36, 36), def = def, use = true });
+            }
             int kx = ix + ox + IW - 6 - 5 * 23 + 2;
             for (int j = 0; j < 10; j++)
                 l.Add(new Cell { r = new RectInt(kx + (j % 5) * 23, iy + 15 + (j / 5) * 23, 21, 21), def = j < Items.Kept.Length ? Items.Kept[j] : null });

@@ -192,7 +192,7 @@ namespace Wakefire
                     vel = Vector2.zero;
                     if (k >= 1f)
                     {
-                        if (bowl.Ignite())
+                        if (!Sky.WetAt(bowl.basePos) && bowl.Ignite())
                         {
                             Sfx.Play("ignite");
                             Fx.Embers(bowl.basePos + new Vector2(0, 1f), 12);

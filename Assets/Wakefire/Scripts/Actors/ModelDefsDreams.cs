@@ -74,6 +74,14 @@ namespace Wakefire
             bedstead.Time("idle", 8f, 8);
             Add("bedstead", bedstead);
 
+            // the temple's rain-dancer: asleep on one leg with the cane upright; the cane tipped; and, in the dream, dancing
+            var dancer = Human(1.46f, Cast.RainDancer);
+            dancer.Own("onefoot", "Idle_Loop", speed: 0.5f).With(Gesture.OneLeg);
+            dancer.Own("pour", "Idle_Loop", speed: 0.5f).With((m, n) => { Gesture.OneLeg(m, n); Gesture.Tipped(m, n); });
+            dancer.Own("dance", "Idle_Loop").With(Gesture.RainStep);
+            dancer.Own("beat", "Idle_Torch_Loop", fade: 0.12f).With((m, n) => Gesture.Knee(m, 1f));
+            Add("raindancer", dancer);
+
             // the Seal: a barrel of lapis that rolls by itself. Two tiles from cap to cap.
             var seal = Built(1f, a => SealProp.Make(a), 2);
             seal.Time("idle", 8f, 8);

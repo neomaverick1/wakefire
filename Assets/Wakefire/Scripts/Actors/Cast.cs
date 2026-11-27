@@ -659,6 +659,57 @@ namespace Wakefire
 
         /// <summary>A thurifer: a censer-bearer's saffron robe gone grey to the knee with forty nights of his own
         /// smoke, arms bare for the work, a shaved head, and a cloth over his nose and mouth (he has met incense).</summary>
+        /// <summary>The temple's rain-dancer, in the proper dress: a fish. Its head goes over his own like a hood, nose to the sky;
+        /// the rest of it hangs down his back and ends in a tail. Under it a temple servant's white kilt and a lapis sash. In
+        /// his right fist the rain cane: as long as he is, banded with bronze, and full of seeds.</summary>
+        public static void RainDancer(ModelActor m)
+        {
+            var look = new Folk
+            {
+                skin = Tan, hair = new Color(0.12f, 0.09f, 0.08f), tunic = new Color(0.86f, 0.84f, 0.76f), fold = new Color(0.64f, 0.62f, 0.56f),
+                sash = new Color(0.14f, 0.28f, 0.60f), shoe = Tan, top = "bald", sleeves = false, hem = 0.05f, build = 0.96f,
+            };
+            var f = Clothe(m, look);
+            var t = f.t;
+            Color scale = new Color(0.38f, 0.52f, 0.56f), dark = new Color(0.22f, 0.33f, 0.40f), fin = new Color(0.66f, 0.36f, 0.20f), eye = new Color(0.07f, 0.07f, 0.09f);
+            Color? Scales(Vector3 p) => (Mathf.FloorToInt(p.y * 30f) + Mathf.FloorToInt(p.x * 30f + 100f)) % 2 == 0 ? dark : (Color?)null;
+            var ck = new Kit(t);
+            float hx = f.hr.x;
+            // the fish's head over his own, from the brow up: its nose points at the sky
+            ck.On("Head").Paint(scale).Stain(Scales).Turned(new Vector3(0, 0, f.hc.z - 0.01f),
+                new[] { (hx + 0.030f, f.hc.y + 0.02f), (hx + 0.038f, f.crown - 0.02f), (hx * 0.94f, f.crown + 0.09f), (hx * 0.56f, f.crown + 0.19f), (0.02f, f.crown + 0.25f) }, 12, f.hr.z / f.hr.x);
+            ck.Stain(null).Paint(eye);
+            foreach (int s in new[] { -1, 1 })
+                ck.Egg(new Vector3(s * (hx + 0.020f), f.crown + 0.05f, f.hc.z + 0.01f), new Vector3(0.014f, 0.026f, 0.026f), 6, 4);
+            // the rest of it down his back, carried by the spine
+            float zb = f.pelvis.z - f.chestBack - 0.05f;
+            float tailY = Mathf.Lerp(f.kneeY, f.pelvis.y, 0.30f);
+            ck.On(f.Spine()).Paint(scale).Stain(Scales).Loft(new[]
+            {
+                (new Vector3(0, f.neck.y + 0.03f, zb + 0.03f), hx * 0.9f, 0.032f),
+                (new Vector3(0, f.chest.y, zb), f.chestX * 0.96f, 0.042f),
+                (new Vector3(0, f.waistY, zb + 0.01f), f.wx * 0.96f, 0.040f),
+                (new Vector3(0, f.pelvis.y - 0.10f, zb + 0.005f), f.wx * 0.74f, 0.032f),
+                (new Vector3(0, tailY, zb), f.wx * 0.40f, 0.022f),
+            }, 2.6f, 10);
+            ck.Stain(null).Paint(fin).Fin(new[] { new Vector3(-0.03f, tailY, zb), new Vector3(0.03f, tailY, zb) },
+                                          new[] { new Vector3(-0.16f, tailY - 0.21f, zb - 0.01f), new Vector3(0.16f, tailY - 0.21f, zb - 0.01f) }, 0.014f);
+            // a side fin on each shoulder
+            foreach (int s in new[] { -1, 1 })
+                ck.On("spine_03").Paint(fin).Fin(new[] { new Vector3(s * f.chestX * 0.9f, f.chest.y + 0.02f, zb + 0.02f), new Vector3(s * f.chestX * 0.9f, f.chest.y - 0.08f, zb + 0.02f) },
+                                                 new[] { new Vector3(s * (f.chestX + 0.13f), f.chest.y - 0.06f, zb - 0.02f), new Vector3(s * (f.chestX + 0.10f), f.chest.y - 0.14f, zb - 0.02f) }, 0.012f);
+            ck.Wear("Fish");
+            // the rain cane: upright in his fist when his arm hangs, tipped level when the arm comes up
+            Grip(t, "_r", out var grip, out var fingers, out var across, out var palm);
+            var rk = new Kit(t);
+            rk.On("hand_r").Frame(grip, across, fingers, palm);
+            rk.Paint(new Color(0.70f, 0.56f, 0.30f)).Ribbon(new[] { new Vector2(0, -0.86f), new Vector2(0, 0.84f) }, new[] { 0.062f, 0.062f }, 0.062f);
+            foreach (float y in new[] { -0.84f, -0.42f, 0.02f, 0.44f, 0.82f })
+                rk.Paint(new Color(0.84f, 0.58f, 0.24f), 1).Ribbon(new[] { new Vector2(0, y - 0.03f), new Vector2(0, y + 0.03f) }, new[] { 0.076f, 0.076f }, 0.076f);
+            rk.Frame();
+            rk.Wear("Cane");
+        }
+
         public static void Thurifer(ModelActor m)
         {
             var look = new Folk
@@ -966,6 +1017,33 @@ namespace Wakefire
         {
             m.Bend("upperarm_l", -62f, 38f);
             m.Bend("lowerarm_l", -64f, 20f);
+        };
+
+        /// <summary>The eleventh step of the rain dance, held for forty nights: one knee up, and asleep on the other leg.</summary>
+        public static Action<ModelActor, float> OneLeg => (m, n) =>
+        {
+            Droop(m, 0.6f);
+            Knee(m, 1f);
+            m.Bend("spine_01", 0, 0, Mathf.Sin(m.life * 0.9f) * 2.2f);        // a man asleep on one leg is never quite still
+        };
+
+        /// <summary>One knee out to the side and the foot against the other leg: the way a heron stands, and a rain-dancer.</summary>
+        public static void Knee(ModelActor m, float k)
+        {
+            m.Bend("thigh_l", -10f * k, 0, -58f * k);
+            m.Bend("calf_l", 0, 0, 112f * k);
+        }
+
+        /// <summary>The cane held out level at arm's length: tipped, so that everything in it runs to the far end.</summary>
+        public static Action<ModelActor, float> Tipped => (m, n) => m.Bend("upperarm_r", 0, 0, 78f);
+
+        /// <summary>The same step danced, in a dream, four thousand times: the knee comes up and goes down again.</summary>
+        public static Action<ModelActor, float> RainStep => (m, n) =>
+        {
+            float k = 0.5f + 0.5f * Mathf.Sin(m.life * 5.2f);
+            Knee(m, k);
+            m.height = Mathf.Abs(Mathf.Sin(m.life * 5.2f)) * 0.05f;
+            Tipped(m, n);
         };
 
         /// <summary>A sentinel at the charge: the spear comes down level.</summary>

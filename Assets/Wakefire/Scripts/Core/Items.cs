@@ -31,6 +31,11 @@ namespace Wakefire
                       about = "One thing you pick up in a dream comes back with you when you wake." },
             new Def { id = "wheel", name = "The Sun Wheel", art = "sun_wheel", have = () => Story.Has("item_wheel"),
                       about = "A bronze disc with an edge of gold, made for a king who missed the sun.|Thrown, it banks off two walls and the third sends it home. Press again to call it sooner." },
+            new Def { id = "horn", name = "The Dawn Horn", art = "dawn_horn", have = () => Story.Has("item_horn"),
+                      aboutNow = () => Story.Has("chapter2_done")
+                          ? "The horn that wakes the sun.|Blow it under open sky and the god turns over: morning, for ten of his minutes. Nothing that walks the night walks in it."
+                          : "The horn that wakes the sun.|It was buried with a king who did not want to get up.",
+                      about = "The horn that wakes the sun." },
         };
 
         /// <summary>Everything else worth showing.</summary>
@@ -54,8 +59,8 @@ namespace Wakefire
                       about = "It opens the gate to the Hill of Sleepers.|Nobody has ever asked for it back." },
             new Def { id = "figs", name = "Old Belu's Figs", art = "figs", have = () => Story.Has("item_figs") && !Story.Has("figs_given"),
                       about = "Four hundred years late, for a widow in the Lower Town.|He would like her to know he is sorry about the wait." },
-            new Def { id = "horn", name = "The Dawn Horn", art = "dawn_horn", have = () => Story.Has("item_horn"),
-                      about = "The horn that wakes the sun.|It was buried with a king who did not want to get up." },
+            new Def { id = "drumstick", name = "Kessi's Drumstick", art = "drumstick", have = () => Story.Has("item_drumstick"),
+                      about = "A forearm of olive wood with a wad of wool on one end. The other end has been chewed.|The dance drum on the threshing floor of the Olive Terraces has been waiting for it." },
             new Def { id = "scrolls", name = "Scrolls", art = "scroll", have = () => Scrolls > 0,
                       about = "A plan of every place that had one to find. Inside that place, the map page shows it.|Somebody drew a goat on the crypt's. Nobody admits to the goat." },
         };

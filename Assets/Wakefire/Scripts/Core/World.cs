@@ -223,6 +223,8 @@ namespace Wakefire
         {
             if ((mk.who == "unremembered" || mk.who == "bearer") && Story.Has("chapter2_done")) return null;      // they are asleep now, like everyone else up there
             if (Story.FirstNight && Game.I.CurrentMap != "crypt") return null;             // the first night: nothing has come down out of the hills yet
+            // the sky has a say: under the sun the night's own do not walk, and with no moon nothing's shadow stays up
+            if (Sky.Open(Game.I.CurrentMap) && ((Sky.Day && Story.NightOnly(mk.who)) || (Sky.Raining && mk.who == "stayup"))) return null;
             var at = Map.ToWorld(mk.x, mk.y);
             Enemy e = mk.who switch
             {

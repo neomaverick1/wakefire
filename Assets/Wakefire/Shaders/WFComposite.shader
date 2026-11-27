@@ -87,9 +87,28 @@ Shader "Wakefire/Composite"
                 lit = lerp(lit, lit * float3(0.90, 0.98, 1.12) + float3(0.02, 0.03, 0.05), saturate(haze) * 0.55);
                 lit += saturate(rim) * float3(0.10, 0.12, 0.16) * step(0.5, WF_Bayer(uv * _MainTex_TexelSize.zw));
 
+                // weather: where there is sky over the picture, and never in a dream
+                if (_WF_Sky.w * (1.0 - dream) > 0.5 && _WF_Sky.x + _WF_Sky.y > 0.01)
+                {
+                    float2 px = floor(wp * 16.0);
+                    float t = _Time.y;
+                    if (_WF_Sky.x > 0.01)
+                    {
+                        // rain: two sheets of it, the near one longer and brighter, both a little aslant
+                        float near = WF_Streak(px, t, 250.0, 7.0, 61.0, 0.17 * _WF_Sky.x, 3.0, 11.0);
+                        float far = WF_Streak(px + float2(37.0, 11.0), t, 170.0, 4.0, 43.0, 0.30 * _WF_Sky.x, 4.0, 5.0);
+                        lit = lerp(lit, float3(0.60, 0.70, 0.88), near * 0.50 + far * (1.0 - near) * 0.24);
+                    }
+                    if (_WF_Sky.y > 0.01)
+                    {
+                        float fl = WF_Flakes(px, t, 13.0, 14.0, 1.0, 3.0) * 0.7 + WF_Flakes(px + 53.0, t, 21.0, 23.0, 2.0, 7.0);
+                        lit = lerp(lit, float3(0.92, 0.95, 1.0), saturate(fl) * _WF_Sky.y * 0.9);
+                    }
+                }
+
                 // the corners fall away into the night
                 float2 q = i.uv - 0.5;
-                lit *= 1.0 - smoothstep(0.16, 0.56, dot(q, q)) * 0.34;
+                lit *= 1.0 - smoothstep(0.16, 0.56, dot(q, q)) * 0.34 * (1.0 - 0.7 * _WF_Sky.z * _WF_Sky.w);      // (less so by day)
                 return fixed4(min(lit, 1), 1);
             }
             ENDCG

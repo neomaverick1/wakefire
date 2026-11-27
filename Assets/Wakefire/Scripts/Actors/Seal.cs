@@ -108,7 +108,7 @@ namespace Wakefire
                     if (sincePrint >= Girth)
                     {
                         sincePrint = 0;
-                        if (prints.Count < Most && Present) Lay();
+                        if (prints.Count < Most && Present && !Sky.ColdAt(pos)) Lay();      // (frozen ground takes no print)
                     }
                     if (Vector2.Distance(pos, end) < 0.05f) { s = S.Rest; stateClock = 0; }
                     break;
@@ -243,6 +243,15 @@ namespace Wakefire
                     // pressed into the ground, still wet
                     anim.Play("lie", Facing.Down);
                     mat.SetFloat("_Dissolve", Mathf.Lerp(0.35f, 0f, stateClock / 0.9f));
+                    if (stateClock > 1.1f && Sky.WetAt(pos))
+                    {
+                        // pressed in the wet he does not get up: he runs, and is mud
+                        if (Story.I) Story.I.PrintSlumps();
+                        for (int i = 0; i < 7; i++) Fx.Dust(pos + new Vector2(Random.Range(-0.4f, 0.4f), Random.Range(-0.2f, 0.2f)), 1);
+                        Sfx.Play("seal_print", 0.5f, 0.2f);
+                        Destroy(gameObject);
+                        return;
+                    }
                     if (stateClock > 1.1f)
                     {
                         s = S.Peel; stateClock = 0;

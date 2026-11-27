@@ -44,6 +44,7 @@ namespace Wakefire
             Settings.Load();
             View = PixelView.Create();
             Dream = Dream.Create();
+            Sky.Ensure();
             Pause.Ensure();
             Notices.Boot();
             TouchControls.Create();

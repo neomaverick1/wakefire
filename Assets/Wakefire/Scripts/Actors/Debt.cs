@@ -44,7 +44,7 @@ namespace Wakefire
         }
 
         /// <summary>What it is asking, this moment.</summary>
-        public int Price => 15 * level + 5 * interest;
+        public int Price => (15 * level + 5 * interest) / (Sky.WetAt(pos) ? 2 : 1);      // (in the rain the tablet runs)
         public bool Billing => s == S.Bill;
         public bool InPieces => s == S.Apart;
         public override bool Sleeps => false;
@@ -116,7 +116,7 @@ namespace Wakefire
                         s = S.Bill; stateClock = 0;
                         anim.Play("bill", facing, true);
                         Sfx.Play("debt_bill", 0.8f, 0.05f);
-                        if (Story.I) Story.I.DebtBilled();
+                        if (Story.I) { Story.I.DebtBilled(); if (Sky.WetAt(pos)) Story.I.DebtRuns(); }
                         break;
                     }
                     if (d.magnitude < 1.2f) { anim.Play("idle", facing); vel = Vector2.zero; break; }

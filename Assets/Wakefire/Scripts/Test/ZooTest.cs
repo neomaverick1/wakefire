@@ -199,6 +199,17 @@ namespace Wakefire
                 Figure("moth", "wrap", c + new Vector2(3.2f, -2.8f), Facing.Down, "dragnet");
                 Figure("moth", "spent", c + new Vector2(6.8f, -2.6f), Facing.Down, "dragnet");
             }
+            else if (what == "dream7")
+            {
+                Figure("priest", "onefoot", c + new Vector2(-5f, 1.5f), Facing.Down, "raindancer");
+                Figure("priest", "pour", c + new Vector2(-2f, 1.5f), Facing.Down, "raindancer");
+                Figure("priest", "dance", c + new Vector2(1f, 1.5f), Facing.Down, "raindancer");
+                Figure("priest", "beat", c + new Vector2(4f, 1.5f), Facing.Down, "raindancer");
+                Figure("priest", "onefoot", c + new Vector2(-5f, -2.5f), Facing.Right, "raindancer");
+                Figure("priest", "pour", c + new Vector2(-2f, -2.5f), Facing.Left, "raindancer");
+                Figure("priest", "sleep", c + new Vector2(1f, -2.5f), Facing.Up, "raindancer");
+                Figure("priest", "beat", c + new Vector2(4f, -2.5f), Facing.Right, "raindancer");
+            }
             else if (what == "dream6")
             {
                 Figure("moth", "idle", c + new Vector2(-4.5f, 1.2f), Facing.Down, "seal");

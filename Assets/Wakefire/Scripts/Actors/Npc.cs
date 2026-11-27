@@ -269,9 +269,11 @@ namespace Wakefire
             transform.position = new Vector3(pos.x, pos.y, 0);
             int o = Map.Order(pos.y) + orderBias;
             anim.sr.sortingOrder = o;
+            // out in the cold spell everybody who went to bed in summer shivers (the dead do not feel it)
+            float shiver = !ghost && layer == WorldLayer.Waking && Sky.ColdAt(pos) && Mathf.Sin(Time.time * 41f + pos.x * 3.7f) > 0.2f ? 1f / 16f : 0f;
             // the dead do not quite stand on the ground
             if (ghost) anim.sr.transform.localPosition = new Vector3(0, (1f + Mathf.Round(Mathf.Sin(Time.time * 1.3f + pos.x * 2.1f) * 1.2f)) / 16f + lift, 0);
-            else if (lift != 0) anim.sr.transform.localPosition = new Vector3(0, lift, 0);
+            else if (lift != 0 || shiver != 0 || anim.sr.transform.localPosition.x != 0) anim.sr.transform.localPosition = new Vector3(shiver, lift, 0);
             if (shadow)
             {
                 shadow.sortingOrder = o - 1;

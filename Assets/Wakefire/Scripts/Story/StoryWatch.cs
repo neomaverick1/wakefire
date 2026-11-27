@@ -19,6 +19,7 @@ namespace Wakefire
 
         partial void SetupLate(string map, Map m)
         {
+            SetupSky(map, m);
             if (map == "ashkel_in" && Has("nicked_snuffer"))
             {
                 var mk = m.Marker("spot", "nicked");

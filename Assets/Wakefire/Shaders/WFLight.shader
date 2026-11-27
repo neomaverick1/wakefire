@@ -45,7 +45,8 @@ Shader "Wakefire/Light"
                 float f = saturate(1 - d);
                 f = f * f * (3 - 2 * f);
                 float q = floor(f * _Steps + 0.5 + (WF_Bayer(i.positionCS.xy) - 0.5) * 0.5) / _Steps;
-                return half4(_Color.rgb * i.color.rgb * i.color.a * q, 1);
+                // (under the sun a lamp is only a lamp)
+                return half4(_Color.rgb * i.color.rgb * i.color.a * q * (1.0 - 0.8 * _WF_Sky.z * _WF_Sky.w), 1);
             }
             ENDHLSL
         }

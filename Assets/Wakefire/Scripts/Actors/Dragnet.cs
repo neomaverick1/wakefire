@@ -85,6 +85,8 @@ namespace Wakefire
         protected override void Think(float dt, Player p)
         {
             if (Jolt > 0) Jolt -= dt;
+            // frozen on the line: a net as stiff as a board cannot be thrown, even by nobody
+            if (Sky.ColdAt(pos) && s == S.Flat) { vel = Vector2.zero; anim.Play("flat", Facing.Down); return; }
             cool -= dt;
             var d = p.pos - pos;
             switch (s)

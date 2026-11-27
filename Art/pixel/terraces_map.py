@@ -11,6 +11,7 @@ import necro
 import kit
 import hkit
 import dprops
+import sky_props
 from mapkit import MapBuilder
 
 TW, TH = 52, 40
@@ -19,6 +20,7 @@ WALLS = [(520, 60, 104), (400, 100, 140), (280, 680, 720), (160, 360, 400)]   # 
 HILL = 700                               # where the gate to the Hill of Sleepers stands in the top cliff
 CRYPT = 420                              # and the door of the crypt, behind the shrine's altar
 CHEST = '/srv/Wakefire/Assets/Wakefire/Resources/Objects/chest.png'
+FLOOR = (650, 344)                       # the middle of the threshing floor on the third terrace
 
 
 def build():
@@ -39,6 +41,8 @@ def build():
     # the shrine's paving: old, pale, and kept
     hkit.streets(T, [(T.rect(336, 60, 168, 44) | T.rect(CRYPT - 13, 26, 26, 44), 7, 10, 17)], base=4.0, ramp='pale', kerb=('flag', 2.8))
     # flowers, where somebody planted them: at the foot of every stair, and round the shrine
+    # the threshing floor, which is also where the temple has its rain danced in
+    hkit.streets(T, [(T.disc(FLOOR[0], FLOOR[1], 36), 9, 8, 14)], base=3.8, ramp='pale', kerb=('flag', 2.8))
     for (x, y, k) in ((48, 512, 'w'), (112, 512, 'w'), (88, 392, 'y'), (150, 392, 'y'), (668, 272, 'r'), (730, 272, 'r'), (348, 152, 'w'), (410, 152, 'w'),
                       (320, 112, 'r'), (510, 112, 'r'), (660, 60, 'w'), (736, 60, 'w'), (780, 300, 'y'), (780, 352, 'y'), (220, 600, 'r'), (520, 610, 'y'), (640, 480, 'w')):
         hkit.flowers(T, x, y, k)
@@ -105,9 +109,12 @@ def build():
     # the flames: two that never go far from the store, and three among the trees
     for i, (x, y) in enumerate(((170, 580), (270, 566))):
         m.enemy("wick", x, y, f"tr_w{i}")
-    for i, (x, y) in enumerate(((520, 350), (180, 220), (620, 230))):
+    for i, (x, y) in enumerate(((470, 350), (180, 220), (620, 230))):
         m.enemy("wick", x, y, f"tr_w{i + 2}", once=True)
-    m.marker("npc", 600, 330, who="goat_terrace")
+    m.marker("npc", 592, 322, who="goat_terrace")
+    # the rain-dancer, asleep on one leg in the middle of the floor, and the dance drum at the edge of it
+    m.marker("npc", FLOOR[0], FLOOR[1] + 4, who="rain_dancer")
+    m.model("rain_drum", sky_props.drum(), FLOOR[0] + 40, FLOOR[1] - 8, box=(-7, -5, 7, 0), kind="look", data={"id": "rain_drum"})
     m.spawn("east", W - 22, 320, "left")
     m.spawn("hill", HILL, 52, "down")
     m.spawn("crypt", CRYPT, 46, "down")

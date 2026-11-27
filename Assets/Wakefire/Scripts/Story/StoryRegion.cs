@@ -50,6 +50,7 @@ namespace Wakefire
         void SpawnRegion(string who, Vector2 at)
         {
             if (SpawnHouse(who, at)) return;
+            if (SpawnSky(who, at)) return;
             switch (who)
             {
                 case "hesha":
@@ -225,6 +226,7 @@ namespace Wakefire
 
         void Update()
         {
+            SkyTick();
             HillUpdate();
             BarrowUpdate();
             TombUpdate();

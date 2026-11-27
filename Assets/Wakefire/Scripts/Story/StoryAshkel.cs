@@ -42,6 +42,7 @@ namespace Wakefire
         void SnufferComes(bool now)
         {
             foreach (var e in Enemy.All) if (e is Snuffer) return;
+            if (Sky.Day) return;                         // (by day it is what the lamp seller puts his lamps out with)
             var s = Snuffer.Spawn(Map.ToWorld(910, now ? 222 : 240));
             s.spawnId = SquareSnuffer;
             if (now) { Sfx.Play("snuffer_clang", 0.5f, 0.03f); PixelView.I.Shake(1, 0.2f); }

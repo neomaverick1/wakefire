@@ -63,7 +63,7 @@ namespace Wakefire
                     return true;
                 case "drinker_a":
                     Pair("drinker_a", at, "sleeper_a", "lie", "idle", "man",
-                        () => One(Narrate("A man asleep under the table.^He got there by the usual road, some time before the god did.")),
+                        () => One(LookAtDrummer()),
                         () => One(Say("Regular", "In here I'm not under the table. In here I'm on it. Singing.| Don't tell me how it sounds.", "man", true)));
                     return true;
                 case "drinker_b":
