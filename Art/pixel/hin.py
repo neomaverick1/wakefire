@@ -11,6 +11,7 @@ from forge import Model, M, Mat, RAMPS, hash2, m_brick, m_ashlar, m_plaster, m_p
 import town
 from town import Mats, PX, rnd, jar
 import houses
+import tombs
 import hkit
 import kit
 import dkit
@@ -39,7 +40,8 @@ def house_wall(length, doors=(), clear=(), plaster=('limewash', 4.4), dado=('red
         m.part(); m.quad((0, -0.5 * PX, z0), (length, -0.5 * PX, z0), (length, -0.5 * PX, 1.2), (0, -0.5 * PX, 1.2), M(dado[0], dado[1], m_mottle(12, 0.45)))
         m.part(); m.box(0, -0.7 * PX, 1.2, length, 0, 1.2 + PX, M(dado[0], dado[1] - 1.2))
     if band:
-        mark = {'zigzag': houses.m_zigzag(8, 3, 2), 'cones': houses.m_cones(6, 3), 'lines': houses.m_band(((1, 1), (4, 1))), 'writing': town.m_cuneiform(5)}[band[0]]
+        mark = {'zigzag': houses.m_zigzag(8, 3, 2), 'cones': houses.m_cones(6, 3), 'lines': houses.m_band(((1, 1), (4, 1))), 'writing': town.m_cuneiform(5),
+                'flock': tombs.m_flock(9)}[band[0]]
         m.part(); m.quad((0, -0.5 * PX, h - 0.78), (length, -0.5 * PX, h - 0.78), (length, -0.5 * PX, h - 0.42), (0, -0.5 * PX, h - 0.42), M(band[1], band[2], mark, ramp2=band[3] if len(band) > 3 else 'dark'))
     if beams:
         m.part()
@@ -67,6 +69,27 @@ def house_wall(length, doors=(), clear=(), plaster=('limewash', 4.4), dado=('red
             m.part(); m.blob(x, -0.06, 1.36, 0.1, 0.06, 0.05, M('clay', 4.4), n=7, rings=3)
             m.part(); m.blob(x + 0.07, -0.06, 1.45, 0.035, 0.03, 0.07, Mat(RAMPS['glow'], 2.6, glow=True), n=5, rings=3)
             m.part(); m.box(x - 0.28, -0.08, 1.24, x + 0.28, 0, 1.3, top)
+        elif what == 'spirit':
+            # a niche with one of the lamps the dead keep in it: the colour of the inside of a wave
+            m.part(); m.box(x - 0.24, -0.03, 1.3, x + 0.24, 0, 1.78, M('dark', 1.8))
+            m.part(); m.quad((x - 0.2, -0.035, 1.32), (x + 0.2, -0.035, 1.32), (x + 0.2, -0.035, 1.62), (x - 0.2, -0.035, 1.62), Mat(RAMPS['ghost'], 0.8, glow=True))
+            m.part(); m.blob(x, -0.06, 1.36, 0.1, 0.06, 0.05, M('bronze', 3.6), n=7, rings=3)
+            m.part(); m.blob(x + 0.07, -0.06, 1.45, 0.035, 0.03, 0.07, Mat(RAMPS['ghost'], 3.8, glow=True), n=5, rings=3)
+            m.part(); m.box(x - 0.28, -0.08, 1.24, x + 0.28, 0, 1.3, top)
+        elif what == 'moon':
+            # the sign of the hill, let into the wall: a moon with its horns up
+            m.part(); m.face([(x + 0.36 * math.cos(a), 1.74 + 0.36 * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 14, endpoint=False)], -0.04, M('lapis', 3.4))
+            aa = np.linspace(math.radians(200), math.radians(340), 8)
+            outer = [(x + math.cos(t) * 0.27, 1.74 + math.sin(t) * 0.27) for t in aa]
+            inner = [(x + math.cos(t) * 0.265, 1.74 + 0.135 + math.sin(t) * 0.24) for t in aa]
+            m.part()
+            for i in range(7):
+                m.quad((outer[i][0], -0.05, outer[i][1]), (outer[i + 1][0], -0.05, outer[i + 1][1]), (inner[i + 1][0], -0.05, inner[i + 1][1]), (inner[i][0], -0.05, inner[i][1]), M('gold', 4.4), two=True)
+        elif what == 'falsedoor':
+            # a door painted on the wall, for a spirit to come and go by: it has never needed to
+            m.part(); m.box(x - 0.56, -0.05, z0, x + 0.56, 0, 2.06, M('stone', 4.4, m_mottle(8, 0.3)))
+            m.part(); m.quad((x - 0.4, -0.06, z0), (x + 0.4, -0.06, z0), (x + 0.4, -0.06, 1.86), (x - 0.4, -0.06, 1.86), M('red', 2.6, m_planks(3, 'v', knots=False)))
+            m.part(); m.box(x - 0.62, -0.08, 2.06, x + 0.62, 0, 2.18, M('stone', 4.9))
         elif what in ('shelf', 'bread', 'tablets', 'cloth', 'cups'):
             for z in (1.0, 1.62):
                 m.part(); m.box(x - 0.8, -0.3, z - PX, x + 0.8, 0, z, M('wood', 4.5), top=M('wood', 4.9))
@@ -760,6 +783,7 @@ class House(Floor):
         """A lamp's light for every lit niche in the room's wall, and the moon for every window."""
         for (hx, what) in rm.look.get('hang', ()):
             if what == 'niche': self.lamp(rm, int(hx * 16))
+            if what == 'spirit': self.lamp(rm, int(hx * 16), strength=0.55, radius=3.6, colour=(0.45, 1.0, 0.85))
             if what == 'window': self.moon(rm, int(hx * 16))
 
     def bar(self, rm, uid, say=None, text=None):

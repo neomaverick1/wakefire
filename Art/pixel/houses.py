@@ -153,7 +153,8 @@ def doorway(m, mt, x, y, w=1.0, h=1.75, glow=True, ajar=0.38, leaf=None):
 def leaf(kind='plain', w=1.0, h=1.75, bands=3, seed=0):
     """A door shut in its doorway, as a thing of its own, so that the house can be drawn with the doorway open
     behind it: 'plain' planks and a ring, 'barred' with two planks nailed across from inside (the nails came
-    through), 'big' two leaves of cedar under bronze."""
+    through), 'big' two leaves of cedar under bronze, 'bricked' a doorway closed with brick, 'chalked' planks
+    with something written on them in chalk."""
     mt = Mats(seed, 2)
     m = Model()
     if kind == 'big':
@@ -166,8 +167,16 @@ def leaf(kind='plain', w=1.0, h=1.75, bands=3, seed=0):
         for sx in (-1, 1):
             m.part(); m.blob(sx * 0.14, -0.08, h * 0.46, 0.05, 0.03, 0.05, mt.bronze, n=6, rings=3)
         return m
+    if kind == 'bricked':
+        # a doorway somebody had closed for good: brick, laid from the inside, and never pointed
+        m.part(); m.quad((-w / 2, -0.04, 0), (w / 2, -0.04, 0), (w / 2, -0.04, h), (-w / 2, -0.04, h), M('tomb', 4.3, m_brick(8, 4, -0.9, 0.7)))
+        return m
     m.part(); m.quad((-w / 2, -0.04, 0), (w / 2, -0.04, 0), (w / 2, -0.04, h), (-w / 2, -0.04, h), mt.door)
     m.part(); m.box(w * 0.22, -0.07, h * 0.48, w * 0.22 + PX, -0.04, h * 0.48 + 2 * PX, mt.bronze)
+    if kind == 'chalked':
+        # a line of chalk across it at the height a man writes at, and a shorter one under it
+        m.part(); m.box(-w * 0.34, -0.05, h * 0.66, w * 0.34, -0.04, h * 0.66 + PX, M('alabaster', 5.6))
+        m.part(); m.box(-w * 0.34, -0.05, h * 0.66 - 2.5 * PX, w * 0.1, -0.04, h * 0.66 - 1.5 * PX, M('alabaster', 5.6))
     if kind == 'barred':
         for z in (0.62, 1.14):
             m.part(); m.box(-w / 2 - 0.1, -0.09, z, w / 2 + 0.1, -0.05, z + 0.13, M('wood', 4.6, m_planks(3, 'h')))

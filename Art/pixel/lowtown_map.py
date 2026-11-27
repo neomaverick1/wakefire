@@ -13,6 +13,7 @@ import town
 import kit
 import houses
 import hkit
+from forge import M, m_glazed
 from mapkit import MapBuilder
 
 TW, TH = 60, 45
@@ -24,6 +25,21 @@ QUAY = 688                          # the top of the water
 MAIN = (448, 512)                   # the main street, west and east kerb
 STREET = (384, 448)                 # the market street, north and south kerb
 LANE = (216, 240)                   # the lane behind the market row
+
+# The town's own look: every house in the same lime wash, under a roof of blue-glazed tile.
+LOOK = {'plaster': ('limewash', 5.1), 'clean': True, 'roof': lambda: M('lapis', 3.0, m_glazed(8, 8))}
+
+# what the board by each door says: (how far from the door it stands, the words)
+NAMES = {
+    'lt_bakery': (-18, "{g}HESHA. BREAD.{/}^Under it, in chalk: {t}BACK WHEN IT HAS RISEN.{/}| It has had forty nights. It has risen."),
+    'lt_beer': (20, "{g}THE SEVEN JARS.{/}^There are six on the board. The seventh was the landlord's own, and he drank it."),
+    'lt_weavers': (18, "{g}THE SISTERS. CLOTH.{/}^Two names under it have been painted out and painted in again, in the other order, more than once."),
+    'lt_tax': (-22, "{g}THE COUNTING HOUSE.{/}^{t}STRIKE THE GONG. HAVE IT READY.{/}"),
+    'lt_oracle': (20, "{g}UMMI. SHE KNOWS.{/}^Smaller, underneath: {t}SHE KNEW YOU WOULD READ THIS.{/}"),
+    'lt_pottery': (18, "{g}KESH. POTS.{/}^{t}YOU BREAK IT, YOU HAVE BOUGHT IT.{/}| You look at the yard full of pots, and keep your elbows in."),
+    'lt_netloft': (18, "{g}NETS MENDED.{/}^{t}FISH NOT INCLUDED.{/}"),
+    'lt_goat': (-18, "{g}NOBODY.{/}^Under it somebody has made a mark, with a hoof by the look of it, that could be a signature."),
+}
 
 # (builder, centre x, front y)
 PLACES = [
@@ -45,21 +61,27 @@ SAY = {
 def build():
     m = MapBuilder("lowtown", TW, TH, (60, 44, 40, 255), music="town")
     T = m.lay(seed=11)
+    town.STYLE = LOOK
     B = [(f(), x, y) for (f, x, y) in PLACES]
+    town.STYLE = None
     # ================================================================ the ground
-    # the town's own earth, swept; grass where the town stops
-    hkit.calm(T, T.all(), 'sand', base=3.2, seed=1, amp=0.3, pebbles=0.002)
-    green = T.rect(0, 456, 24, 210) | T.rect(936, 456, 24, 210) | T.rect(16, 48, 232, 164) | T.rect(752, 48, 200, 164) | T.rect(772, 456, 172, 96)
-    hkit.lawn(T, green, seed=5, flowers=0.012)
-    # the yards: paler, drier, kept
-    yards = T.rect(256, 48, 184, 164) | T.rect(24, 456, 416, 206) | T.rect(528, 456, 240, 206) | T.rect(672, 248, 272, 136) | T.rect(780, 552, 164, 114)
-    hkit.calm(T, yards, 'sand', base=3.9, seed=3, amp=0.3, pebbles=0.001)
+    # the town stands in grass, kept; where work is done the ground is beaten earth with a line of stones round it
+    hkit.green(T, T.all(), seed=5)
+    yards = T.rect(264, 544, 176, 118) | T.rect(528, 536, 232, 126) | T.rect(680, 256, 256, 122) | T.rect(264, 56, 168, 148)
+    hkit.calm(T, yards, 'dust', base=3.7, seed=3, amp=0.25, pebbles=0.001)
+    T.border(yards, ramp='pale', tone=4.0, width=1, hgt=0.8)
     # the streets
     main = T.rect(MAIN[0], 0, MAIN[1] - MAIN[0], STREET[0])
     street = T.rect(0, STREET[0], W, STREET[1] - STREET[0])
     lane = T.rect(16, LANE[0], 928, LANE[1] - LANE[0])
     south = T.rect(464, STREET[1], 32, 666 - STREET[1])
-    hkit.paved(T, main | street | lane | south, seed=12, rows=(8,), wmin=11, wmax=17)
+    # a paved path from every door to the street it belongs to
+    paths = (T.rect(331, FN, 16, LANE[0] - FN) | T.rect(844, FN, 16, LANE[0] - FN) |                       # the goat's house, the oracle's
+             T.rect(112, 176, 16, 40) |                                                                        # into the orchard
+             T.rect(173, FS, 16, 40) | T.rect(173, 632, 291, 16) |                                             # the bakery: door, then east to the lane
+             T.rect(715, FS, 16, 24) | T.rect(496, 616, 235, 16) |                                             # the pottery: door, then west to the lane
+             T.rect(829, 644, 16, 24) | T.rect(648, 240, 24, 144) | T.rect(220, 240, 40, 144))                  # the net loft; the two alleys
+    hkit.streets(T, [(main | street | lane | south, 12, 11, 17), (T.rect(512, 120, 16, 32) | T.rect(616, 212, 32, 4), 18, 10, 16), (paths, 19, 8, 12)])
     # a drain down the middle of the main street, a darker course of stone
     T.slabs(T.rect(476, 0, 8, STREET[0]), seed=13, rows=(8, 9), wmin=7, wmax=8, ramp='cobble', base=3.2, jitter=0.6, crack=0, whole=False)
     # where the two streets cross: a square of bigger stones, lapis let into it
@@ -70,20 +92,19 @@ def build():
     court = T.rect(528, 56, 208, 156)
     T.tiles(court, seed=17, size=16, ramp='tile', base=3.9, checker='flag')
     T.border(court, ramp='pale', tone=4.4, width=2, hgt=1.2)
-    hkit.paved(T, T.rect(512, 120, 16, 32) | T.rect(616, 212, 32, 4), seed=18)
-    # a paved path from every door to the street it belongs to
-    paths = (T.rect(331, FN, 16, LANE[0] - FN) | T.rect(844, FN, 16, LANE[0] - FN) |                       # the goat's house, the oracle's
-             T.rect(112, 176, 16, 40) |                                                                        # into the orchard
-             T.rect(173, FS, 16, 40) | T.rect(173, 632, 291, 16) |                                             # the bakery: door, then east to the lane
-             T.rect(715, FS, 16, 24) | T.rect(496, 616, 235, 16) |                                             # the pottery: door, then west to the lane
-             T.rect(829, 644, 16, 24) | T.rect(648, 240, 24, 144) | T.rect(220, 240, 40, 144))                  # the net loft; the two alleys
-    hkit.paved(T, paths, seed=19, rows=(8,), wmin=8, wmax=12, base=4.0)
     # ---- gardens
     for (x, y, w, h, sd) in ((272, 472, 64, 32, 1), (352, 472, 64, 32, 2), (28, 480, 40, 48, 3), (28, 540, 40, 40, 4),      # the bakery's
                              (40, 64, 72, 28, 5), (152, 64, 72, 28, 6), (40, 180, 56, 24, 7), (168, 180, 56, 24, 8),        # the orchard's
                              (768, 184, 56, 24, 9), (880, 184, 56, 24, 10),                                                 # the oracle's
                              (264, 56, 40, 100, 11), (416, 60, 20, 60, 12)):                                                # the goat's (eaten)
         hkit.bed(T, x, y, w, h, seed=sd, crop='dry' if sd >= 11 else 'grass')
+    # flowers, where somebody planted them: either side of every gate, and at the corners of the grass
+    for (x, y, k) in ((96, 218, 'w'), (136, 218, 'w'), (316, 218, 'y'), (356, 218, 'y'), (828, 218, 'r'), (868, 218, 'r'),
+                      (28, 60, 'r'), (232, 60, 'r'), (764, 60, 'w'), (936, 60, 'w'), (780, 140, 'y'), (924, 150, 'y'),
+                      (34, 468, 'w'), (424, 468, 'w'), (540, 468, 'r'), (748, 468, 'r'), (120, 580, 'y'), (220, 590, 'w'),
+                      (784, 470, 'w'), (928, 470, 'r'), (790, 540, 'y'), (900, 536, 'w'), (8, 470, 'y'), (8, 600, 'w'), (944, 470, 'y'), (944, 600, 'r'),
+                      (60, 100, 'y'), (200, 100, 'y'), (132, 150, 'w')):
+        hkit.flowers(T, x, y, k)
     # the quay: the town stops at a kerb of big stones, and past it the sea
     T.slabs(T.rect(0, QUAY - 22, W, 22), seed=18, rows=(11,), wmin=14, wmax=22, base=3.7, moss=0.04, whole=False)
     T.border(T.rect(0, QUAY - 22, W, 22), ramp='pale', tone=4.2, width=2, hgt=1.2)
@@ -97,6 +118,8 @@ def build():
     # ================================================================ the houses
     for (b, x, y) in B:
         hkit.place(m, b, x, y, inside=IN, say=SAY.get(b.key))
+        off, words = NAMES[b.key]
+        hkit.name_post(m, x + int(round(b.doors[0][0] * 16)) + off, y + 7, b.key + "_name", words)
     # the old inner wall closes the north side, either side of the road up to the gate
     m.model("lt_wall_w", town.city_wall(27.0, h=2.2, d=1.0, buttress=6.0), 0, 40, box=(0, -36, 432, 0))
     m.model("lt_wall_e", town.city_wall(27.0, h=2.2, d=1.0, buttress=6.0, seed=2), 528, 40, box=(0, -36, 432, 0))
@@ -105,27 +128,27 @@ def build():
 
     # ================================================================ the plots
     # under the wall: the orchard, the goat's house, the well court, the oracle's
-    hkit.plot(m, 16, 48, 248, 212, gates=[('s', 108, 132)], sides='se', seed=1, plaster=1, lamp=[('s', 0)])
-    hkit.plot(m, 256, 48, 440, 212, gates=[('s', 327, 351)], sides='swe', seed=5, plaster=3, lamp=[('s', 0)])
-    hkit.plot(m, 752, 48, 952, 212, gates=[('s', 840, 864)], sides='sw', seed=9, plaster=1, lamp=[('s', 0)])
+    hkit.plot(m, 16, 48, 248, 212, gates=[('s', 108, 132)], sides='se', seed=1, plaster=1, lamp=[('s', 0)], hedge='e')
+    hkit.plot(m, 256, 48, 440, 212, gates=[('s', 327, 351)], sides='swe', seed=5, plaster=1, lamp=[('s', 0)], hedge='we')
+    hkit.plot(m, 752, 48, 952, 212, gates=[('s', 840, 864)], sides='sw', seed=9, plaster=1, lamp=[('s', 0)], hedge='w')
     for (x, y) in ((528, 216), (736, 216)):                       # the court is open to the lane: piers and nothing between
-        hkit.gate_pier(m, x, y, 3, 2, lamp=True)
+        hkit.gate_pier(m, x, y, 3, 1, lamp=True)
     for (x, y) in ((528, 64), (736, 64)):
-        hkit.gate_pier(m, x, y, 4, 2)
-    hkit.wall_ns(m, 520, 48, 116, 13, 2); hkit.wall_ns(m, 520, 156, 212, 14, 2)
-    hkit.wall_ns(m, 738, 48, 212, 15, 2)
+        hkit.gate_pier(m, x, y, 4, 1)
+    hkit.wall_ns(m, 520, 48, 116, 13, 1); hkit.wall_ns(m, 520, 156, 212, 14, 1)
+    hkit.wall_ns(m, 738, 48, 212, 15, 1)
     # the market row: a wall shuts the west end; the caravan yard has its own
-    hkit.wall_ew(m, 10, 36, FM, 17, 4)
-    hkit.plot(m, 672, 248, 944, 384, gates=[('w', 296, 328)], sides='nw', seed=21, plaster=4, lamp=[('w', 0)])
+    hkit.wall_ew(m, 10, 36, FM, 17, 1)
+    hkit.plot(m, 672, 248, 944, 384, gates=[('w', 296, 328)], sides='nw', seed=21, plaster=1, lamp=[('w', 0)])
     # behind the market street: the bakery's and the pottery's, each with a gate on the lane to the quay
-    hkit.plot(m, 24, 450, 446, 668, gates=[('e', 624, 656)], sides='nse', seed=25, plaster=2, lamp=[('e', 0)])
-    hkit.plot(m, 520, 450, 768, 668, gates=[('w', 608, 640)], sides='nsw', seed=31, plaster=0, lamp=[('w', 0)])
-    hkit.wall_ns(m, 762, 456, 662, 37, 0)
+    hkit.plot(m, 24, 450, 446, 668, gates=[('e', 624, 656)], sides='nse', seed=25, plaster=1, lamp=[('e', 0)], hedge='s')
+    hkit.plot(m, 520, 450, 768, 668, gates=[('w', 608, 640)], sides='nsw', seed=31, plaster=1, lamp=[('w', 0)], hedge='s')
+    hkit.hedge_sn(m, 761, 456, 662, 2)
 
     # ================================================================ what stands in them
     # ---- the orchard: olives in rows, clipped myrtle, a bench
-    for i, (x, y) in enumerate(((60, 132), (132, 128), (204, 132), (96, 172), (168, 170))):
-        kit.olive(m, x, y, i + 1)
+    for i, (x, y) in enumerate(((60, 136), (132, 136), (204, 136), (96, 180), (168, 180))):
+        hkit.fruit(m, x, y, i)
     hkit.hedge_ew(m, 24, 104, 204, 1, flowers='red'); hkit.hedge_ew(m, 136, 240, 204, 2, flowers='red')
     hkit.hedge_sn(m, 24, 56, 196, 3)
     m.model("bench_0", hkit.bench(1.5, 0), 108, 108, box=(0, -6, 24, 0))
@@ -143,7 +166,7 @@ def build():
     hkit.hedge_ew(m, 760, 836, 204, 5, flowers='fig'); hkit.hedge_ew(m, 868, 944, 204, 6, flowers='fig')
     for k, x in enumerate((822, 882)):
         m.model(f"tub_olive_{k}", hkit.tub_tree(k, 'olive'), x, FN + 10, box=(-5, -8, 5, 0))
-    kit.cypress(m, 772, 120, 1); kit.cypress(m, 934, 124, 2)
+    hkit.tree(m, 776, 128, 1); hkit.tree(m, 930, 128, 2)
     # ---- the market: three stalls in a row before the caravan yard, and what the caravan left in it
     for (x, sd) in ((716, 4), (796, 5), (876, 6)):
         m.stall(f"stall_{sd}", sd, x, FM + 14, town)
@@ -181,7 +204,7 @@ def build():
     kit.palm(m, 420, 560, 3)
     m.model("bench_0", hkit.bench(1.5, 0), 392, 630, box=(0, -6, 24, 0))
     hkit.hedge_ew(m, 264, 424, 520, 7, flowers='cream')
-    kit.olive(m, 52, 520, 4)
+    hkit.tree(m, 52, 524, 1)
     # ---- the pottery: kiln, wheel, and the jars set out to be counted, which is how he sleeps
     m.model("kiln", town.kiln, 556, 604, box=(-10, -18, 10, 0), frames=2)
     m.model("wheel", town.potters_wheel(), 560, 652, box=(-6, -8, 6, 0))
@@ -202,9 +225,10 @@ def build():
             "Nets, folded for a morning that hasn't come yet.^The road ends here. So does the land.")
     m.model("washing_2", hkit.washing(2, 2.6, ('straw', 'straw', 'linen')), 800, 534, box=(0, -3, 3, 0))
     m.model("crates", town.crates(0), 800, 668); m.model("lt_amph", town.amphorae(41), 760, 664)
-    for k, (x, y) in enumerate(((800, 500), (880, 488), (920, 512))):
-        kit.bush(m, x, y, k + 1)
-    kit.olive(m, 852, 492, 6)
+    for j, y in enumerate((496, 512)):                                              # a small green at the east end: bushes in a block, a tree either side
+        for i, x in enumerate((828, 844, 860, 876)):
+            kit.bush(m, x, y, 1)
+    hkit.tree(m, 796, 520, 0); hkit.tree(m, 912, 520, 2)
     kit.chest(m, 936, 640, "lt_alley", "shekels:20")
     # ---- light: a torch at every corner where two ways meet, and down the main street in pairs
     for (x, y) in ((440, FM - 2), (520, FM - 2), (440, STREET[1] + 6), (520, STREET[1] + 6), (440, 100), (520, 100), (440, LANE[0] - 2), (520, LANE[1] + 6),
@@ -212,12 +236,17 @@ def build():
         kit.torch(m, x, y)
     for (x, y, sd) in ((434, 62, 0), (526, 62, 1)):
         kit.cypress(m, x, y, sd)
+    # the town's trees, in rows: along the west and east edges, behind the Seven Jars, behind the counting house
+    for k, y in enumerate((480, 540, 600, 660)):
+        hkit.tree(m, 10, y, k); hkit.tree(m, 950, y, k + 1)
+    for x in (60, 108, 156, 204):
+        hkit.tree(m, x, 276)
+    for x in (544, 592, 640):
+        hkit.tree(m, x, 278)
 
     # ================================================================ where the town stops
     kit.wall_ns(m, 0, 40, STREET[0], seed=11, plaster=1)
-    kit.wall_ns(m, W - 10, 40, STREET[0], seed=12, plaster=4)
-    kit.cypress_row(m, 8, 472, 650, seed=3)
-    kit.cypress_row(m, W - 8, 472, 520, seed=4)
+    kit.wall_ns(m, W - 10, 40, STREET[0], seed=12, plaster=1)
 
     # people
     m.marker("npc", 316, 628, who="hesha")

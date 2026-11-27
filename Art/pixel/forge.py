@@ -219,6 +219,7 @@ RAMPS = {
     # warm earth and plaster: lit tones lean yellow, shade leans violet
     'mud':     hexes('#2a1c2a', '#47303a', '#6b4a46', '#946a50', '#bd9060', '#dcb47a', '#f2d49a'),
     'limewash': hexes('#33304a', '#585470', '#847e92', '#b0a8ac', '#d6cdc0', '#efe6cf', '#fff8e6'),
+    'verdigris': hexes('#0a1c24', '#103438', '#1a5050', '#2a7068', '#469080', '#70b49c', '#a4d4bc'),
     'clay':    hexes('#2c1820', '#4c2a2c', '#74403a', '#9c5c46', '#c07e56', '#dca470', '#f2c890'),
     'brick':   hexes('#2a1620', '#4a242a', '#703832', '#96503c', '#b86e4a', '#d49260'),
     'sandstone': hexes('#2e2634', '#50424e', '#7a6660', '#a48a70', '#c8ac84', '#e4cc9c', '#f8e8ba'),

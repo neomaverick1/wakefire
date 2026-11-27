@@ -18,6 +18,9 @@ RAMPS = {
     'brick':  hexes('#2a1620', '#48242a', '#6c3832', '#90503c', '#b06c4a', '#cc8c5c', '#e2ac74'),
     'cobble': hexes('#181e30', '#2a3448', '#404e64', '#5a687e', '#78869a', '#9aa6b6', '#bcc6d0'),
     'grass':  hexes('#10281e', '#184026', '#225a2e', '#307436', '#468e40', '#68aa52', '#92c66e'),
+    'lawn':   hexes('#0c2a20', '#124428', '#1a6030', '#268038', '#3a9c44', '#5cb858', '#8ad478'),
+    'path':   hexes('#30263a', '#52404a', '#7a6056', '#a28466', '#c4a67a', '#dcc692', '#f0e0b0'),
+    'straw':  hexes('#2a2630', '#484038', '#6a5c44', '#8e7c50', '#b09c62', '#ccbc7c', '#e2d69c'),
     'dry':    hexes('#2a2a20', '#46462a', '#666634', '#868642', '#a6a456', '#c4c070', '#dcd890'),
     'soil':   hexes('#1c141c', '#2e2026', '#443030', '#5c423a', '#745646', '#8c6c54'),
     'sand':   hexes('#5c4230', '#84603c', '#aa8250', '#c8a066', '#debc80', '#f0d69c', '#fcecba'),
@@ -40,7 +43,7 @@ RAMPS = {
     'sere':   hexes('#26232c', '#403b40', '#5d564f', '#7c745c', '#9a926e', '#b6ae86', '#d0c89e'),
     'basalt': hexes('#0d0b15', '#191722', '#282532', '#3a3644', '#4f4b58', '#69656e', '#858188'),
 }
-SURF = {'earth': 's', 'dust': 's', 'soil': 's', 'sand': 's', 'ash': 's', 'grass': 'g', 'dry': 'g', 'sere': 'g', 'moss': 'g', 'water': 'a', 'plank': 'w'}
+SURF = {'earth': 's', 'dust': 's', 'soil': 's', 'sand': 's', 'ash': 's', 'grass': 'g', 'lawn': 'g', 'straw': 'g', 'dry': 'g', 'sere': 'g', 'moss': 'g', 'water': 'a', 'plank': 'w'}
 
 
 class Terrain:

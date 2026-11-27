@@ -54,11 +54,12 @@ def pier(seed=0, plaster=1, h=1.0, lamp=False):
     return m
 
 
-def hedge(length, seed=0, h=0.62, d=0.55, flowers=None):
-    """Myrtle, clipped square the way a careful house keeps it. Runs east from the origin."""
+def hedge(length, seed=0, h=0.62, d=0.55, flowers=None, leaf='green'):
+    """Myrtle, clipped square the way a careful house keeps it. Runs east from the origin.
+    (leaf: what it is a hedge of. On the Hill of Sleepers it is thorn, dead, and clipped all the same.)"""
     r = rnd(seed); m = Model()
-    side = M('green', 3.0, m_clumps(4), soft=True)
-    top = M('green', 4.0, m_clumps(3), soft=True)
+    side = M(leaf, 3.0, m_clumps(4), soft=True)
+    top = M(leaf, 4.0, m_clumps(3), soft=True)
     m.part(); m.box(0, 0, 0, length, d, h - 0.08, side, top=top)
     n = max(2, int(round(length / 0.42)))
     m.part()
@@ -73,10 +74,10 @@ def hedge(length, seed=0, h=0.62, d=0.55, flowers=None):
     return m
 
 
-def hedge_ns(depth, seed=0, h=0.62, wd=0.55, flowers=None):
+def hedge_ns(depth, seed=0, h=0.62, wd=0.55, flowers=None, leaf='green'):
     r = rnd(seed); m = Model()
-    side = M('green', 3.0, m_clumps(4), soft=True)
-    top = M('green', 4.0, m_clumps(3), soft=True)
+    side = M(leaf, 3.0, m_clumps(4), soft=True)
+    top = M(leaf, 4.0, m_clumps(3), soft=True)
     m.part(); m.box(0, 0, 0, wd, depth, h - 0.08, side, top=top)
     n = max(2, int(round(depth / 0.42)))
     m.part()
@@ -181,7 +182,64 @@ def cave_mouth(seed=0, w=1.1, h=1.2):
     return m
 
 
+def round_tree(seed=0, s=1.0):
+    """The tree a town plants along its ways: a short bole, and a head as round as a loaf."""
+    r = rnd(seed); m = Model()
+    bark = M('trunk', 3.4, m_mottle(5, 0.4))
+    leaf = M('green', 3.5, m_clumps(5), soft=True)
+    m.part(); m.limb([(0, 0.3, 0), (0.02, 0.3, 0.75 * s)], [0.2 * s, 0.15 * s], bark, n=7)
+    m.part()
+    m.blob(0, 0.35, 1.45 * s, 0.92 * s, 0.78 * s, 0.84 * s, leaf, seed=seed, bump=0.1, n=12, rings=7)
+    for i in range(7):
+        a = 2 * math.pi * i / 7 + float(r.uniform(-0.2, 0.2))
+        m.blob(math.cos(a) * 0.6 * s, 0.35 + math.sin(a) * 0.3 * s, (1.35 + 0.25 * math.sin(a * 2 + seed)) * s, 0.48 * s, 0.42 * s, 0.44 * s, leaf, seed=seed * 7 + i, bump=0.14, n=9, rings=5)
+    return m
+
+
+def fruit_tree(seed=0, s=0.8, fruit='red'):
+    """A pomegranate, smaller than the trees along the ways, and hung with fruit."""
+    r = rnd(seed + 40); m = round_tree(seed + 40, s)
+    fl = Mat(RAMPS[fruit], 4.6, soft=True)
+    m.part()
+    k = 0
+    while k < 10:
+        # on the side of the head that whoever is looking can see (its top and its front): the fruit sits just proud of the leaves
+        n = r.normal(0, 1, 3); n = n / (float(np.linalg.norm(n)) + 1e-6)
+        if n[2] - n[1] < 0.3 or abs(n[0]) > 0.8: continue
+        m.blob(float(n[0]) * 0.94 * s, 0.35 + float(n[1]) * 0.8 * s, (1.45 + float(n[2]) * 0.86) * s, 0.1, 0.08, 0.1, fl, n=6, rings=4, seed=k)
+        k += 1
+    return m
+
+
+def lamp_post(frame=0):
+    """A lamp on a post at the side of a way: a bowl of fired clay on a turned stem, burning."""
+    m = Model()
+    m.part(); m.turned(0, 0.2, [(0.16, 0), (0.1, 0.1), (0.055, 0.2), (0.05, 1.2), (0.1, 1.28), (0.2, 1.36), (0.22, 1.44), (0.16, 1.44)], M('bronze', 3.8, gloss=0.02), n=9, cap=Mat(RAMPS['glow'], 1.6, glow=True))
+    town.flame(m, 0, 0.2, 1.44, s=0.62, frame=frame, seed=7, tongues=3)
+    m.light(0, -0.2, 1.7, 3.6, (1.0, 0.72, 0.38), 0.75)
+    return m
+
+
 # ------------------------------------------------------------------ putting them on the map
+def tree(m, x, y, sd=0):
+    """One of the town's round trees, its foot at (x, y)."""
+    return m.model("rtree", round_tree(1, 1.08), x, y, box=(-4, -6, 4, 0))
+
+
+def fruit(m, x, y, sd=0, fruit='red'):
+    return m.model(f"ftree_{fruit}", fruit_tree(0, 0.8, fruit), x, y, box=(-3, -5, 3, 0))
+
+
+def lamp(m, x, y):
+    """A lamp post, lit."""
+    m.model("lamp_post", lamp_post, x, y, box=(-2, -4, 2, 0), frames=3, kind="torch")
+
+
+def name_post(m, x, y, uid, text):
+    """The board by a door that says whose door it is."""
+    m.model("name_post", town.sign(), x, y, box=(-2, -4, 2, 0), kind="look", data={"id": "say", "text": text})
+
+
 def wall_ew(m, x0, x1, y, seed=0, plaster=1):
     """A low wall from x0 east to x1, its south face at y."""
     L = x1 - x0
@@ -199,14 +257,14 @@ def gate_pier(m, x, y, seed=0, plaster=1, lamp=False):
     m.model(key, pier(seed, plaster, lamp=lamp), x, y, box=(-4, -8, 4, 0))
 
 
-def hedge_ew(m, x0, x1, y, seed=0, flowers=None):
+def hedge_ew(m, x0, x1, y, seed=0, flowers=None, leaf='green'):
     L = x1 - x0
-    m.model(f"hedge_{L}_{seed}_{flowers}", hedge(L / 16.0, seed, flowers=flowers), x0, y, box=(0, -8, L, 0), kind="hedge")
+    m.model(f"hedge_{L}_{seed}_{flowers}" + ("" if leaf == 'green' else "_" + leaf), hedge(L / 16.0, seed, flowers=flowers, leaf=leaf), x0, y, box=(0, -8, L, 0), kind="hedge")
 
 
-def hedge_sn(m, x, y0, y1, seed=0, flowers=None):
+def hedge_sn(m, x, y0, y1, seed=0, flowers=None, leaf='green'):
     D = y1 - y0
-    m.model(f"hedgen_{D}_{seed}_{flowers}", hedge_ns(D / 16.0, seed, flowers=flowers), x, y1, box=(0, -D, 9, 0), kind="hedge")
+    m.model(f"hedgen_{D}_{seed}_{flowers}" + ("" if leaf == 'green' else "_" + leaf), hedge_ns(D / 16.0, seed, flowers=flowers, leaf=leaf), x, y1, box=(0, -D, 9, 0), kind="hedge")
 
 
 def fence_ew(m, x0, x1, y, seed=0):
@@ -219,9 +277,17 @@ def fence_sn(m, x, y0, y1, seed=0):
     m.model(f"fencen_{D}_{seed}", fence_ns(D / 16.0, seed), x, y1, box=(0, -D, 2, 0))
 
 
-def plot(m, x0, y0, x1, y1, gates=(), sides='swe', seed=0, plaster=1, lamp=()):
+def plot(m, x0, y0, x1, y1, gates=(), sides='swe', seed=0, plaster=1, lamp=(), hedge=''):
     """Low walls round a plot (x0, y0)-(x1, y1), with a way through wherever a path goes in.
-    gates: (side, a, b) = the opening, along that side. lamp: which gates have a lit pier."""
+    gates: (side, a, b) = the opening, along that side. lamp: which gates have a lit pier.
+    hedge: the sides that are clipped myrtle instead of wall (the same ground, the same gates)."""
+    def wall_ew_(m_, a, b, y, sd, pl, side):
+        if side in hedge: hedge_ew(m_, a, b, y + 1, sd % 4)
+        else: wall_ew(m_, a, b, y, sd, pl)
+
+    def wall_ns_(m_, x, a, b, sd, pl, side):
+        if side in hedge: hedge_sn(m_, x - 1, a, b, sd % 4)
+        else: wall_ns(m_, x, a, b, sd, pl)
     g = {s: sorted((a, b) for (sd, a, b) in gates if sd == s) for s in 'nswe'}
     k = [0]
 
@@ -234,13 +300,13 @@ def plot(m, x0, y0, x1, y1, gates=(), sides='swe', seed=0, plaster=1, lamp=()):
         return out
     if 's' in sides:
         for (a, b) in run(x0, x1, g['s']):
-            wall_ew(m, a, b, y1, seed + k[0], plaster); k[0] += 1
+            wall_ew_(m, a, b, y1, seed + k[0], plaster, 's'); k[0] += 1
         for i, (a, b) in enumerate(g['s']):
             gate_pier(m, a - 4, y1 + 1, seed, plaster, lamp=('s', i) in lamp)
             gate_pier(m, b + 4, y1 + 1, seed + 1, plaster, lamp=('s', i) in lamp)
     if 'n' in sides:
         for (a, b) in run(x0, x1, g['n']):
-            wall_ew(m, a, b, y0 + 6, seed + k[0], plaster); k[0] += 1
+            wall_ew_(m, a, b, y0 + 6, seed + k[0], plaster, 'n'); k[0] += 1
         for i, (a, b) in enumerate(g['n']):
             gate_pier(m, a - 4, y0 + 7, seed, plaster)
             gate_pier(m, b + 4, y0 + 7, seed + 1, plaster)
@@ -248,7 +314,7 @@ def plot(m, x0, y0, x1, y1, gates=(), sides='swe', seed=0, plaster=1, lamp=()):
     for sd, x in (('w', x0), ('e', x1 - 6)):
         if sd not in sides: continue
         for (a, b) in run(ya, yb, g[sd]):
-            wall_ns(m, x, a, b, seed + k[0], plaster); k[0] += 1
+            wall_ns_(m, x, a, b, seed + k[0], plaster, sd); k[0] += 1
         for i, (a, b) in enumerate(g[sd]):
             gate_pier(m, x + 3, a, seed, plaster, lamp=(sd, i) in lamp)
             gate_pier(m, x + 3, b + 8, seed + 1, plaster, lamp=(sd, i) in lamp)
@@ -294,6 +360,65 @@ def lawn(T, mask, seed=5, flowers=0.01):
     T.grass(mask, seed=seed, flowers=flowers, tufts=0.02, fringe=0)
 
 
+def green(T, mask, seed=5, base=3.55, ramp='lawn'):
+    """The grass a town stands in, kept: one green with a breath of a second in it, and the blades in rows like a weave.
+    (ramp: the same ground in another country's colour: the straw of the Hill of Sleepers, where nothing has grown in years.)"""
+    X, Y = T.xx, T.yy
+    big = fbm(X / 70.0, Y / 70.0, T.seed + seed, 2)
+    tone = base + (big > 0.62) * 0.2
+    T.put(mask, ramp, tone, np.zeros((T.H, T.W)))
+    row = Y // 6
+    xs = (X + (row % 2) * 4) % 8
+    lat = ((Y % 6) == 2) & ((xs == 3) | (xs == 4)) & (forge.hash2((X + (row % 2) * 4) // 8, row, T.seed + seed + 3) < 0.82) & mask
+    foot = np.roll(lat, 1, 0) & mask & ~lat
+    T.tone[lat] += 0.9; T.hgt[lat] += 0.6
+    T.tone[foot] -= 0.7
+
+
+def edge_stones(T, mask, ramp='path', tone=2.3):
+    """The kerb round a piece of paving: a line of darker stones just inside its edge, a joint every so often."""
+    ring = T.border(mask, ramp=ramp, tone=tone, width=2, hgt=1.2)
+    X, Y = T.xx, T.yy
+    T.add(ring & (((X + Y) % 9) == 0), -1.4)
+    return ring
+
+
+def streets(T, parts, base=4.2, ramp='path', kerb=('path', 2.3)):
+    """The ways through a town, of warm cut stone: each part (mask, seed, least and most width of a slab, and if it
+    likes the height of a course and its tone) laid in its own size of stone, and one kerb round the lot, so that where a path meets a street nothing is drawn across its mouth."""
+    whole = None
+    for part in parts:
+        mask, seed, wmin, wmax = part[:4]
+        rows = part[4] if len(part) > 4 else (8,)
+        T.slabs(mask, seed=seed, rows=rows, wmin=wmin, wmax=wmax, ramp=ramp, base=part[5] if len(part) > 5 else base, whole=False, jitter=0.7, crack=0.03, wear=0.3)
+        whole = mask if whole is None else (whole | mask)
+    edge_stones(T, whole, kerb[0], kerb[1])
+    return whole
+
+
+def street(T, mask, seed=2, rows=(8,), wmin=10, wmax=16):
+    """A way through the town: warm cut stone, a darker kerb where it meets the grass."""
+    return streets(T, [(mask, seed, wmin, wmax)])
+
+
+def flowers(T, x, y, kind='w', n=3, leaf='lawn'):
+    """Flowers somebody planted: three of them, close together, at (x, y). Four petals round an eye, and a leaf."""
+    nm = {'w': 'flower_w', 'y': 'flower_y', 'r': 'flower_r'}[kind]
+    rid = T.ramp(nm); leaf = T.ramp(leaf); eye = T.ramp('flower_r' if kind == 'y' else 'flower_y')
+    for (dx, dy) in ((0, 0), (7, 3), (2, 8))[:n]:
+        px, py = int(x + dx), int(y + dy)
+        if not (2 <= px < T.W - 5 and 2 <= py < T.H - 7): continue
+        for j, row in enumerate((" pp ", "peep", "peep", " qq ", "s  s", " ll ")):
+            for i, ch in enumerate(row):
+                if ch == ' ': continue
+                yy, xx = py + j, px + i
+                if ch in 'pq': T.rid[yy, xx] = rid; T.tone[yy, xx] = 2 if ch == 'p' else 1
+                elif ch == 'e': T.rid[yy, xx] = eye; T.tone[yy, xx] = 2 if (i + j) % 2 else 1
+                elif ch == 's': T.rid[yy, xx] = leaf; T.tone[yy, xx] = 1.0
+                else: T.rid[yy, xx] = leaf; T.tone[yy, xx] = 1.4 + 3.4 * (i == 1)
+                if ch in 'pe': T.hgt[yy, xx] += 0.9
+
+
 # ------------------------------------------------------------------ a building
 def _front(m, xa, xb, ya, yb, notches, depth=9):
     """The wall of a front between ya (its top on the map) and yb (its foot), with doorways let into the foot of it."""
@@ -314,7 +439,10 @@ def contact(T, b, X, Y):
 
 def place(m, b, X, Y, inside=None, say=None, face="down"):
     """Stand building b with the middle of its front foot at map (X, Y). inside = the map its doors lead into
-    (None: they are only doors). say = {door index: what a shut door says for itself}. Returns the prop."""
+    (None: they are only doors). say = {door index: what a shut door says for itself}. Returns the prop.
+    Kinds of door: 'open'; 'locked' (never opens: the way in is somewhere else); 'gong', 'lit', anything else
+    (shut until its gong is struck, its sign is lit, its latch is drawn from inside); 'held' (as the last, but in
+    the dream it is simply not there)."""
     say = say or {}
     o = m.model(b.key, b.model, X, Y, box=None)
     top = o["py"]
@@ -335,6 +463,15 @@ def place(m, b, X, Y, inside=None, say=None, face="down"):
                 lk, lw, lh, lb = b.leaves[i]
                 m.model(f"{b.key}_leaf{i}", houses.leaf(lk, lw, lh, lb), cx, Y, box=(-dw, -4, dw, 0), kind="look",
                         data={"id": "say", "text": say.get(i, "Shut.")}, shadow=False, lights=False)
+            continue
+        if kind == 'held':
+            # held shut by whoever is behind it, and bolted: so it is shut in the waking world, and in the dream, where
+            # the dead are not, it is not there at all. Once the bolt inside is drawn it stands open in both.
+            notches.append((cx - dw, cx + dw))
+            m.exit(cx - dw + 2, Y - 9, cx + dw - 2, Y - 4, inside, name + "_in")
+            lk, lw, lh, lb = b.leaves[i]
+            m.model(f"{b.key}_leaf{i}", houses.leaf(lk, lw, lh, lb), cx, Y, box=(-dw, -9, dw, 0), layer=1, kind="bars", shadow=False, lights=False,
+                    data={"id": f"{b.key}_door", "text": f"on:{b.key}_latch", "who": "door|" + say.get(i, "Shut."), "say": say.get(('open', i))})
             continue
         notches.append((cx - dw, cx + dw))
         m.exit(cx - dw + 2, Y - 9, cx + dw - 2, Y - 4, inside, name + "_in")

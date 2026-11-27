@@ -53,17 +53,26 @@ def m_rosettes(step=16, band=None):
     return f
 
 
+# A town's own look: while this is set, everything built is in the same plaster and under the same roof,
+# whatever it asks for. {'plaster': (ramp, tone), 'roof': a function that gives the roof's surface, 'clean': walls kept fresh}
+STYLE = None
+
+
 class Mats:
     """The surfaces a building or prop is made of."""
     def __init__(self, seed=0, plaster=None):
         r = rnd(seed)
         name, base = PLASTER[plaster if plaster is not None else int(r.integers(0, len(PLASTER)))]
+        if STYLE:
+            name, base = STYLE['plaster']
         self.wall = M(name, base, m_plaster(), ramp2='brick')
+        if STYLE and STYLE.get('clean'):
+            self.wall = M(name, base, m_mottle(24, 0.3))            # fresh lime wash: no brick showing, no cracks
         self.wall_plain = M(name, base, m_mottle(18, 0.42))
         self.trim = M(name, base + 0.9, m_mottle(20, 0.3))
         self.stain = M(name, base - 0.9, m_mottle(9, 0.4))
         self.plinth = M('brick', 3.6, m_brick(8, 4, -1.0, 0.8))
-        self.roof = M('roof', 4.5, m_mottle(16, 0.45, specks=0.012, speck_t=-1.0))
+        self.roof = STYLE['roof']() if STYLE else M('roof', 4.5, m_mottle(16, 0.45, specks=0.012, speck_t=-1.0))
         self.wood = M('wood', 4.3, m_planks(4, 'v'))
         self.wood_h = M('wood', 4.3, m_planks(4, 'h'))
         self.beam = M('wood', 4.7)

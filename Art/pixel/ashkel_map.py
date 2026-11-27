@@ -13,7 +13,7 @@ import kit
 import houses
 import hkit
 import dprops
-from forge import Model, M, m_ashlar, m_mottle
+from forge import Model, M, m_ashlar, m_mottle, m_glazed
 from mapkit import MapBuilder
 
 TW, TH = 60, 30
@@ -22,6 +22,18 @@ IN = "ashkel_in"
 FN, FS, FM = 196, 436, 430          # the fronts: the row under the wall, the row south of the market, the merchant's
 LANE = (216, 248)                   # the lane west of the square
 PATH = (446, 462)                   # the path along the south: to the merchant's porch, to the tablet house and Ilta's
+
+# The district's own look: the lime wash of the town below it, under roofs of red-glazed tile.
+LOOK = {'plaster': ('limewash', 5.1), 'clean': True, 'roof': lambda: M('red', 3.2, m_glazed(8, 8))}
+
+# what the board by each door says: (how far from the door it stands, the words)
+NAMES = {
+    'ak_watch': (-22, "{g}THE FIRST WATCH.{/}^{t}KNOCK IF IT IS URGENT. IF IT IS VERY URGENT, COME IN.{/}"),
+    'ak_merchant': (26, "{g}ILU-BANI. CEDAR.{/}^{t}BY APPOINTMENT TO THE TEMPLE.{/}| And lower, a good deal smaller: {t}NO CREDIT. NOT EVEN THE TEMPLE.{/}"),
+    'ak_lamps': (-24, "{g}LAMPS. OIL. WICKS.{/}^{t}NO NAKED FLAMES.{/}| Somebody has thought about that, and added: {t}EXCEPT OURS.{/}"),
+    'ak_tablets': (-22, "{g}THE TABLET HOUSE.{/}^{t}READING. WRITING. SITTING STILL.{/}| The third has been underlined, by a hand that was plainly doing none of them."),
+    'ak_ilta': (20, "{g}ILTA.{/}^There was a second name above hers once.| She has never painted over it. She has never painted it in again, either."),
+}
 
 PLACES = [
     (houses.watch_house, 100, FN), (houses.lamp_house, 884, FN),
@@ -53,33 +65,36 @@ def terrace():
 def build():
     m = MapBuilder("ashkel", TW, TH, (60, 44, 40, 255), music="town")
     T = m.lay(seed=3)
+    town.STYLE = LOOK
     B = [(f(), x, y) for (f, x, y) in PLACES]
+    town.STYLE = None
     # ================================================================ the ground
-    hkit.calm(T, T.all(), 'sand', base=3.2, seed=1, amp=0.3, pebbles=0.002)
-    green = (T.rect(392, 316, 52, 124) | T.rect(520, 316, 40, 20) | T.rect(816, 232, 134, 100) | T.rect(222, 274, 144, 164) |
-             T.rect(732, 344, 80, 94) | T.rect(528, 344, 38, 94) | T.rect(920, 344, 30, 120) | T.rect(10, 262, 22, 200))
-    hkit.lawn(T, green, seed=5, flowers=0.012)
-    # the yards: paler, drier, kept
-    yards = T.rect(184, 62, 188, 150)
-    hkit.calm(T, yards, 'sand', base=3.9, seed=3, amp=0.3, pebbles=0.001)
-    # the drill square in the watch's yard: a floor of beaten earth with a line round it
+    # the district stands in grass, kept; stone where the city walks
+    hkit.green(T, T.all(), seed=5)
+    # the drill square in the watch's yard: a floor of beaten earth with a line of stones round it
     drill = T.rect(208, 100, 144, 84)
-    hkit.calm(T, drill, 'dust', base=3.6, seed=4, amp=0.2, pebbles=0.0)
-    T.border(drill, ramp='pale', tone=4.4, width=1, hgt=0.6)
-    # the lane, and the path along the south
+    hkit.calm(T, drill, 'dust', base=3.7, seed=4, amp=0.2, pebbles=0.0)
+    T.border(drill, ramp='pale', tone=4.2, width=1, hgt=0.8)
+    # the square before the gate: big pale stones
+    square = T.rect(380, 92, 200, 216) | T.rect(376, 58, 208, 40)
+    # the lane, the path along the south, and a paved path from every door to the way it belongs to
     lane = T.rect(10, LANE[0], 370, LANE[1] - LANE[0])
     path = T.rect(100, PATH[0], 348, PATH[1] - PATH[0]) | T.rect(512, PATH[0], 420, PATH[1] - PATH[0])
-    hkit.paved(T, lane | path, seed=12, rows=(8,), wmin=11, wmax=17)
+    paths = (T.rect(111, FN, 16, LANE[0] - FN) |                          # the watch house
+             T.rect(268, 212, 16, 4) |                                    # the yard gate
+             T.rect(112, FM, 16, PATH[0] - FM) |                          # the merchant's porch
+             T.rect(288, 386, 16, 60) |                                   # his garden gate, and up to the pool
+             T.rect(678, FS, 16, PATH[0] - FS) | T.rect(844, FS, 16, PATH[0] - FS) | T.rect(764, 438, 16, 8) |      # the tablet house, Ilta's, her garden
+             T.rect(902, FN, 16, 36) | T.rect(816, 216, 102, 16) |        # the lamp seller's, and round to the market
+             T.rect(580, 196, 12, 24))                                    # between the square and the market
+    hkit.streets(T, [(square, 12, 14, 22, (12,), 3.9), (lane | path, 12, 11, 17), (paths, 19, 8, 12)])
     # the market: brick laid herringbone, a kerb round it, and the well in a court of tiles
     market = T.rect(592, 62, 224, 270)
-    T.bricks(market, seed=21, bw=8, bh=4, ramp='flag', base=3.9, jitter=0.4, herring=True)
+    T.bricks(market, seed=21, bw=8, bh=4, ramp='brick', base=3.8, jitter=0.4, herring=True)
     T.border(market, ramp='pale', tone=4.3, width=2, hgt=1.2)
     court = T.rect(608, 252, 64, 64)
     T.tiles(court, seed=17, size=16, ramp='tile', base=3.9, checker='flag')
     T.border(court, ramp='pale', tone=4.4, width=2, hgt=1.2)
-    # the square: cut stone
-    square = T.rect(380, 92, 200, 216)
-    T.slabs(square | T.rect(376, 58, 208, 40), seed=12, moss=0.06)
     # the processional way: pale slabs between two bands of glazed blue brick studded with gold
     way = T.rect(448, 92, 64, 388)
     T.slabs(way, seed=41, rows=(12,), wmin=16, wmax=16, ramp='pale', base=4.3, jitter=0.8, crack=0.05, whole=False, wear=0.4)
@@ -87,14 +102,6 @@ def build():
     T.bricks(bands, seed=42, bw=8, bh=4, ramp='lapis', base=3.3, jitter=0.7)
     stud = bands & ((T.yy % 16) >= 7) & ((T.yy % 16) <= 8) & (((T.xx - 444) % 68) >= 1) & (((T.xx - 444) % 68) <= 2)
     T.put(stud, 'gold', np.full((H, W), 4.0), 1.4)
-    # a paved path from every door to the street it belongs to
-    paths = (T.rect(111, FN, 16, LANE[0] - FN) |                          # the watch house
-             T.rect(268, 212, 16, 4) |                                    # the yard gate
-             T.rect(112, FM, 16, PATH[0] - FM) |                          # the merchant's porch
-             T.rect(288, 438, 16, 8) |                                    # his garden gate
-             T.rect(678, FS, 16, PATH[0] - FS) | T.rect(844, FS, 16, PATH[0] - FS) | T.rect(764, 438, 16, 8) |      # the tablet house, Ilta's, her garden
-             T.rect(902, FN, 16, 36) | T.rect(816, 216, 102, 16))        # the lamp seller's, and round to the market
-    hkit.paved(T, paths, seed=19, rows=(8,), wmin=8, wmax=12, base=4.0)
     # ---- the merchant's garden: a pool in a surround of tiles
     surround = T.rect(242, 314, 104, 72)
     T.tiles(surround, seed=23, size=8, ramp='tile', base=4.0, checker='flag')
@@ -102,12 +109,19 @@ def build():
     pool = T.rect(250, 322, 88, 56)
     T.water(pool, seed=24, deep=10.0)
     T.border(pool, ramp='lapis', tone=3.4, width=2, hgt=1.0)
-    hkit.paved(T, T.rect(288, 386, 16, 52), seed=25, rows=(8,), wmin=8, wmax=12, base=4.0)
     # ---- garden beds
     for (x, y, w, h, sd, crop) in ((230, 282, 48, 20, 1, 'grass'), (310, 282, 48, 20, 2, 'grass'), (230, 404, 40, 26, 3, 'grass'), (322, 404, 36, 26, 4, 'grass'),      # Ilu-Bani's
                                    (738, 352, 26, 40, 5, 'grass'), (784, 352, 24, 28, 6, 'dry'),                                                                        # Ilta's
                                    (532, 356, 28, 64, 7, 'grass')):                                                                                                     # the tablet house's leeks
         hkit.bed(T, x, y, w, h, seed=sd, crop=crop)
+    # flowers, where somebody planted them: either side of a gate, at the corners of the grass
+    for (x, y, k) in ((250, 192, 'y'), (296, 192, 'y'), (196, 100, 'w'), (196, 150, 'w'),                               # the drill yard (the captain's idea)
+                      (274, 424, 'r'), (310, 424, 'r'), (226, 266, 'w'), (352, 266, 'w'),                               # Ilu-Bani's garden
+                      (396, 380, 'w'), (430, 388, 'y'), (396, 430, 'r'), (430, 322, 'w'), (522, 320, 'r'), (548, 426, 'y'),      # south of the square
+                      (742, 400, 'w'), (796, 396, 'r'), (796, 420, 'y'),                                               # Ilta's
+                      (822, 250, 'y'), (930, 250, 'y'), (826, 322, 'w'), (872, 322, 'r'), (926, 346, 'w'), (926, 452, 'y'),      # the oil yard, the east side
+                      (14, 270, 'w'), (14, 360, 'r'), (14, 440, 'y'), (584, 100, 'w'), (584, 300, 'r')):
+        hkit.flowers(T, x, y, k)
     for (b, x, y) in B:
         hkit.contact(T, b, x, y)
     T.contact(0, 30, 392, 58, reach=6, strength=1.6); T.contact(568, 30, W, 58, reach=6, strength=1.6)
@@ -133,6 +147,8 @@ def build():
     # ================================================================ the houses
     for (b, x, y) in B:
         hkit.place(m, b, x, y, inside=IN, say=SAY.get(b.key))
+        off, words = NAMES[b.key]
+        hkit.name_post(m, x + int(round(b.doors[0][0] * 16)) + off, y + 7, b.key + "_name", words)
     # nobody walks round the back of one: the wall is behind the north row, and what is behind the others is theirs
     m.solid(10, 58, 184, 86)                                              # behind the watch house
     m.solid(824, 58, W, 94)                                               # behind the lamp seller's
@@ -146,14 +162,14 @@ def build():
             "Under that, scratched with a spear point: {t}YOU WAKE HIM.{/}")
 
     # ================================================================ the plots
-    hkit.plot(m, 184, 62, 372, 212, gates=[('s', 264, 288), ('e', 140, 172)], sides='se', seed=1, plaster=3, lamp=[('s', 0)])     # the drill yard
+    hkit.plot(m, 184, 62, 372, 212, gates=[('s', 264, 288), ('e', 140, 172)], sides='se', seed=1, plaster=1, lamp=[('s', 0)])     # the drill yard
     hkit.plot(m, 216, 262, 372, 444, gates=[('s', 284, 308)], sides='nse', seed=7, plaster=1, lamp=[('s', 0)])                  # Ilu-Bani's garden
     hkit.hedge_ew(m, 16, 212, 262, 1, flowers='red')                                                                            # the back of his house, on the lane
     hkit.wall_ew(m, 732, 756, 438, 13, 1); hkit.wall_ew(m, 788, 812, 438, 14, 1)                                                # Ilta's garden
     for x in (756, 788):
         hkit.gate_pier(m, x, 439, 5, 1, lamp=(x == 756))
     hkit.hedge_ew(m, 528, 740, 338, 2); hkit.hedge_ew(m, 740, 944, 338, 3, flowers='fig')                                       # the south side of the market
-    hkit.wall_ns(m, 522, 344, 438, 15, 0)                                                                                       # the tablet house's plot, on the way
+    hkit.hedge_sn(m, 521, 344, 438, 3)                                                                                          # the tablet house's plot, on the way
 
     # ================================================================ what stands in them
     # ---- the drill yard
@@ -193,7 +209,7 @@ def build():
         m.model("lt_amph" if k % 2 == 0 else "lt_amph_w", town.amphorae(41 + k % 2), x, 262)
     kit.say(m, "crates_e", town.crates(1), 934, 300, (-12, -10, 12, 0),
             "Crates of copper pots, stacked against the Coppersmiths' wall.^Not one of them has been hammered in forty nights. The quiet is unnatural.")
-    kit.olive(m, 852, 310, 0); kit.palm(m, 826, 290, 3)
+    hkit.tree(m, 836, 318); hkit.tree(m, 900, 318)
     hkit.hedge_ew(m, 824, 900, 240, 5, flowers='ochre')
     # ---- Widow Ilta's: the fig, the hens, her beds
     kit.say(m, "ak_fig", houses.fig_tree(1), 772, 424, (-4, -6, 4, 0),
@@ -202,14 +218,14 @@ def build():
     m.model("washing_ilta", hkit.washing(1, 2.0, ('cream', 'blue', 'linen')), 934, 420, box=(0, -3, 3, 0))
     kit.pot(m, 826, FS + 6, False); kit.pot(m, 892, FS + 6, True)
     # ---- the tablet house's plot
-    kit.olive(m, 546, 438, 3)
+    hkit.tree(m, 544, 436)
     kit.say(m, "ak_slate", town.stele(1.1, 3), 566, FS + 12, (-4, -4, 4, 0),
             "The tablet house's notice stone. Today's line, for copying:^{g}THE DILIGENT BOY RISES BEFORE THE SUN.{/}| Somebody has added, lower down and not very straight: {t}the sun has not come up.{/}")
     # ---- the square
     for (x, y, sd) in ((398, 134, 1), (562, 134, 2), (398, 286, 3), (562, 286, 4)):
         m.model(f"planter_{sd}", town.planter(sd), x, y, box=(-14, -10, 14, 0))
     kit.sign(m, 440, 300, "sign_gate", "sign_temple")
-    kit.bush(m, 568, 216, 2)                                              # the fishmonger's palace
+    kit.bush(m, 568, 216, 1)                                              # the fishmonger's palace
     for i, (x, y) in enumerate(((412, 176), (548, 176), (480, 250))):
         kit.brazier(m, x, y, False, f"square_{i}")
     kit.brazier_frames(m)
@@ -218,20 +234,24 @@ def build():
     k = 0
     for x in range(400, 440, 16):
         for y in (334, 356):
-            kit.bush(m, x, y, k); k += 1
-    kit.olive(m, 420, 420, 4); kit.olive(m, 540, 330, 5)
+            kit.bush(m, x, y, 1); k += 1
+    hkit.tree(m, 416, 420); hkit.tree(m, 542, 334)
+    # the district's trees, in rows: down the east side, and either side of the way where it leaves
+    for y in (372, 424):
+        hkit.tree(m, 936, y)
     # ---- light: torches where ways meet
     for (x, y) in ((442, 108), (518, 108), (374, LANE[0] - 2), (374, LANE[1] + 8), (588, 108), (588, 324), (442, PATH[0] - 4), (518, PATH[0] - 4), (628, 64)):
         kit.torch(m, x, y)
 
     # ================================================================ where the district stops
-    kit.wall_ns(m, 0, 58, LANE[0] + 34, seed=6, plaster=2)
+    kit.wall_ns(m, 0, 58, LANE[0] + 34, seed=6, plaster=1)
     kit.say(m, "cart_wreck", town.cart_wreck(2), 50, 240, (-26, -12, 28, 0),
             "A handcart, on its side where its owner lay down.^Past the wall is the Dyers' Quarter, snoring in three colours.")
-    kit.wall_ns(m, 0, LANE[0] + 34, 462, seed=5, plaster=0)
-    kit.wall_ns(m, W - 10, 58, 462, seed=8, plaster=3)
-    m.model("south_wall_w", town.drystone(446 / 16.0, h=0.7, seed=3), 0, H - 2, box=None)
-    m.model("south_wall_e", town.drystone((W - 514) / 16.0, h=0.7, seed=4), 514, H - 2, box=None)
+    kit.wall_ns(m, 0, LANE[0] + 34, 462, seed=5, plaster=1)
+    kit.wall_ns(m, W - 10, 58, 462, seed=8, plaster=1)
+    # the old inner wall closes the south side: from in here it is the walk along the top of it, and the backs of its merlons
+    m.model("south_wall_w", town.city_wall(446 / 16.0, h=2.2, d=1.0, buttress=0), 0, H + 37, box=None)
+    m.model("south_wall_e", town.city_wall((W - 514) / 16.0, h=2.2, d=1.0, seed=2, buttress=0), 514, H + 37, box=None)
     m.solid(0, H - 13, 446, H); m.solid(514, H - 13, W, H)
 
     m.marker("spawn", 480, 220)
