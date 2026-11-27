@@ -185,6 +185,7 @@ namespace Wakefire
             }
             if (!pr || pr.Kind != "gong") return;
             Sfx.Play("gong", 1f, 0.02f);
+            Noise.Make(pr.basePos, 26f);
             PixelView.I.Shake(1, 0.12f);
             StartCoroutine(Swing(pr));
             string id = pr.data.id;

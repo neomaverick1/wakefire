@@ -118,6 +118,7 @@ namespace Wakefire
             public bool horns, goad;             // a bull's horns on the helm; a hook under the spear's head
             public float shieldWide = 1f, shieldTall = 1f;   // a warden's is the size of a door
             public float metal = 1f;             // how bright the plate is: 1 polished bronze, 0 fired clay
+            public bool lampLit = true;          // the lamp in his fist: burning, or out
         }
 
         public static void Azar(ModelActor m) => Soldier(m, new Look());
@@ -134,6 +135,15 @@ namespace Wakefire
             plateSkin = true, tunic = new Color(0.62f, 0.40f, 0.16f), tunicFold = new Color(0.50f, 0.31f, 0.12f), trim = new Color(0.88f, 0.64f, 0.24f),
             leather = new Color(0.42f, 0.26f, 0.10f), crest = new Color(0.66f, 0.42f, 0.14f), eyes = new Color(1.0f, 0.62f, 0.16f),
             hasCape = false, hasBlade = false, hasLantern = false, hasSpear = true, hasShield = true,
+        });
+
+        /// <summary>One of the night watch, out on his round when the city went down: Azar's own harness under a cloak
+        /// the colour of the hour. Every other helm of the watch has two eyes in the dark of it. His are shut. The lamp
+        /// in his fist went out forty nights ago, and he is still holding it up to see by.</summary>
+        public static void NightWatch(ModelActor m) => Soldier(m, new Look
+        {
+            crest = new Color(0.17f, 0.21f, 0.36f), cape = new Color(0.13f, 0.17f, 0.31f), eyes = new Color(0.07f, 0.05f, 0.07f),
+            hasBlade = false, hasLantern = true, lampLit = false, flame = new Color(0.21f, 0.20f, 0.22f),
         });
 
         /// <summary>The Bronze Herdsman: the sentinels' bronze gone dark, a helm horned like the herd he keeps, and the goad.</summary>
@@ -301,7 +311,7 @@ namespace Wakefire
                 float s = m.def.scale;
                 lk.Paint(look.bronze, 1).Box(new Vector3(0, -0.05f, 0) * s, new Vector3(0.024f, 0.10f, 0.024f) * s);
                 lk.Turned(Vector3.zero, new[] { (0.0f, -0.085f * s), (0.085f * s, -0.13f * s) }, 8);
-                lk.Paint(look.flame, 0, 1).Turned(Vector3.zero, new[] { (0.062f * s, -0.13f * s), (0.072f * s, -0.20f * s), (0.062f * s, -0.27f * s) }, 8);
+                lk.Paint(look.flame, 0, look.lampLit ? 1 : 0).Turned(Vector3.zero, new[] { (0.062f * s, -0.13f * s), (0.072f * s, -0.20f * s), (0.062f * s, -0.27f * s) }, 8);
                 lk.Paint(look.bronze, 1).Turned(Vector3.zero, new[] { (0.085f * s, -0.27f * s), (0.065f * s, -0.305f * s), (0.0f, -0.305f * s) }, 8);
                 var lantern = lk.Loose("Lantern", m.anchor);
                 var dangle = lantern.gameObject.AddComponent<Dangle>();

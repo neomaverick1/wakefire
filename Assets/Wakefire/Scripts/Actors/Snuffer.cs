@@ -68,6 +68,7 @@ namespace Wakefire
             if (s == S.Tipped) return true;
             if (s == S.Rear && !holding) { Topple(((Vector2)h.from - pos).x > 0 ? -1 : 1); return false; }
             Sfx.Play("snuffer_ring", 0.7f, 0.06f);
+            Noise.Make(pos, 10f);
             Jolt = 0.25f;
             return false;
         }
@@ -78,6 +79,7 @@ namespace Wakefire
             anim.Play("tipped", side > 0 ? Facing.Right : Facing.Left, true);
             if (anim.model) anim.model.Aim(side > 0 ? Vector2.right : Vector2.left, true);
             Sfx.Play("snuffer_fall", 1f, 0.04f);
+            Noise.Make(pos, 9f);
             PixelView.I.Shake(2, 0.22f);
             Fx.Dust(pos, 10);
             prey = null; onAzar = false;
@@ -204,6 +206,7 @@ namespace Wakefire
             s = S.Cover; stateClock = 0; rings = 0; heat = 0;
             anim.Play("cover", facing, true);
             Sfx.Play("snuffer_clang", 1f, 0.03f);
+            Noise.Make(pos, 12f);
             PixelView.I.Shake(2, 0.2f);
             for (int i = 0; i < 12; i++)
             {
@@ -240,6 +243,7 @@ namespace Wakefire
                 rings++;
                 Jolt = 0.3f;
                 Sfx.Play("snuffer_ring", 1f, 0.03f);
+                Noise.Make(pos, 10f);
                 PixelView.I.Shake(2, 0.14f);
                 Fx.Sparks(pos + new Vector2(0, 1.0f), new Color(1f, 0.8f, 0.4f), 5);
             }
@@ -293,6 +297,25 @@ namespace Wakefire
             if (glow) glow.intensity = 0;
             for (int i = 0; i < 2 + Hot; i++) Pickup.Drop(Pickup.Kind.Shekel, pos + Random.insideUnitCircle * 0.6f);
             base.Die();
+        }
+
+        /// <summary>Run in, by a man who is asleep, for being abroad after dark without a light: it goes to the lock-up,
+        /// and what it had on it is returned to its owners.</summary>
+        public void Nicked()
+        {
+            Dark(false);
+            var map = Map.Current;
+            if (map)
+                foreach (var id in eaten)
+                    foreach (var pr in map.props)
+                        if (pr && pr.Kind == "brazier" && pr.data.id == id) { HomingFlame.Send(pos + new Vector2(0, 0.6f), pr); break; }
+            Fx.Dust(pos, 12);
+            Sfx.Play("snuffer_fall", 0.5f, 0.05f);
+            if (glow) glow.intensity = 0;
+            Story.Set("nicked_snuffer");
+            if (spawnId != null) Story.Set("dead_" + spawnId);
+            Rooms.Slain(this);
+            Destroy(gameObject);
         }
 
         protected override void OnDestroy()

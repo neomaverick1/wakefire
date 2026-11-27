@@ -55,6 +55,8 @@ namespace Wakefire
             Save.PlayTime += Time.unscaledDeltaTime;
             var p = Player.I;
             var m = Map.Current;
+            Vector2 was = seenAt;
+            if (p) seenAt = p.pos;
             if (!p || !m || Busy) return;
             if (p.state == Player.State.Dead) { StartCoroutine(Respawn()); return; }
             if (p.state != Player.State.Free) return;
@@ -74,7 +76,7 @@ namespace Wakefire
                 if (mk.kind != "exit" && !warp) continue;
                 var a = Map.ToWorld(mk.x, mk.y + mk.h);
                 var r = new Rect(a.x, a.y, mk.w / 16f, mk.h / 16f);
-                if (!r.Contains(p.pos)) continue;
+                if (!r.Contains(p.pos) && !Swept(r, was, p.pos)) continue;
                 inside = true;
                 if (!exitArmed) continue;
                 if (!string.IsNullOrEmpty(mk.who) && !Story.Has(mk.who)) continue;
@@ -83,6 +85,19 @@ namespace Wakefire
                 return;
             }
             if (!inside) exitArmed = true;
+        }
+
+        Vector2 seenAt;
+
+        /// <summary>Did he pass through this on his way from there to here? (One frame's walk: anything longer was
+        /// not a walk, and counts for nothing.)</summary>
+        static bool Swept(Rect r, Vector2 a, Vector2 b)
+        {
+            float d = Vector2.Distance(a, b);
+            if (d < 0.02f || d > 1.2f) return false;
+            int n = Mathf.CeilToInt(d / 0.08f);
+            for (int i = 1; i < n; i++) if (r.Contains(Vector2.Lerp(a, b, i / (float)n))) return true;
+            return false;
         }
 
         /// <summary>Through a burrow or up a ladder: in at one end, and out at the other end of it on the same floor.</summary>
@@ -235,11 +250,14 @@ namespace Wakefire
                 "dragnet" => Dragnet.Spawn(at),
                 "stayup" => StayUp.Spawn(at),
                 "yawn" => Yawn.Spawn(at),
+                "watch" => SleepWatch.Spawn(at),
+                "debt" => Debt.Spawn(at),
                 _ => null,
             };
             if (!e) return null;
             e.markerId = mk.id;
             if (!string.IsNullOrEmpty(mk.text) && mk.text.StartsWith("once")) e.spawnId = mk.id;
+            if (e is SleepWatch sw) sw.SetBeat(mk.text);
             // "hold:FLAG": a clay soldier that stands like the statue it is until the story has that flag
             if (e is ClaySoldier cs && !string.IsNullOrEmpty(mk.text) && mk.text.Contains("hold:"))
                 cs.holdFlag = mk.text.Substring(mk.text.IndexOf("hold:") + 5).Split(' ')[0];

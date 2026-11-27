@@ -124,6 +124,11 @@ def build():
     F.put("in_stool", hin.stool(1), lock, 128, 104, box=(-3, -4, 3, 0))
     F.put("in_basket", hin.basket(4), lock, 292, 60, box=(-4, -5, 4, 0))
     F.who(lock, 258, 160, "prisoner")
+    # where a man comes to when the Sleeping Watch has run him in, and where it puts anything else it runs in
+    X, Y = lock.p(206, 162)
+    m.spawn("wt_cell_in", X, Y, "down")
+    X, Y = lock.p(228, 150)
+    m.marker("spot", X, Y, who="nicked")
     F.lights(lock)
     # ---- under Ilu-Bani's
     F.put("in_logs_5", hin.logs(5, 1), mcel, 104, 110, box=(-4, -26, 30, 0))

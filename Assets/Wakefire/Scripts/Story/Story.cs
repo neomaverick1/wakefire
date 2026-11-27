@@ -39,9 +39,11 @@ namespace Wakefire
                 case "tomb_1": case "tomb_2": case "tomb_hi": SetupHill(map, m); SetupTomb(map, m); break;
                 default: SetupRegion(map, m); break;
             }
+            SetupLate(map, m);
         }
 
         partial void SetupRegion(string map, Map m);
+        partial void SetupLate(string map, Map m);
 
         void OnFell()
         {

@@ -94,7 +94,7 @@ namespace Wakefire
         {
             if (!Present || health.Dead) return false;
             if (Untouchable(h)) return false;
-            if (!Accepts(h)) { Sfx.Play("clank"); Fx.Sparks(pos + new Vector2(0, 0.5f), new Color(1f, 0.85f, 0.5f), 4); return true; }
+            if (!Accepts(h)) { Sfx.Play("clank"); Noise.Make(pos, 7f); Fx.Sparks(pos + new Vector2(0, 0.5f), new Color(1f, 0.85f, 0.5f), 4); return true; }
             if (!health.Take(h)) return false;
             asleep = 0;
             flash = 0.18f;

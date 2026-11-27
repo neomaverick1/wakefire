@@ -156,14 +156,18 @@ namespace Wakefire
                 foreach (var b in props)
                 {
                     if (!b || b.Kind != "block") continue;
-                    if (Vector2.Distance(b.basePos, plate.basePos) < 0.3f)
-                    {
-                        plate.lit = true;
-                        Sfx.Play("plate");
-                        PlatePressed?.Invoke(plate.data.id);
-                    }
+                    if (Vector2.Distance(b.basePos, plate.basePos) < 0.3f) Press(plate);
                 }
             }
+        }
+
+        /// <summary>Something heavy enough has come to rest on this plate. (The map does not judge weights: it is told.)</summary>
+        public void Press(Prop plate)
+        {
+            if (!plate || plate.Kind != "plate" || plate.lit) return;
+            plate.lit = true;
+            Sfx.Play("plate");
+            PlatePressed?.Invoke(plate.data.id);
         }
 
         public MarkerJson Marker(string kind, string who = null)

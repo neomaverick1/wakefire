@@ -259,6 +259,13 @@ def build():
     m.spawn("gate", 480, 72, "down")
     m.exit(448, 472, 512, 480, "lowtown", "north")
     m.exit(462, 30, 498, 46, "temple_yard", "south", need="gate_open")
+    # two of the night watch were out on their rounds when the city went down, and have not stopped: one round the
+    # square, one up and down the lane. And the gong the watch is called with, which still calls it.
+    m.marker("enemy", 432, 150, who="watch", id="ak_watch_0", text="beat:432,150;530,150;530,280;432,280")
+    m.marker("enemy", 150, 236, who="watch", id="ak_watch_1", text="beat:150,236;360,236")
+    hkit.gong(m, 246, 220, "ak_watch_gong")
+    hkit.name_post(m, 226, 222, "ak_gong_name", "{g}RING FOR THE WATCH.{/}^{t}ONE STROKE: A THIEF. TWO: A FIRE. THREE: THE CAPTAIN IS ON HIS WAY ROUND. LOOK BUSY.{/}| "
+                                                "Under it, in another hand: {t}the watch comes to ANY noise. kindly stop testing this.{/}")
     m.marker("npc", 466, 84, who="captain")
     m.marker("npc", 398, 222, who="goat")
     m.marker("npc", 552, 226, who="dreamer")

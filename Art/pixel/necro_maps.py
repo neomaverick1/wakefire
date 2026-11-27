@@ -252,7 +252,7 @@ def necro_road():
     T.rock(T.ragged(T.disc(112, 246, 54, 40), 5, 12, seed=2), seed=3, base=3.3)
     coast(T, land, seed=33)
     # every house on its own raked ground
-    for k, (xa, ya, xb, yb) in enumerate(((78, 552, 180, 662), (454, 570, 564, 666), (454, 392, 548, 512), (118, 72, 244, 178))):
+    for k, (xa, ya, xb, yb) in enumerate(((78, 552, 180, 662), (454, 570, 564, 666), (454, 392, 548, 512), (118, 72, 244, 178), (466, 64, 534, 122))):
         yard(T, xa, ya, xb, yb, seed=k)
     # the road, and a path from every door to it
     road = T.stroke(ROAD, 30)
@@ -283,6 +283,17 @@ def necro_road():
     for (xa, xb, ya, yb, sd) in ((70, 178, 560, 656, 1), (446, 562, 574, 660, 3), (110, 242, 78, 172, 5)):
         hkit.hedge_sn(m, xa, ya, yb, sd, leaf=THORN); hkit.hedge_sn(m, xb, ya, yb, sd + 1, leaf=THORN)
     hkit.hedge_sn(m, 446, 400, 504, 7, leaf=THORN)
+    # the assessor's vault, against the rock at the top of the road: a square of dead thorn with a bronze grille in
+    # it, and before the grille a plate in the ground that knows what a debt weighs and does not notice a man
+    hkit.hedge_sn(m, 462, 66, 122, 9, leaf=THORN); hkit.hedge_sn(m, 529, 66, 122, 10, leaf=THORN)
+    hkit.hedge_ew(m, 462, 489, 122, 11, leaf=THORN); hkit.hedge_ew(m, 511, 538, 122, 12, leaf=THORN)
+    m.model("bars_22", town.bars(22 / 16.0, 1.3), 500, 122, box=(-11, -6, 11, 0), kind="bars",
+            data={"id": "nr_vault", "text": "plate:nr_weigh",
+                  "say": "The grille of the assessor's vault goes up.^It has been waiting three hundred years to hear the end of this."})
+    kit.chest(m, 500, 92, "nr_assessor", "shekels:120")
+    m.model("plate", town.plate(), 500, 148, box=None, kind="plate", data={"id": "nr_weigh"}, shadow=False)
+    kit.stele(m, 532, 146, 2, text="{g}THE ASSESSOR OF THE DEAD.{/}^{t}DEBTS ARE WEIGHED HERE. THE VAULT OPENS TO WHAT IS OWED, WHEN IT COMES TO BE WEIGHED, "
+                                   "OR TO THE NEWS THAT IT IS PAID.{/}| Scratched under it: {t}I STOOD ON THE PLATE. I AM OWED PLENTY. NOTHING.{/}")
     # what he had cut so as never to be without them, in a pen of their own beside his door
     for k, (x, y) in enumerate(((532, 676), (552, 688), (516, 692))):
         kit.say(m, "tb_sheep", tombs.stone_sheep(1), x, y, (-6, -5, 8, 0),
@@ -308,7 +319,7 @@ def necro_road():
         kit.spirit_lamp(m, x, y)
     # the trees of the hill, in rows: up the east side of the road at the foot, along the wall, under the rock
     for (x, y) in ((364, 690), (364, 630), (84, 540), (84, 420), (96, 384), (572, 430), (150, 306), (236, 286), (332, 286), (500, 286),
-                   (420, 80), (480, 80), (540, 80), (206, 82), (572, 160), (60, 206)):
+                   (420, 80), (556, 84), (206, 82), (572, 160), (60, 206)):
         thorn_tree(m, x, y)
     for sd, (x, y) in enumerate(((204, 690), (436, 610), (510, 556), (414, 226), (96, 110))):
         kit.rock(m, x, y, sd)
@@ -338,6 +349,8 @@ def necro_road():
         m.enemy("unremembered", x, y, f"nr_u{i}")
     for i, (x, y) in enumerate(((330, 470), (220, 520), (330, 262))):
         m.enemy("scarab", x, y, f"nr_s{i}")
+    # somebody up here died owing money. It is standing in the road.
+    m.enemy("debt", 392, 170, "nr_debt", once=True)
     m.spawn("south", 320, H - 30, "up")
     m.spawn("north", 320, 86, "down")
     m.exit(296, H - 8, 344, H, "terraces", "hill")

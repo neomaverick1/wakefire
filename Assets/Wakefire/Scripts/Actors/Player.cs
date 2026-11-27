@@ -434,6 +434,7 @@ namespace Wakefire
         {
             var n = NpcInFront();
             if (n != null && n.talk != null) return Act.Talk;
+            if (Answerer() != null) return Act.Talk;
             var pr = ActProp();
             if (pr != null && pr.Kind == "dreamthing") return Act.Take;
             if (pr != null && pr.Kind == "standard" && !Story.Has(pr.data.id)) return Act.Lower;
@@ -735,11 +736,21 @@ namespace Wakefire
                 Story.Run(sleeper ? Story.I.FirstNightTalk(n) : n.talk(), n);
                 return true;
             }
+            var who = Answerer();
+            if (who != null) { Story.Run(who.Answer()); return true; }
             var pr = ActProp();
             if (pr != null) { Interacted?.Invoke(pr); return true; }
             // at the foot of a stair or a ladder, or back at the head of one: he takes it
             if (RailNear(out var mk, out bool foot)) { StartRail(mk, foot); return true; }
             return false;
+        }
+
+        /// <summary>Something in front of him that is not one of the townsfolk and can be spoken to all the same.</summary>
+        IAnswers Answerer()
+        {
+            foreach (var e in Enemy.All)
+                if (e && e is IAnswers a && a.Answers(this)) return a;
+            return null;
         }
 
         Npc NpcInFront()

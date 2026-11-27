@@ -199,6 +199,20 @@ namespace Wakefire
                 Figure("moth", "wrap", c + new Vector2(3.2f, -2.8f), Facing.Down, "dragnet");
                 Figure("moth", "spent", c + new Vector2(6.8f, -2.6f), Facing.Down, "dragnet");
             }
+            else if (what == "dream4")
+            {
+                Figure("captain", "sleepwalk", c + new Vector2(-6.5f, 2.2f), Facing.Down, "watchman");
+                var w = Figure("captain", "sleepwalk", c + new Vector2(-4.0f, 2.4f), Facing.Right, "watchman");
+                w.GetComponentInParent<ZooTick>().walk = new Vector2(1.2f, 0);
+                Figure("captain", "sleep", c + new Vector2(2.6f, 2.2f), Facing.Left, "watchman");
+                Figure("captain", "arrest", c + new Vector2(6.5f, 2.2f), Facing.Down, "watchman");
+                Figure("priest", "idle", c + new Vector2(-6.5f, -2.6f), Facing.Down, "debt");
+                var d = Figure("priest", "walk", c + new Vector2(-4.2f, -2.6f), Facing.Right, "debt");
+                d.GetComponentInParent<ZooTick>().walk = new Vector2(1.0f, 0);
+                Figure("priest", "bill", c + new Vector2(2.4f, -2.6f), Facing.Left, "debt");
+                Figure("priest", "slam", c + new Vector2(5.0f, -2.6f), Facing.Down, "debt");
+                Figure("priest", "lie", c + new Vector2(7.6f, -2.4f), Facing.Down, "debt");
+            }
             else
             {
                 foreach (var (at, anim, f) in new[] { (new Vector2(-6.5f, 2.4f), "idle", Facing.Down), (new Vector2(-2.6f, 2.6f), "walk", Facing.Right),

@@ -50,6 +50,18 @@ namespace Wakefire
             creep.fps = 8f / 1.333f; creep.frames = 8; creep.stride = 0.62f * 1.6f; creep.paceMax = 3.5f;
             stay.Own("grip", "Zombie_Scratch", 0.20f, 1.10f, speed: 0.8f, fade: 0.08f);
             Add("stayup", stay);
+
+            // the Sleeping Watch: a man of the watch, as Azar is, asleep on his feet with his arms out
+            var watch = Human(1.40f, Cast.NightWatch);
+            watch.Own("arrest", "Interact", loop: false, fade: 0.10f);
+            Add("watchman", watch);
+
+            // the Debt: nobody at all, in fired clay. It holds the sum out the way a man holds a torch up.
+            var debt = Human(1.50f, Debt.Dress);
+            debt.Own("bill", "Idle_Torch_Loop", fade: 0.15f);
+            debt.Own("slam", "Sword_Regular_C", 0.20f, 1.00f, loop: false, fade: 0.06f);
+            debt.Own("yes", "Yes", loop: false, fade: 0.10f);
+            Add("debt", debt);
         }
     }
 }
