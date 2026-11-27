@@ -63,6 +63,29 @@ namespace Wakefire
                 if (kind == "moth") { Dream.I.SetInstant(false); Dream.I.Seconds = 7; }
                 yield return new WaitForSeconds(0.5f);
             }
+            // a stutter: one long tick takes the swing straight past the frame the blade lands on. It lands all the same.
+            {
+                p.health.max = p.health.hp = 400;
+                p.pos = arena;
+                p.SetState(Player.State.Free, "idle");
+                p.Face(Facing.Right);
+                var foe = Crab.Spawn(arena + new Vector2(1.0f, 0));
+                foe.Sleep(6f);
+                yield return null;
+                p.pos = arena; p.Face(Facing.Right);
+                int hp = foe.health.hp;
+                Controls.FakePress = Controls.Attack;
+                for (int i = 0; i < 6 && p.state != Player.State.Attack; i++) yield return null;
+                bool began = p.state == Player.State.Attack && p.anim.Frame < 2 && foe && foe.health.hp == hp;
+                int was = p.anim.Frame;
+                p.anim.Tick(0.2f);
+                int now = p.anim.Frame;
+                yield return null;
+                bool landed = !foe || foe.health.hp < hp;
+                t.Note($"a blow lands though the picture skipped its frame (frame {was} -> {now}): {(began && landed ? "ok" : "FAILED")}");
+                if (foe) Object.Destroy(foe.gameObject);
+                yield return new WaitForSeconds(0.3f);
+            }
         }
     }
 }

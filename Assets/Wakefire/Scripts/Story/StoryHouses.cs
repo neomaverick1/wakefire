@@ -59,7 +59,7 @@ namespace Wakefire
                         () => One(Narrate("The alewife of the Seven Jars, asleep with her chin on the counter and one hand still on a drinking reed.^She has not spilled a drop in forty nights.")),
                         () => Twice("alewife", "Alewife", "baker",
                             "Seven jars, seven beers, and I've forgotten what is in three of them.| Nobody has complained. Nobody who drank from those three has said anything at all.",
-                            "The cellar? Bolted from underneath. My husband's idea, rest him.| It keeps the crabs out of the hall. It keeps me out of the cellar. He thought of everything."));
+                            "The cellar? Bolted from underneath. My husband's idea, rest him.| It keeps the sea out of the hall. It keeps me out of the cellar. He thought of everything."));
                     return true;
                 case "drinker_a":
                     Pair("drinker_a", at, "sleeper_a", "lie", "idle", "man",

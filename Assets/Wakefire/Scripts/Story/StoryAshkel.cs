@@ -22,6 +22,8 @@ namespace Wakefire
             // what was done here stays done
             if (Has("braziers"))
                 foreach (var id in new[] { "square_0", "square_1", "square_2" }) { var b = m.Find(id); if (b) b.Ignite(); }
+            // ...and so does what it brought on: the thing that has come to see about the light
+            if (Has("key") && !Has("dead_" + SquareSnuffer) && !FirstNight) SnufferComes(false);
             if (Has("gate_open"))
             {
                 var gate = m.Find("temple_gate");
@@ -32,6 +34,23 @@ namespace Wakefire
                         if (o.s == "gate_temple_open") { gate.data.px = o.px; gate.data.py = o.py; gate.SetSprite(o.s, o.px, o.py); }
                 }
             }
+        }
+
+        const string SquareSnuffer = "ak_snuffer";
+
+        /// <summary>The lamp seller's bad dream walks out of the lamp seller's door.</summary>
+        void SnufferComes(bool now)
+        {
+            foreach (var e in Enemy.All) if (e is Snuffer) return;
+            var s = Snuffer.Spawn(Map.ToWorld(910, now ? 222 : 240));
+            s.spawnId = SquareSnuffer;
+            if (now) { Sfx.Play("snuffer_clang", 0.5f, 0.03f); PixelView.I.Shake(1, 0.2f); }
+        }
+
+        /// <summary>A fire in the square has gone out, or come back: the boy in the dream knows at once.</summary>
+        void FiresChanged()
+        {
+            if (durChild && Has("braziers") && !Has("gate_open")) durChild.SetIdle(LitBraziers() >= 3 ? "idle" : "cower");
         }
 
         void Spawn(string who, Vector2 at)
@@ -116,6 +135,12 @@ namespace Wakefire
         IEnumerator TalkDurChild()
         {
             const string who = "Dur, age six";
+            if (Has("braziers") && LitBraziers() < 3)
+            {
+                yield return Say(who, "It came BACK! The dark came back!| It's got legs now!", "child", true);
+                yield return Say(who, Has("key") ? "You can keep the key. I don't want it. I want the fires." : "Light them again! All {g}three{/}!", "child", true);
+                yield break;
+            }
             if (Has("key"))
             {
                 yield return Say(who, "Don't tell the captain. He'd be so cross.", "child", true);
@@ -130,6 +155,8 @@ namespace Wakefire
                 Set("key");
                 yield return Say(who, "Don't tell the captain.", "child", true);
                 yield return Say(who, "And if you're going up the ziggurat, ask the oracle in the {g}lower town{/} first. Down the road, south.^She knows everything. She says so herself.", "child", true);
+                // (three fires burning in a city where every flame went out: something was bound to come and see about it)
+                if (!Has("dead_" + SquareSnuffer)) SnufferComes(true);
                 yield break;
             }
             int n = Bump("dur_child");
@@ -234,6 +261,7 @@ namespace Wakefire
             switch (p.Kind)
             {
                 case "brazier":
+                    FiresChanged();
                     if (p.lit && !Has("braziers") && LitBraziers() >= 3)
                     {
                         Set("braziers");

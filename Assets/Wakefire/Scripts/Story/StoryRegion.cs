@@ -131,9 +131,9 @@ namespace Wakefire
                 yield return Say("Hesha", "Oh, a customer! In here the bread never burns.", "baker", true);
                 yield return Say("Hesha", "Out there it's been rising for forty nights. It's taller than me now.| It has opinions.", "baker", true);
                 yield return Say("Hesha", "Abu-Nur used to bring oil for my oven. {g}Night Oil{/}, he called it. One sip and you'd dream till noon.", "baker", true);
-                yield return Say("Hesha", "Then the crabs took it. Crabs can't sleep, you know. Jealous little things.", "baker", true);
+                yield return Say("Hesha", "Then his own net took it. He left one out, you know. It never stopped.", "baker", true);
             }
-            else yield return Say("Hesha", Has("item_oil") ? "You found the oil? Good. Dream a long one for me." : "The cliffs are east, love. Mind the crabs. They pinch out of spite.", "baker", true);
+            else yield return Say("Hesha", Has("item_oil") ? "You found the oil? Good. Dream a long one for me." : "The cliffs are east, love. Mind the nets. Most of them are only nets.", "baker", true);
         }
 
         IEnumerator TalkKesh()
@@ -179,7 +179,7 @@ namespace Wakefire
                 yield return Say("Ummi", "Ah. The one who doesn't sleep. I dreamed you'd come. I dream a lot lately.", "oracle", true);
                 yield return Say("Ummi", "Ninhal sleeps on the summit, and the city sleeps with him. Something keeps him down.| Something heavy.| Something bronze.", "oracle", true);
                 yield return Say("Ummi", "The way up is a road of moonlight across the chasm in the temple yard. But it's long, and you nod off in short naps.", "oracle", true);
-                yield return Say("Ummi", "Find Abu-Nur's {g}Night Oil{/}. The crabs on the {g}cliffs to the east{/} have it.", "oracle", true);
+                yield return Say("Ummi", "Find Abu-Nur's {g}Night Oil{/}. His own net has it, on the {g}cliffs to the east{/}. He left it out.", "oracle", true);
                 yield return Say("Ummi", "And on the {g}terraces to the west{/}, an old shrine keeps a lamp for anyone who looks twice.", "oracle", true);
             }
             else yield return Say("Ummi", "East for the oil. West for the lamp. Up for the god.| Down for snacks. I'm hungry in here.", "oracle", true);
@@ -194,7 +194,7 @@ namespace Wakefire
                 yield return Say("Abu-Nur", "Don't tell my wife it's mostly fish.", "fisher", true);
                 yield break;
             }
-            yield return Say("Abu-Nur", "The crabs! The crabs took my {g}Night Oil{/}! A whole jar! They hauled it off to the cove.", "fisher", true);
+            yield return Say("Abu-Nur", "My net! My own net took my {g}Night Oil{/}! A whole jar! It hauled it off to the cove.| I left it out one night. One! It has been fishing ever since, and it is better at it than I am.", "fisher", true);
             yield return Say("Abu-Nur", "Out there the cove is across the water. But in here, see? The moon's laid a road.", "fisher", true);
             yield return Say("Abu-Nur", "Quick, though. Dreams don't last. Yours especially. You look terrible.", "fisher", true);
         }

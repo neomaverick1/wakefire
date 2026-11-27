@@ -56,10 +56,13 @@ namespace Wakefire
             yield return Quiet(0.3f);
             bool stoned = false;
             int hp0 = p.health.hp;
-            for (w = 0; w < 10f && !stoned; w += Time.deltaTime)
+            // (the first time ever, the story stops to say what happened and lets him off: that is not this check's
+            // ten seconds, and the next look is the one that sets)
+            for (w = 0; w < 10f && !stoned; )
             {
                 if (p.state == Player.State.Free) Back(Facing.Up);
                 stoned = p.Stoned;
+                if (!(Story.I && Story.I.Running)) w += Time.deltaTime;
                 yield return null;
             }
             Check("he meets her eyes: he is stone", stoned);
@@ -98,7 +101,14 @@ namespace Wakefire
             int mh = m.health.hp;
             p.pos = m.pos + new Vector2(0, -0.95f); p.Face(Facing.Up);
             yield return null;
-            for (int i = 0; i < 3 && m && m.Stoned; i++) { Controls.FakePress = Controls.Attack; yield return new WaitForSeconds(0.36f); }
+            // (whatever the story has to say about her comes first: she waits for it, and so does the blade)
+            for (float sw = 0, next = 0; sw < 2.4f && m && m.Stoned && m.health.hp == mh; )
+            {
+                if (Story.I && Story.I.Running) { yield return null; continue; }
+                if (sw >= next && p.state == Player.State.Free) { p.pos = m.pos + new Vector2(0, -0.95f); p.Face(Facing.Up); Controls.FakePress = Controls.Attack; next = sw + 0.36f; }
+                sw += Time.deltaTime;
+                yield return null;
+            }
             Check($"stone can be cut ({mh} -> {(m ? m.health.hp : 0)})", !m || m.health.hp < mh);
             for (w = 0; w < 6f && m && m.Stoned; w += Time.deltaTime) { p.health.hp = p.health.max; yield return null; }
             if (m)

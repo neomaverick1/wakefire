@@ -265,6 +265,12 @@ def build():
     # the dream has its own residents here
     for (x, y, uid) in ((120, 640, "lt_m1"), (700, 640, "lt_m2"), (480, 560, "lt_m3")):
         m.enemy("moth", x, y, uid)
+    # ...and so, since the night the Wakefire was taken up, has the waking town: shadows whose owners are asleep
+    # indoors, and a yawn that has been going round for forty nights
+    for i, (x, y) in enumerate(((300, 426), (764, 420), (480, 606))):
+        m.enemy("stayup", x, y, f"lt_s{i}", once=True)
+    for (x, y, uid) in ((480, 300, "lt_y0"), (700, 228, "lt_y1")):
+        m.enemy("yawn", x, y, uid, once=True)
     # ways out
     m.spawn("north", 480, 26, "down")
     m.spawn("west", 22, 424, "right")

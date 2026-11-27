@@ -152,7 +152,69 @@ namespace Wakefire
                 }
                 yield break;
             }
+            if (what.StartsWith("dream")) { yield return ZooDreams(t, what); yield break; }
             yield return ZooIndoors(t, what);
+        }
+
+        /// <summary>The bad dreams, in the gate square at night with Azar beside them for size.
+        /// dream1: Snuffers. dream2: Wicks, the Dragnet and a net that is only a net. dream3: Stay-Ups.</summary>
+        static IEnumerator ZooDreams(AutoTest t, string what)
+        {
+            Story.DreamsQuiet = true;
+            Game.I.EnterMap("ashkel", "south");
+            Fade.Set(0);
+            var p = Player.I;
+            p.SetState(Player.State.Free, "idle");
+            yield return new WaitForSeconds(0.6f);
+            Clear();
+            if (Hud.I) Hud.I.gameObject.SetActive(false);
+            Vector2 c = Map.ToWorld(480, 212);
+            // (an empty square: nothing standing between the lens and what is being looked at)
+            foreach (var pr in Map.Current.props) if (pr && Vector2.Distance(pr.basePos, c) < 16f) pr.gameObject.SetActive(false);
+            foreach (var n in Npc.All) if (n) n.gameObject.SetActive(false);
+            p.pos = c; p.Face(Facing.Down);
+            yield return Hold(0.4f, c);
+            if (what == "dream1")
+            {
+                Figure("moth", "idle", c + new Vector2(-7.0f, 2.2f), Facing.Down, "snuffer");
+                var w = Figure("moth", "walk", c + new Vector2(-4.8f, 2.4f), Facing.Right, "snuffer");
+                w.GetComponentInParent<ZooTick>().walk = new Vector2(1.2f, 0);
+                Figure("moth", "sniff", c + new Vector2(3.6f, 2.2f), Facing.Left, "snuffer");
+                Figure("moth", "rear", c + new Vector2(7.0f, 2.0f), Facing.Down, "snuffer");
+                Figure("moth", "cover", c + new Vector2(-7.0f, -2.6f), Facing.Down, "snuffer");
+                Figure("moth", "tipped", c + new Vector2(-3.4f, -2.8f), Facing.Right, "snuffer");
+                Figure("moth", "hot", c + new Vector2(3.4f, -2.6f), Facing.Down, "snuffer");
+                Figure("moth", "sniff", c + new Vector2(7.2f, -2.8f), Facing.Up, "snuffer");
+            }
+            else if (what == "dream2")
+            {
+                Figure("moth", "idle", c + new Vector2(-7.4f, 2.4f), Facing.Down, "wick");
+                var w = Figure("moth", "walk", c + new Vector2(-5.6f, 2.4f), Facing.Right, "wick");
+                w.GetComponentInParent<ZooTick>().walk = new Vector2(2.0f, 0);
+                Figure("moth", "dart", c + new Vector2(-2.6f, 2.4f), Facing.Down, "wick");
+                Figure("moth", "flat", c + new Vector2(3.0f, 2.6f), Facing.Down, "dragnet");
+                Figure("moth", "flat", c + new Vector2(6.6f, 2.6f), Facing.Down, "net");
+                Figure("moth", "rise", c + new Vector2(-6.6f, -2.8f), Facing.Down, "dragnet");
+                Figure("moth", "cast", c + new Vector2(-3.0f, -2.4f), Facing.Down, "dragnet");
+                Figure("moth", "wrap", c + new Vector2(3.2f, -2.8f), Facing.Down, "dragnet");
+                Figure("moth", "spent", c + new Vector2(6.8f, -2.6f), Facing.Down, "dragnet");
+            }
+            else
+            {
+                foreach (var (at, anim, f) in new[] { (new Vector2(-6.5f, 2.4f), "idle", Facing.Down), (new Vector2(-2.6f, 2.6f), "walk", Facing.Right),
+                                                      (new Vector2(3.0f, 2.4f), "grip", Facing.Right), (new Vector2(-5.0f, -1.6f), "walk", Facing.Down) })
+                {
+                    var e = StayUp.Spawn(c + at);
+                    e.enabled = false;                  // (a look at it, not a fight: it stays where it is put)
+                    e.anim.Play(anim, f, true);
+                    e.gameObject.AddComponent<ZooTick>().anim = e.anim;
+                }
+            }
+            for (int i = 0; i < 4; i++)
+            {
+                yield return Hold(i == 0 ? 0.9f : 0.35f, c);
+                yield return t.Shot($"d{i}-{what}", 0f);
+            }
         }
 
         /// <summary>The ziggurat's people, in a hall of the ziggurat with the lights on.</summary>

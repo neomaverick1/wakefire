@@ -13,13 +13,17 @@ Shader "Wakefire/Shade"
         _Cell ("Square of the model stage (uv origin, uv size)", Vector) = (0,0,0,0)
         _Sway ("Sway in the wind", Float) = 0
         _Flat ("The sprite is already the shadow's shape on the ground", Float) = 0
+        _Deep ("A shadow with nothing throwing it: darker than any real one", Float) = 0
+        _Own ("Which way it falls instead (x right, y up the screen, for each unit of height)", Vector) = (0.66, -0.40, 0, 0)
+        _Thin ("Thinned by firelight (0 = whole)", Float) = 0
+        _Ref ("Stencil: shadows of one kind never stack on each other", Float) = 1
     }
     SubShader
     {
         Tags { "Queue"="Transparent" "RenderType"="Transparent" "RenderPipeline"="UniversalPipeline" "IgnoreProjector"="True" }
         Cull Off ZWrite Off ZTest Always
         Blend SrcAlpha OneMinusSrcAlpha
-        Stencil { Ref 1 Comp NotEqual Pass Replace }
+        Stencil { Ref [_Ref] Comp NotEqual Pass Replace }
 
         Pass
         {
@@ -41,6 +45,10 @@ Shader "Wakefire/Shade"
                 float4 _Cell;
                 float _Sway;
                 float _Flat;
+                float _Deep;
+                float4 _Own;
+                float _Thin;
+                float _Ref;
             CBUFFER_END
 
             // how far a shadow runs for each unit of height: along the ground to the right, and down the screen
@@ -78,8 +86,10 @@ Shader "Wakefire/Shade"
                 {
                     float2 cellPx = _Cell.zw * _WFModels_TexelSize.zw;
                     float2 px = floor(i.uv * cellPx) + 0.5 - _WF_StagePivot.xy * cellPx;
-                    float up = px.y / -Cast.y;
-                    float along = px.x - Cast.x * up;
+                    // (something that is only a shadow falls its own way, and is never quite still at the edges)
+                    float2 fall = _Deep > 0.5 ? _Own.xy : float2(Cast.x, -Cast.y);
+                    float up = px.y / fall.y;
+                    float along = px.x - fall.x * up + _Deep * floor(sin(up * 0.21 + _Time.y * 3.1) * 1.3 + 0.5);
                     float2 suv = _WF_StagePivot.xy + float2(along, up) / cellPx;
                     if (up < 0.0 || suv.x < 0.01 || suv.x > 0.99 || suv.y > 0.99) discard;
                     float2 p = (floor((_Cell.xy + suv * _Cell.zw) * _WFModels_TexelSize.zw) + 0.5) * _WFModels_TexelSize.xy;
@@ -92,6 +102,11 @@ Shader "Wakefire/Shade"
                     clip(a - 0.5);
                 }
                 // deeper in the dream, where the light is stranger
+                if (_Deep > 0.5)
+                {
+                    clip(WF_Bayer(i.positionCS.xy) - _Thin - 0.0001);
+                    return half4(0.0, 0.0, 0.012, 0.97);
+                }
                 return half4(lerp(float3(0.012, 0.014, 0.05), float3(0.05, 0.01, 0.10), dream), 0.5);
             }
             ENDHLSL

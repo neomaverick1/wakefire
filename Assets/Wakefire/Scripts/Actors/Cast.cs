@@ -797,6 +797,14 @@ namespace Wakefire
             m.Bend("Head", 24f * amount);
         }
 
+        /// <summary>A sleeper's yawn, on top of however they are sleeping: the head comes up and back, the arms out a little (k: 0..1..0).</summary>
+        public static void Stretch(ModelActor m, float k)
+        {
+            Droop(m, -1.7f * k);
+            m.Bend("spine_03", -8f * k);
+            Arms(m, -10f * k, 22f * k);
+        }
+
         static void Arms(ModelActor m, float pitch, float spread = 0, float elbow = 0)
         {
             m.Bend("upperarm_l", pitch, 0, -spread);

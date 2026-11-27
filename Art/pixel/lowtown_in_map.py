@@ -163,7 +163,7 @@ def build():
     m.model("burrow_mouth", dkit.burrow_mouth(), X, Y + 1, box=None, shadow=False, lights=False)
     m.exit(X - 8, Y - 8, X + 8, Y, "cliffs", "beer_cave")
     m.spawn("beer_cave_in", X, Y + 12, "down")
-    F.enemy(under, "crab", 170, 140, "lt_cellar_c1"); F.enemy(under, "crab", 250, 124, "lt_cellar_c2")
+    F.enemy(under, "dragnet", 212, 138, "lt_cellar_n1", once=True)       # (it came in with the tide, by the hole, and has been catching jars)
     F.lights(under)
     # ---- the pottery
     for j, y in enumerate((100, 120, 140)):

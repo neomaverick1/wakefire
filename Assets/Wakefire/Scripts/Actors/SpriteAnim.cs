@@ -108,6 +108,7 @@ namespace Wakefire
                 return;
             }
             played = true;
+            plays++;
             anim = name;
             facing = f;
             var t = Timing.TryGetValue(sheet.name + ":" + name, out var tm) ? tm : Timing.TryGetValue(name, out tm) ? tm : (8f, true);
@@ -122,6 +123,7 @@ namespace Wakefire
                 var map = model.def.Map(name);
                 if (map != null && map.fps > 0) fps = map.fps;
                 if (map != null && map.frames > 0) FrameCount = map.frames;
+                if (map != null && map.once) loop = false;
                 model.Face(f, !shown);
                 model.Play(name, restart);
                 shown = true;
@@ -131,6 +133,29 @@ namespace Wakefire
         }
 
         bool played, shown;
+        int plays;                              // how many times Play has started something: see Reach
+
+        /// <summary>From the frame last shown to the one the clock has reached, announcing every frame on the way.
+        /// When a tick is a long one (a stutter on a slow phone) the picture skips frames; what happens on a frame
+        /// (the blade landing, the flame held out) still happens. False if somebody listening started another
+        /// animation or did away with this one: the tick stops there.</summary>
+        bool Reach(int g, int n)
+        {
+            if (g == Frame) return true;
+            int from = Frame;
+            int steps = from < 0 ? g + 1 : loop ? ((g - from) % n + n) % n : g - from;
+            if (steps < 1) steps = 1;                        // (the clock was put back: straight there)
+            int serial = plays;
+            for (int i = steps - 1; i >= 0; i--)
+            {
+                int f = loop ? ((g - i) % n + n) % n : g - i;
+                Frame = f;
+                if (!model && frames != null && f < frames.Length) sr.sprite = frames[f];
+                FrameChanged?.Invoke(anim, f);
+                if (!this || plays != serial) return false;
+            }
+            return true;
+        }
 
         public void SetFacing(Facing f)
         {
@@ -157,11 +182,7 @@ namespace Wakefire
                 int n = Mathf.Max(1, FrameCount);
                 int g = (int)(time * fps);
                 g = loop ? g % n : Mathf.Min(g, n - 1);
-                if (g != Frame)
-                {
-                    Frame = g;
-                    FrameChanged?.Invoke(anim, g);
-                }
+                if (!Reach(g, n)) return;
                 float through = time * fps / n;
                 model.Advance(dt, loop ? Mathf.Repeat(through, 1f) : Mathf.Clamp01(through));
                 return;
@@ -170,12 +191,7 @@ namespace Wakefire
             time += dt;
             int f = (int)(time * fps);
             f = loop ? f % frames.Length : Mathf.Min(f, frames.Length - 1);
-            if (f != Frame)
-            {
-                Frame = f;
-                sr.sprite = frames[f];
-                FrameChanged?.Invoke(anim, f);
-            }
+            Reach(f, frames.Length);
         }
     }
 }

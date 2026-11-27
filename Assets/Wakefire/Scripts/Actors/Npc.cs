@@ -187,6 +187,26 @@ namespace Wakefire
             if (snore != null && !talking) Zeds(dt);
         }
 
+        float yawning = -1f;
+
+        /// <summary>The yawn that is going round has reached this sleeper: a long breath, and it is passed on.</summary>
+        public void YawnNow()
+        {
+            if (!Present || yawning >= 0) return;
+            float tall = anim.model ? anim.model.def.scale * 1.62f : 2.1f;
+            var at = anim.anim == "lie" ? pos + new Vector2(0.95f, 0.75f) : pos + new Vector2(0.3f, tall);
+            for (int i = 0; i < 3; i++) Zed.Spawn(at + new Vector2(0.22f * i, 0.16f * i), layer);
+            zedClock = 2.4f;
+            if (anim.model && anim.anim != "lie") { yawning = 0; anim.model.Posed += YawnPose; }
+        }
+
+        void YawnPose(ModelActor m, float dt)
+        {
+            yawning += dt;
+            Gesture.Stretch(m, Mathf.Sin(Mathf.Clamp01(yawning / 1.6f) * Mathf.PI));
+            if (yawning >= 1.6f) { yawning = -1f; m.Posed -= YawnPose; }
+        }
+
         float zedClock = UnityEngine.Random.Range(0.3f, 1.6f);
 
         /// <summary>Sleepers breathe out little letter Zs. Even the ones sleepwalking.</summary>

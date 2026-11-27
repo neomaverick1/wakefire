@@ -1,6 +1,6 @@
 """The sea cliffs east of town: a grassy clifftop, steps down to the beach, a pier where
-Abu-Nur the fisherman sleeps in his boat, brine crabs everywhere, and across the water a
-cove where the crabs keep what they steal. In the dream, moonlight lays a bridge over the sea."""
+Abu-Nur the fisherman sleeps in his boat, nets left out on the sand (one or two of which have
+gone on fishing without him), and across the water a cove where a net keeps what it has caught. In the dream, moonlight lays a bridge over the sea."""
 import sys
 sys.path.insert(0, '/srv/Wakefire/Art/pixel')
 import numpy as np
@@ -88,7 +88,7 @@ def build():
     m.set_into_ground(town.cliff(15.0, h=1.85, seed=27), 0, 414, seed=27)
     m.set_into_ground(town.cliff(238 / 16.0, h=1.85, seed=28), 282, 414, seed=28)
     m.set_into_ground(town.steps(38 / 16.0, n=5, rise=1.0, run=1.1), 242, 414)
-    # (a hole at the foot of the low cliff: the way the crabs go under the town, and so can a man on his knees)
+    # (a hole at the foot of the low cliff: the way the tide gets under the town, and so can a man on his knees)
     m.solid(0, 380, 112, 414); m.solid(128, 380, 240, 414); m.solid(112, 380, 128, 404); m.solid(282, 380, 520, 414)
     m.model("cave_mouth", hkit.cave_mouth(3), 120, 415, box=None, shadow=False, lights=False)
     m.exit(114, 404, 126, 411, "lowtown_in", "beer_cave_in")
@@ -121,7 +121,7 @@ def build():
         for dx in (0, 16):
             for dy in (0, 12):
                 kit.bush(m, x0 + dx, y0 + dy, 1)
-    hkit.name_post(m, 226, 362, "cl_name", "{g}THE SEA CLIFFS.{/}^{t}NO BATHING. NO FISHING. NO FEEDING THE CRABS.{/}| The crabs have never been able to read. It has not held them back.")
+    hkit.name_post(m, 226, 362, "cl_name", "{g}THE SEA CLIFFS.{/}^{t}NO BATHING. NO FISHING AFTER DARK. TAKE YOUR NETS IN.{/}| Somebody did not take a net in. It has been dark for forty nights.")
     for (x, y, sd) in ((60, 470, 1), (380, 440, 2), (180, 520, 0), (840, 190, 3), (820, 320, 1), (340, 70, 4)):
         kit.rock(m, x, y, sd)
     # ---------------------------------------------------------------- where the clifftop and the beaches stop
@@ -136,12 +136,13 @@ def build():
 
     # the stolen oil, in the cove
     kit.chest(m, 860, 140, "cove_oil", "oil")
-    # people and crabs
+    # people, and nets: most of them are nets. The ones with money in them are not.
     m.marker("npc", 604, 487, who="abunur")
-    for i, (x, y) in enumerate(((100, 470), (200, 500), (330, 470), (440, 500), (60, 430))):
-        m.enemy("crab", x, y, f"cl_c{i}")
-    for i, (x, y) in enumerate(((830, 200), (870, 250), (820, 300))):
-        m.enemy("crab", x, y, f"cl_k{i}")
+    for i, (x, y) in enumerate(((204, 494), (428, 498))):
+        m.enemy("dragnet", x, y, f"cl_n{i}", once=True)
+    m.enemy("dragnet", 838, 232, "cl_n2", once=True)                # ...and the one that keeps the cove
+    for i, (x, y) in enumerate(((108, 474), (322, 478), (62, 438), (866, 292))):
+        m.marker("npc", x, y, who=f"net_{i}")
     m.marker("npc", 470, 120, who="goat_cliff")
     m.spawn("west", 22, 320, "right")
     m.exit(0, 296, 8, 344, "lowtown", "east")

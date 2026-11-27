@@ -36,7 +36,7 @@ namespace Wakefire
         /// <summary>The dead at home. True if `who` is one of them.</summary>
         bool SpawnTombs(string who, Vector2 at)
         {
-            if (!who.StartsWith("t_")) return false;
+            if (!who.StartsWith("t_")) return SpawnDreams(who, at);
             if (Has("chapter2_done")) return true;                  // asleep, every one of them
             switch (who)
             {

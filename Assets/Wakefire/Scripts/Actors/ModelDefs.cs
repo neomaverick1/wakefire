@@ -30,6 +30,7 @@ namespace Wakefire
         public int frames;                   // how many frames the game counts (0: as the sprite sheet has)
         public float fade = 0.09f;           // seconds to blend in from whatever came before
         public float step = 30f;             // poses a second; drawn animation moves in steps, not a blur
+        public bool once;                    // for a built creature: plays through once and holds (the game's clock does not loop it)
         public Action<ModelActor, float> pose;   // a gesture layered on by hand (a nodding head, a shrug)
 
         public float End => t1 > 0 ? t1 : asset.length;
@@ -67,9 +68,9 @@ namespace Wakefire
         }
 
         /// <summary>For a built creature: how the game's clock runs for one of its animations.</summary>
-        public ClipMap Time(string anim, float fps, int frames, float stride = 0, float paceMax = 3f)
+        public ClipMap Time(string anim, float fps, int frames, float stride = 0, float paceMax = 3f, bool once = false)
         {
-            var m = new ClipMap { fps = fps, frames = frames, stride = stride, paceMax = paceMax, paceMin = 0.2f };
+            var m = new ClipMap { fps = fps, frames = frames, stride = stride, paceMax = paceMax, paceMin = 0.2f, once = once };
             anims[anim] = m;
             return m;
         }
@@ -167,6 +168,7 @@ namespace Wakefire
             Add("crab", Built(1.85f, a => CrabBeast.Make(a)));
             Add("moth", Built(1.60f, a => MothBeast.Make(a)));
             Hill();
+            Dreams();
         }
 
         /// <summary>A creature whose skeleton and skin are made by code.</summary>

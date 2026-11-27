@@ -11,7 +11,7 @@ namespace Wakefire
     public partial class Player : MonoBehaviour
     {
         public static Player I;
-        public enum State { Free, Attack, Roll, Nod, Use, Hurt, Dead, Talk, Cutscene, ItemGet, Guard, Throw, Stone, Rail }
+        public enum State { Free, Attack, Roll, Nod, Use, Hurt, Dead, Talk, Cutscene, ItemGet, Guard, Throw, Stone, Rail, Held }
         /// <summary>What the action button would do this moment.</summary>
         public enum Act { None, Talk, Open, Read, Look, Guard, Take, Lower, Climb }
         public Act Action { get; private set; }
@@ -169,6 +169,8 @@ namespace Wakefire
             float dt = Time.deltaTime;
             stateClock += dt;
             rollCd -= dt;
+            if (rooted > 0) rooted -= dt;
+            if (flare > 0) flare -= dt;
             var input = Controls.MoveVector;
 
             switch (state)
@@ -231,6 +233,9 @@ namespace Wakefire
                     vel = Vector2.Lerp(vel, Vector2.zero, dt * 14f);
                     if (anim.Done) ToFree();
                     break;
+                case State.Held:
+                    HeldUpdate(dt);
+                    break;
                 case State.Cutscene:
                     vel = march;
                     break;
@@ -243,6 +248,7 @@ namespace Wakefire
 
             var before = pos;
             if ((state == State.Free || state == State.Guard) && (Solids.Blocks(new Rect(pos - half, half * 2), pos, this) || Solids.InEdge(new Rect(pos - half, half * 2)))) Unstick();
+            if (rooted > 0 && state != State.Hurt && state != State.Cutscene) vel = Vector2.zero;       // something has his shadow
             pos = Solids.Move(pos, vel * dt, half, this);
             CheckGround();
             if (anim.model)
@@ -277,6 +283,7 @@ namespace Wakefire
                 anim.sr.enabled = hurtFlash <= 0 || ((int)(hurtFlash * 20) % 2 == 0);
             }
             else anim.sr.enabled = true;
+            if (hidden) anim.sr.enabled = false;
         }
 
         void FreeUpdate(Vector2 input, float dt)
@@ -536,6 +543,7 @@ namespace Wakefire
 
         void StartRoll(Vector2 input)
         {
+            if (rooted > 0) { Sfx.Play("deny", 0.4f); return; }
             rollDir = input.sqrMagnitude > 0.04f ? input.normalized : Dir;      // any of the ways the stick points, not just four
             facing = FacingOf(rollDir, facing);
             state = State.Roll;
@@ -689,6 +697,7 @@ namespace Wakefire
 
         void UseLantern()
         {
+            flare = 0.55f;
             var b = PropInFront(0.7f, p => p.Kind == "brazier" && !p.lit);
             if (b != null && b.Ignite())
             {
@@ -812,6 +821,7 @@ namespace Wakefire
                 glare.sortingOrder = Map.Order(pos.y) + (facing == Facing.Up ? -1 : 1);
             }
             else if (glare && glare.enabled) glare.enabled = false;
+            if (lantern && !hidden) { lantern.radius = Mathf.MoveTowards(lantern.radius, flare > 0 ? 5.0f : 3.6f, Time.deltaTime * 9f); lantern.intensity = Mathf.MoveTowards(lantern.intensity, flare > 0 ? 1.0f : 0.6f, Time.deltaTime * 3f); }
             if (lantern && anim.model) anim.model.ownLight = lantern;
             if (lantern && anim.model && anim.model.props.TryGetValue("lantern", out var carried))
                 lantern.transform.position = (Vector3)(pos + anim.model.Offset(carried.TransformPoint(0, -0.19f * anim.model.def.scale, 0)));

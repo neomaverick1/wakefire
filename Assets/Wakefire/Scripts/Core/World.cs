@@ -230,6 +230,11 @@ namespace Wakefire
                 "medusa" => Medusa.Spawn(at),
                 "thurifer" => Thurifer.Spawn(at),
                 "glass" => BurningGlass.Spawn(at),
+                "snuffer" => Snuffer.Spawn(at),
+                "wick" => Wick.Spawn(at),
+                "dragnet" => Dragnet.Spawn(at),
+                "stayup" => StayUp.Spawn(at),
+                "yawn" => Yawn.Spawn(at),
                 _ => null,
             };
             if (!e) return null;

@@ -298,6 +298,7 @@ namespace Wakefire
             worldImage.uvRect = new Rect((1 + ox) / (width + 2), (1 + oy) / (Height + 2),
                 width / (float)(width + 2), Height / (float)(Height + 2));
             Shader.SetGlobalVector("_WF_RTWorld", new Vector4(xs, ys, (width + 2) / (float)PPU, (Height + 2) / (float)PPU));
+            AirBend.Push();
         }
 
         /// <summary>World point to the pixel HUD (origin bottom-left, render pixels).</summary>

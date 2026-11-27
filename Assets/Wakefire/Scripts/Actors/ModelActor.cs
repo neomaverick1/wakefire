@@ -44,6 +44,9 @@ namespace Wakefire
         Color fireColour = new Color(1f, 0.62f, 0.26f);
         SpriteRenderer shadow;
         bool lookedForShadow;
+        /// <summary>Set before the figure is first drawn: the material its shadow is drawn with instead of the usual one.</summary>
+        public Material shadeOverride;
+        public SpriteRenderer ShadowRenderer => shadow;
         MaterialPropertyBlock shadowBlock;
         /// <summary>After the clip has posed the skeleton: gestures, cloth and carried things go on top.</summary>
         public event Action<ModelActor, float> Posed;
@@ -323,6 +326,7 @@ namespace Wakefire
                     shadow = found.GetComponent<SpriteRenderer>();
                     shadow.sprite = ModelStage.Blank(def.span);
                     var shadeMat = Map.ShadeMat(Mathf.RoundToInt(shadow.sharedMaterial ? shadow.sharedMaterial.GetFloat("_Layer") : 0));
+                    if (shadeOverride) shadeMat = shadeOverride;
                     if (shadeMat) shadow.sharedMaterial = shadeMat;
                     shadowBlock = new MaterialPropertyBlock();
                 }

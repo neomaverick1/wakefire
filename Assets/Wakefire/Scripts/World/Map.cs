@@ -334,6 +334,7 @@ namespace Wakefire
             foreach (var o in meta.data.objects) if (o.s == "brazier_lit_0" || (o.frames != null && o.frames.Length > 0 && o.frames[0] == "brazier_lit_0")) litJson = o;
             if (litJson != null)
             {
+                if (coldPx == int.MinValue) { coldPx = data.px; coldPy = data.py; }
                 data.px = litJson.px; data.py = litJson.py;
                 SetFrames(litJson.frames);
                 Map.Normals(sr, litJson.frames[0] + "_lin");

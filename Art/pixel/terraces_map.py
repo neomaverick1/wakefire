@@ -1,6 +1,6 @@
 """The olive terraces west of town: hillside steps held up by dry-stone walls, olive trees in
-rows, stairs that climb through the walls, jackals that hunt in pairs, and at the top the old
-shrine of the First Watch: an altar whose offering only shows itself in the dream, and behind it
+rows, stairs that climb through the walls, lamp flames that have left their lamps and come up
+to where the oil is made, and at the top the old shrine of the First Watch: an altar whose offering only shows itself in the dream, and behind it
 the door in the rock that goes down to the watch's crypt."""
 import sys
 sys.path.insert(0, '/srv/Wakefire/Art/pixel')
@@ -89,10 +89,24 @@ def build():
     m.model("altar", town.altar(), 420, 70, box=(-9, -12, 9, 0), kind="look", data={"id": "shrine_altar"})
     kit.lamassu(m, 352, 76, west=False)
     kit.chest(m, 452, 76, "shrine_lamp", "lamp", layer=2)
-    # a vessel of flame, guarded, in the far corner of the lowest terrace
-    kit.chest(m, 40, 620, "terrace_vessel", "vessel")
-    for i, (x, y) in enumerate(((300, 340), (520, 350), (180, 220), (620, 230), (500, 100), (240, 470), (420, 600))):
-        m.enemy("jackal", x, y, f"tr_j{i}")
+    # the oil store, in the far corner of the lowest terrace: a walled pen with a grille across its way in.
+    # The grille answers to the fire bowl, and the fire bowl is on the wrong side of the grille: nobody with
+    # hands can light it. Something that goes through bars can. In it, a vessel of flame.
+    # (the bowl stands straight in from the grille: a flame that comes up against the wall slides along it to the
+    # way in. The vessel is at the far end of the store, with room to stand in front of it.)
+    hkit.plot(m, 4, 586, 128, 628, gates=[("n", 46, 68)], sides="ne", seed=5)
+    m.model("bars_22", town.bars(22 / 16.0, 1.3), 57, 593, box=(-11, -6, 11, 0), kind="bars",
+            data={"id": "tr_store", "text": "lit:tr_bowl",
+                  "say": "The grille goes up.^It was waiting for the bowl. The bowl was waiting for a flame with nobody attached to it."})
+    kit.brazier(m, 58, 622, False, "tr_bowl")
+    kit.brazier_frames(m)
+    kit.chest(m, 102, 608, "terrace_vessel", "vessel")
+    hkit.name_post(m, 138, 600, "tr_store_name", "{g}OIL STORE.{/}^{t}THE GRILLE STAYS UP WHILE THE BOWL IS LIT. KEEP THE BOWL LIT.{/}| Under it, in chalk: {t}IT WENT OUT. THE BOWL IS INSIDE. WHO BUILT THIS.{/}")
+    # the flames: two that never go far from the store, and three among the trees
+    for i, (x, y) in enumerate(((170, 580), (270, 566))):
+        m.enemy("wick", x, y, f"tr_w{i}")
+    for i, (x, y) in enumerate(((520, 350), (180, 220), (620, 230))):
+        m.enemy("wick", x, y, f"tr_w{i + 2}", once=True)
     m.marker("npc", 600, 330, who="goat_terrace")
     m.spawn("east", W - 22, 320, "left")
     m.spawn("hill", HILL, 52, "down")

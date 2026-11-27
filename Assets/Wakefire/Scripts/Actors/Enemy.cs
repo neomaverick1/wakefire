@@ -71,6 +71,9 @@ namespace Wakefire
         bool atAttention;
 
         protected virtual void Init() { }
+        /// <summary>Nothing thinks while the story is speaking. For most that is all; for one whose states are short
+        /// and are the whole point (the moment a Snuffer is on its side), the state's clock stands still as well.</summary>
+        protected virtual bool WaitsOutStories => false;
         protected abstract void Think(float dt, Player p);
         protected virtual void OnHurt(HitInfo h) { }
 
@@ -137,7 +140,9 @@ namespace Wakefire
             if (Game.Paused) return;
             float dt = Time.deltaTime;
             if (Frozen) { anim.Tick(dt); Place(); return; }
-            stateClock += dt;
+            // (a creature that waits out the story: whatever it was in the middle of when the talking began, lying on
+            // its side, winding up, it is still in the middle of when the talking stops)
+            if (!(WaitsOutStories && Story.I && Story.I.Running)) stateClock += dt;
             var p = Player.I;
             bool here = Present;
             anim.sr.enabled = true;
