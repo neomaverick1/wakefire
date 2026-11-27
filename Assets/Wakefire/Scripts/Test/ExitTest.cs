@@ -18,9 +18,10 @@ namespace Wakefire
                                       "bull_seen", "bull_dead", "chapter_done", "ch2", "item_hillkey", "hill_gate", "met_namtar", "queue_passed", "king_door",
                                       "door_t1_door", "door_t2_seal", "door_t3_kingdoor", "door_t3_lock", "ghostkey", "item_wheel", "king_seen", "king_done", "item_horn", "chapter2_done",
                                       "on_lt_tax_gong", "on_lt_goat_latch", "open_beer_hatch",
-                                      "on_ak_merchant_latch", "on_ak_lamps_sign", "on_wt_keys", "on_tb_bolt" })
+                                      "on_ak_merchant_latch", "on_ak_lamps_sign", "on_wt_keys", "on_tb_bolt",
+                                      "on_nr_couple_latch", "on_np_five_latch", "on_np_knocker_gong", "on_np_pillow_sign" })
                 Story.Set(f);
-            string[] maps = { "ashkel", "ashkel_in", "lowtown", "lowtown_in", "cliffs", "terraces", "crypt", "temple_yard", "zig_1", "zig_2", "zig_hi", "zig_3", "necro_road", "necropolis", "barrow", "tomb_1", "tomb_2", "tomb_hi", "tomb_3" };
+            string[] maps = { "ashkel", "ashkel_in", "lowtown", "lowtown_in", "cliffs", "terraces", "crypt", "temple_yard", "zig_1", "zig_2", "zig_hi", "zig_3", "necro_road", "necro_road_in", "necropolis", "necropolis_in", "barrow", "tomb_1", "tomb_2", "tomb_hi", "tomb_3" };
             int bad = 0, n = 0;
             foreach (var map in maps)
             {
@@ -45,7 +46,7 @@ namespace Wakefire
                     // the doors of houses are anywhere on a map: walked in at going north (a door, a hatch, a stair), and
                     // out of going south (the street door of a room, at the foot of its cell)
                     bool rooms = Game.Houses(map);
-                    if (rooms || map == "lowtown" || map == "ashkel")
+                    if (rooms || map == "lowtown" || map == "ashkel" || map == "necro_road" || map == "necropolis")
                     {
                         bool edge = !rooms && min <= 24f;
                         if (!edge) dir = rooms && (ex.y + ex.h) % 224 == 0 ? Vector2.down : Vector2.up;

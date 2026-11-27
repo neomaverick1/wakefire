@@ -375,6 +375,13 @@ def green(T, mask, seed=5, base=3.55, ramp='lawn'):
     T.tone[foot] -= 0.7
 
 
+def track(T, mask, seed=3):
+    """A way that nobody paved: earth trodden pale, with a darker lip where the grass begins."""
+    calm(T, mask, 'dust', base=4.3, seed=seed, amp=0.2, pebbles=0.004)
+    T.border(mask, ramp='earth', tone=2.9, width=1, hgt=0.6)
+    return mask
+
+
 def edge_stones(T, mask, ramp='path', tone=2.3):
     """The kerb round a piece of paving: a line of darker stones just inside its edge, a joint every so often."""
     ring = T.border(mask, ramp=ramp, tone=tone, width=2, hgt=1.2)

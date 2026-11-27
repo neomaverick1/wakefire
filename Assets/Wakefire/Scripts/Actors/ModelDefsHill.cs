@@ -19,6 +19,9 @@ namespace Wakefire
             d.Own("sit", "Sitting_Idle_Loop", fade: 0.1f);
             d.Own("sit_talk", "Sitting_Talking_Loop", fade: 0.15f);
             d.Own("lamp", "Idle_Lantern_Loop", fade: 0.2f);
+            // and at home: down on their knees at a floor that is already clean, and knocking on the inside of a door
+            d.Own("scrub", "Fixing_Kneeling", 1.0f, 4.2f, fade: 0.25f);
+            d.Own("knock", "Interact", fade: 0.12f);
             return d;
         }
 
@@ -31,6 +34,9 @@ namespace Wakefire
             Add("dead_fisher", Dead(1.33f, Cast.Person("fisher")));
             Add("dead_potter", Dead(1.33f, Cast.Person("potter")));
             Add("dead_sleeper", Dead(1.33f, Cast.Person("sleeper_b")));
+            // the dead at home, in the houses of the road and the hill
+            foreach (var who in new[] { "t_sweeper", "t_shepherd", "t_proud", "t_wife", "t_husband", "t_rich", "t_knocker", "t_scribe", "t_listener", "t_watchman" })
+                Add(who, Dead(1.33f, Cast.Person(who)));
             Add("general_a", Dead(1.40f, Cast.General(0)));
             Add("general_b", Dead(1.40f, Cast.General(1)));
 

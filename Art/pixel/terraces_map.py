@@ -9,6 +9,7 @@ from px import Canvas
 import town
 import necro
 import kit
+import hkit
 import dprops
 from mapkit import MapBuilder
 
@@ -23,8 +24,8 @@ CHEST = '/srv/Wakefire/Assets/Wakefire/Resources/Objects/chest.png'
 def build():
     m = MapBuilder("terraces", TW, TH, (30, 60, 40, 255), music="hills")
     T = m.lay(seed=31)
-    T.grass(T.all(), seed=1, flowers=0.008, tufts=0.03, fringe=0)
-    # a worn path along each terrace, and up to each stair
+    hkit.green(T, T.all(), seed=1)
+    # a path along each terrace, and up to each stair
     paths = T.none()
     for (y0, y1) in ((540, 600), (420, 500), (300, 380), (180, 260), (40, 140)):
         mid = y0 + (y1 - y0) // 2
@@ -34,28 +35,35 @@ def build():
         cx = (s0 + s1) / 2
         paths |= T.stroke([(cx, y - 44), (cx, y + 64)], 22)
     paths |= T.stroke([(HILL, 96), (HILL, 30)], 20)           # up to the gate of the Hill of Sleepers
-    paths = T.ragged(paths, 4, 9, seed=2)
-    T.earth(paths, seed=3, base=4.1, ramp='dust', pebbles=0.01)
-    # the shrine's old paving, grass thin and dry round it
-    T.grass(T.ragged(T.disc(420, 70, 100, 30), 3, 8, seed=4) & ~paths, seed=5, ramp='dry', base=3.0, tufts=0.05)
-    T.slabs(T.ragged(T.disc(410, 82, 74, 22) | T.rect(CRYPT - 13, 26, 26, 44), 3, 7, seed=6), seed=7, rows=(10, 11), wmin=10, wmax=17, base=3.8, moss=0.25, crack=0.15)
+    hkit.track(T, paths, seed=3)
+    # the shrine's paving: old, pale, and kept
+    hkit.streets(T, [(T.rect(336, 60, 168, 44) | T.rect(CRYPT - 13, 26, 26, 44), 7, 10, 17)], base=4.0, ramp='pale', kerb=('flag', 2.8))
+    # flowers, where somebody planted them: at the foot of every stair, and round the shrine
+    for (x, y, k) in ((48, 512, 'w'), (112, 512, 'w'), (88, 392, 'y'), (150, 392, 'y'), (668, 272, 'r'), (730, 272, 'r'), (348, 152, 'w'), (410, 152, 'w'),
+                      (320, 112, 'r'), (510, 112, 'r'), (660, 60, 'w'), (736, 60, 'w'), (780, 300, 'y'), (780, 352, 'y'), (220, 600, 'r'), (520, 610, 'y'), (640, 480, 'w')):
+        hkit.flowers(T, x, y, k)
     for (y, s0, s1) in WALLS:
         T.contact(0, y, s0, y + 20, reach=6, strength=1.4); T.contact(s1, y, W, y + 20, reach=6, strength=1.4)
     m.bake()
     # the walls and the stairs through them, set into the ground
     for (y, s0, s1) in WALLS:
-        m.set_into_ground(town.drystone(s0 / 16.0, seed=y), 0, y + 20, seed=y)
-        m.set_into_ground(town.drystone((W - s1) / 16.0, seed=y + 1), s1, y + 20, seed=y + 1)
-        m.set_into_ground(town.steps((s1 - s0) / 16.0, n=4, rise=0.6, run=0.65), s0, y + 20)
+        m.set_into_ground(town.cliff(s0 / 16.0, h=1.15, seed=y), 0, y + 20, seed=y)
+        m.set_into_ground(town.cliff((W - s1) / 16.0, h=1.15, seed=y + 1), s1, y + 20, seed=y + 1)
+        m.set_into_ground(town.steps((s1 - s0) / 16.0, n=5, rise=1.0, run=1.1), s0, y + 20)
         m.solid(0, y, s0, y + 18); m.solid(s1, y, W, y + 18)
     # olive trees in their rows
-    sd = 0
+    # (one tree, the same in every row)
     for (row_y, xs) in ((120, (60, 180, 520, 640, 760)), (250, (40, 200, 330, 460, 600)), (370, (240, 380, 520, 760)),
                         (490, (200, 340, 470, 610, 740)), (620, (160, 300, 440, 580, 720))):
         for x in xs:
-            kit.olive(m, x, row_y, sd); sd += 3
-    for k, (x, y) in enumerate(((120, 330), (136, 340), (560, 210), (576, 220), (700, 470), (300, 600), (316, 610), (780, 90))):
-        kit.bush(m, x, y, k)
+            kit.olive(m, x, row_y, 0)
+    for (x0, y0) in ((120, 330), (560, 210), (700, 470), (300, 600)):                # myrtle, in blocks of four
+        for dx in (0, 16):
+            for dy in (0, 12):
+                kit.bush(m, x0 + dx, y0 + dy, 1)
+    # what the boards say
+    hkit.name_post(m, 790, 290, "tr_name", "{g}THE OLIVE TERRACES.{/}^{t}PICK NOTHING. THE TEMPLE COUNTS THEM.{/}| Under it, in chalk: {t}THE TEMPLE IS ASLEEP.{/}")
+    hkit.name_post(m, HILL - 44, 104, "tr_hill", "{g}THE HILL OF SLEEPERS.{/}^{t}DO NOT WAKE THE DEAD.{/}| Somebody has. It was not you. It is a comfort, of a kind.")
     for (x, y, k) in ((60, 150, 0), (780, 250, 1), (90, 450, 2), (660, 560, 3), (520, 52, 4)):
         kit.rock(m, x, y, k)
     # ---------------------------------------------------------------- where the hillside stops
@@ -75,7 +83,7 @@ def build():
         kit.cypress_row(m, 8, ya, yb, seed=i)
         if ya == 316: kit.cypress_row(m, W - 8, 362, yb, seed=i + 2)
         else: kit.cypress_row(m, W - 8, ya, yb, seed=i + 2)
-    m.model("tr_south", town.drystone(W / 16.0, h=0.7, seed=9), 0, H - 2, box=None)
+    hkit.wall_ew(m, 0, W, H - 2, 9, 1)                         # the lowest terrace's own wall: the town's, lime-washed
     m.solid(0, H - 13, W, H)
     # the shrine at the top: an altar, and in the dream, what was offered on it
     m.model("altar", town.altar(), 420, 70, box=(-9, -12, 9, 0), kind="look", data={"id": "shrine_altar"})

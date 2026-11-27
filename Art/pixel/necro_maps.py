@@ -12,6 +12,8 @@ import region_art as G
 import town
 import necro
 import kit
+import hkit
+import tombs
 import bprops
 from mapkit import MapBuilder
 
@@ -151,6 +153,87 @@ def plot(T, x, y, w, h, seed=0):
     return mask
 
 
+# ------------------------------------------------------------------ the houses of the dead
+IN_ROAD, IN_HILL = "necro_road_in", "necropolis_in"
+THORN = 'bone'                  # what the hedges up here are made of: thorn, dead, white as a bone, and clipped all the same
+
+# the stone by each door, that says who is behind it: (how far from the door it stands, the words)
+STONES = {
+    'nr_sweeper': (24, "The stone by the door reads:^{g}'AMAT. SHE KEPT A CLEAN HOUSE.'{/}| Somebody has swept round the foot of the stone, in a circle, as far as a broom will reach."),
+    'nr_shepherd': (-22, "The stone by the door reads:^{g}'A SHEPHERD. HE NEVER LOST ONE.'{/}| Lower down, in the same hand, later: {g}'HE HAS LOST COUNT.'{/}"),
+    'nr_proud': (-22, "The stone by the door reads:^{g}'KI-AG. HE LOOKED UP TO NOBODY.'{/}| It is a hand taller than any other stone on the road. It has been measured."),
+    'nr_couple': (26, "The stone by the door reads:^{g}'THEY WERE NEVER PARTED.'{/}| Under it, scratched from the inside, by the look of it: {g}'NOT FOR WANT OF ASKING.'{/}"),
+    'np_rich': (48, "The stone by the door reads:^{g}'PUZUR, MERCHANT. HE TOOK IT WITH HIM.'{/}| There is a second stone behind the first, with the list."),
+    'np_knocker': (-24, "The stone by the door reads:^{g}'IBBI. HE DID NOT LIKE TO BE A BOTHER.'{/}"),
+    'np_five': (-24, "The stone by the door reads:^{g}'SHE SAID SHE WOULD ONLY BE A MINUTE.'{/}"),
+    'np_reader': (22, "The stone by the door reads:^{g}'ADAPA, SCRIBE. SIXTY TABLETS.'{/}| The mason has added, on his own account: {g}'I CUT NINE. NOBODY SHOULD HAVE TO CUT SIXTY.'{/}"),
+    'np_pillow': (-26, "The stone by the door reads:^{g}'A NIGHT WATCHMAN. HE NEVER ONCE SLEPT ON DUTY.'{/}| {g}'HE IS MAKING UP FOR IT.'{/}"),
+}
+# what a shut door on the hill says for itself, and what is said when it opens
+SHUT = {
+    'nr_proud': {0: "Bricked up from the inside, and never pointed.^He went in and had it closed behind him, so that nobody could come and stand level.| "
+                    "The steps up the front are for the neighbours to look at. The hatch in the roof is for the man who sweeps it."},
+    'nr_couple': {0: "Bolted, on the inside. Through it, in whispers: an argument about whose turn it is to lie on the left.^Nobody is coming to the door until that is settled.| "
+                     "The dead do not dream. Asleep, there would be nobody behind this door to keep it shut.",
+                  ('open', 0): "The bolt is drawn, and the door of the two vaults stands open.^The argument has moved on to who left it open."},
+    'np_knocker': {0: "Shut. From inside: knocking. Three knocks, a wait, three knocks.^He does not want to be let out. He is making sure that somebody is there.| There is a gong beside the door, for callers.",
+                   ('open', 0): "The gong sings. The knocking stops.^Then, very quickly, a great many bolts."},
+    'np_five': {0: "On the door, in chalk: {g}BACK IN FIVE MINUTES.{/}^The dust on the chalk is forty nights deep, and the door is barred on the inside."},
+    'np_pillow': {0: "Shut. A rattle is cut over the door: a night watchman's.^The fire bowl beside it is cold. Whoever is inside has had enough of the dark, and is not opening the door to any more of it.",
+                  ('open', 0): "Fire at the door: the first warm light on this hill in three hundred years.^Inside, a bar is lifted.| {g}'That's more like it,'{/} says somebody."},
+}
+
+
+def houses_of(m, B, inside):
+    """Stand the houses of the dead, each with its stone by the door."""
+    for (b, x, y) in B:
+        hkit.place(m, b, x, y, inside=inside, say=SHUT.get(b.key))
+        off, words = STONES[b.key]
+        m.model("name_stone", tombs.name_stone(), x + int(round(b.doors[0][0] * 16)) + off, y + 6, box=(-6, -4, 6, 0), kind="look", data={"id": "say", "text": words + BLANK})
+
+
+def thorn_tree(m, x, y):
+    """The one tree of the hill, its foot at (x, y)."""
+    return m.model("thorn_tree", tombs.thorn_tree(1), x, y, box=(-3, -5, 3, 0))
+
+
+def straw(T, seed=5):
+    """The hill is under straw: grass that died standing, and has been kept short ever since."""
+    hkit.green(T, T.all(), seed=seed, base=3.5, ramp='straw')
+
+
+def ways(T, road, paths, seed=7):
+    """The ways of the dead: the road itself in pale stone, worn, as the king's avenue is; the paths to the doors
+    in grey; a dark kerb, and one kerb round the lot."""
+    T.slabs(road, seed=seed, rows=(12,), wmin=14, wmax=20, ramp='pale', base=4.2, jitter=0.9, crack=0.1, whole=False, wear=0.6)
+    T.slabs(paths & ~road, seed=seed + 2, rows=(8,), wmin=8, wmax=12, ramp='flag', base=4.3, whole=False, jitter=0.7, crack=0.03, wear=0.3)
+    hkit.edge_stones(T, road | paths, 'flag', 2.2)
+
+
+def yard(T, x0, y0, x1, y1, seed=0):
+    """The ground a house of the dead stands on: gravel, raked, pale, a line of stones round it."""
+    area = T.rect(x0, y0, x1 - x0, y1 - y0)
+    hkit.calm(T, area, 'ash', base=4.7, seed=seed, amp=0.15, pebbles=0.0)
+    X, Y = T.xx, T.yy
+    T.add(area & ((Y % 4) == 1), -0.35)                       # the rake
+    T.border(area, ramp='pale', tone=4.6, width=1, hgt=0.8)
+    return area
+
+
+def grave_plot(T, x, y, w, h, seed=0):
+    """Where the plain graves are: turned earth, square, with a line of pale stones round it."""
+    area = T.rect(x, y, w, h)
+    T.earth(area, seed=seed + 1, base=2.9, ramp='ash', pebbles=0.02)
+    T.border(area, ramp='pale', tone=4.0, width=1, hgt=0.8)
+    return area
+
+
+def asphodel(T, pts):
+    """The only thing that flowers up here, and it flowers white."""
+    for (x, y) in pts:
+        hkit.flowers(T, x, y, 'w', leaf='straw')
+
+
 # ------------------------------------------------------------------ the road of the dead
 ROAD = [(320, 704), (316, 600), (250, 520), (200, 450), (230, 372), (420, 330), (452, 250), (400, 170), (320, 110), (320, 0)]
 
@@ -160,25 +243,31 @@ def necro_road():
     W, H = TW * 16, TH * 16
     m = MapBuilder("necro_road", TW, TH, (10, 12, 28, 255), music="hill")
     T = m.lay(seed=201)
+    town.STYLE = tombs.LOOK
+    B = [(tombs.sweeper(), 128, 652), (tombs.shepherd(), 508, 656), (tombs.proud(), 500, 500), (tombs.couple(), 180, 168)]
+    town.STYLE = None
     land = T.ragged(T.rect(52, 70, W - 104, H), 15, 52, seed=31) | T.ragged(T.rect(-30, -30, W + 60, 126), 9, 34, seed=30) | T.rect(40, H - 26, W - 80, 26)
     land &= ~T.ragged(T.disc(0, 400, 86, 70) | T.disc(W, 560, 78, 80), 6, 18, seed=32)
-    T.earth(T.all(), seed=1, base=3.3, ramp='ash', pebbles=0.014)
-    T.grass(T.ragged(T.disc(170, 560, 80, 44) | T.disc(500, 400, 60, 30) | T.disc(250, 200, 84, 34) | T.disc(520, 120, 54, 40) | T.disc(110, 330, 50, 40), 5, 10, seed=4),
-            seed=5, ramp='sere', base=2.7, tufts=0.07)
+    straw(T)
     T.rock(T.ragged(T.disc(112, 246, 54, 40), 5, 12, seed=2), seed=3, base=3.3)
     coast(T, land, seed=33)
-    road = T.ragged(T.stroke(ROAD, 30), 3, 8, seed=6)
-    T.slabs(road, seed=7, rows=(10, 11), wmin=10, wmax=18, ramp='pale', base=3.3, jitter=1.0, crack=0.12, moss=0.0, wear=0.6)
-    side = T.ragged(T.stroke([(230, 372), (160, 320), (118, 268)], 15) | T.stroke([(420, 330), (480, 400), (500, 440)], 15), 3, 7, seed=8)
-    T.earth(side & ~road, seed=9, base=4.2, ramp='ash', pebbles=0.01)
-    plots = ((176, 544, 96, 62, 41), (410, 500, 74, 84, 42), (286, 396, 70, 44, 43), (236, 170, 100, 60, 44), (60, 120, 62, 70, 45))
-    for (x, y, w, h, sd) in plots:
-        plot(T, x, y, w, h, sd)
-    TOMBS = [('vault', 122, 640, 5.0, 2.8, 1.5, 0, True), ('flat', 508, 652, 5.5, 2.8, 1.6, 1, False), ('step', 548, 520, 4.5, 2.8, 1.4, 2, False),
-             ('vault', 176, 150, 5.5, 2.8, 1.6, 6, True), ('flat', 490, 132, 4.5, 2.4, 1.4, 7, False)]
+    # every house on its own raked ground
+    for k, (xa, ya, xb, yb) in enumerate(((78, 552, 180, 662), (454, 570, 564, 666), (454, 392, 548, 512), (118, 72, 244, 178))):
+        yard(T, xa, ya, xb, yb, seed=k)
+    # the road, and a path from every door to it
+    road = T.stroke(ROAD, 30)
+    paths = (T.rect(106, 652, 16, 28) | T.rect(106, 664, 206, 16) |                      # the sweeper's
+             T.rect(476, 656, 16, 24) | T.rect(326, 664, 166, 16) |                      # the shepherd's
+             T.rect(540, 504, 34, 14) | T.rect(558, 336, 16, 182) | T.rect(430, 328, 144, 16) |      # round to the foot of the proud man's stair
+             T.rect(172, 168, 16, 24) | T.rect(172, 176, 232, 16) |                      # the two vaults
+             T.stroke([(230, 372), (160, 320), (118, 268)], 14))                         # up to the stone of the first king
+    ways(T, road, paths)
+    for (x, y, w, h, sd) in ((200, 548, 92, 56, 41), (392, 488, 60, 64, 42), (286, 396, 70, 44, 43), (250, 210, 92, 52, 44), (60, 120, 58, 70, 45)):
+        grave_plot(T, x, y, w, h, sd)
+    asphodel(T, ((92, 668), (164, 668), (452, 672), (548, 672), (120, 190), (232, 190), (474, 516), (300, 640), (340, 560), (270, 340), (470, 250), (350, 130), (90, 560), (560, 590)))
     BARROWS = [(104, 476, 2.0, 3, True), (540, 268, 2.2, 4, False)]
-    for (st, x, y, w, d, h, sd, lamp) in TOMBS:
-        T.contact(x - w * 8, y - d * 16, x + w * 8, y, reach=5, strength=1.4)
+    for (b, x, y) in B:
+        hkit.contact(T, b, x, y)
     for (x, y, r, sd, lamp) in BARROWS:
         T.contact(x - r * 14, y - r * 30, x + r * 14, y - 4, reach=6, strength=1.3)
     g = m.bake()
@@ -189,8 +278,16 @@ def necro_road():
     m.set_into_ground(town.cliff((W - 354) / 16.0, h=2.2, seed=52, grass=False, rock='stone'), 354, 60, seed=52)
     m.solid(0, 0, 286, 62); m.solid(354, 0, W, 62)
     kit.standard(m, 278, 84); kit.standard(m, 362, 84)
-    for i, (st, x, y, w, d, h, sd, lamp) in enumerate(TOMBS):
-        kit.tomb(m, x, y, w, d, h, sd, st, lamp, text=door(i))
+    # ---- the houses, each on its own ground, a hedge of dead thorn either side
+    houses_of(m, B, IN_ROAD)
+    for (xa, xb, ya, yb, sd) in ((70, 178, 560, 656, 1), (446, 562, 574, 660, 3), (110, 242, 78, 172, 5)):
+        hkit.hedge_sn(m, xa, ya, yb, sd, leaf=THORN); hkit.hedge_sn(m, xb, ya, yb, sd + 1, leaf=THORN)
+    hkit.hedge_sn(m, 446, 400, 504, 7, leaf=THORN)
+    # what he had cut so as never to be without them, in a pen of their own beside his door
+    for k, (x, y) in enumerate(((532, 676), (552, 688), (516, 692))):
+        kit.say(m, "tb_sheep", tombs.stone_sheep(1), x, y, (-6, -5, 8, 0),
+                "A sheep, cut in stone, the size of a sheep.^He had six made, so that he would never be without them. People leave them a little grass, to be kind."
+                "~~In the dream it is a stone, and has never looked like anything.")
     for i, (x, y, r, sd, lamp) in enumerate(BARROWS):
         kit.tumulus(m, x, y, r, sd, lamp, text=barrow(i))
     # the wall the queue stands in the gap of: field stone right across the hill
@@ -199,9 +296,9 @@ def necro_road():
     m.solid(0, 290, 394, 300); m.solid(446, 290, W, 300)
     m.solid(394, 286, 446, 300, 1)            # the dead in the gap: there in the waking world, not in the dream
     kit.standard(m, 386, 308); kit.standard(m, 454, 308)
-    # the plain graves
-    kit.graves(m, 186, 566, 4, 2, seed=1); kit.graves(m, 420, 524, 3, 3, seed=2); kit.graves(m, 296, 418, 3, 1, seed=3)
-    kit.graves(m, 246, 192, 4, 2, seed=4); kit.graves(m, 70, 144, 2, 2, seed=5)
+    # the plain graves, in rows
+    kit.graves(m, 210, 570, 4, 2, seed=1); kit.graves(m, 402, 512, 3, 2, seed=2); kit.graves(m, 296, 418, 3, 1, seed=3)
+    kit.graves(m, 260, 232, 4, 1, seed=4); kit.graves(m, 70, 144, 2, 2, seed=5)
     # stones with things to say
     kit.stele(m, 112, 244, 0, uid="stele_kur", text="stele")
     kit.standard(m, 88, 250)
@@ -209,18 +306,23 @@ def necro_road():
         kit.stele(m, x, y, i + 1, text=epitaph(i))
     for (x, y) in ((286, 650), (350, 566), (226, 476), (252, 336), (474, 232), (372, 126)):
         kit.spirit_lamp(m, x, y)
-    for i, (x, y) in enumerate(((84, 560), (566, 590), (96, 384), (572, 430), (236, 262), (420, 76), (206, 76), (572, 160), (76, 196))):
-        kit.dead_tree(m, x, y, i)
-    for sd, (x, y) in enumerate(((204, 676), (436, 600), (150, 306), (510, 550), (414, 226), (96, 110))):
+    # the trees of the hill, in rows: up the east side of the road at the foot, along the wall, under the rock
+    for (x, y) in ((364, 690), (364, 630), (84, 540), (84, 420), (96, 384), (572, 430), (150, 306), (236, 286), (332, 286), (500, 286),
+                   (420, 80), (480, 80), (540, 80), (206, 82), (572, 160), (60, 206)):
+        thorn_tree(m, x, y)
+    for sd, (x, y) in enumerate(((204, 690), (436, 610), (510, 556), (414, 226), (96, 110))):
         kit.rock(m, x, y, sd)
-    for i, (x, y) in enumerate(((240, 650), (470, 470), (130, 400), (556, 348), (310, 250), (200, 110), (530, 84), (382, 440))):
-        kit.thorn(m, x, y, i)
-    for i, (x, y) in enumerate(((158, 646), (468, 660), (90, 500), (300, 470), (510, 200), (214, 160), (450, 140))):
+    k = 0
+    for (x0, y0) in ((228, 648), (396, 440), (296, 250)):                    # thorn, in blocks
+        for dx in (0, 14, 28):
+            for dy in (0, 12):
+                kit.thorn(m, x0 + dx, y0 + dy, 0); k += 1
+    for i, (x, y) in enumerate(((184, 664), (444, 664), (90, 500), (300, 470), (510, 200), (246, 160), (450, 140))):
         kit.urn(m, x, y, i)
-    for i, (x, y) in enumerate(((400, 640), (150, 350), (340, 216), (560, 400))):
+    for i, (x, y) in enumerate(((400, 640), (150, 350), (340, 216), (584, 400))):
         kit.bones(m, x, y, i)
     m.model("offer_a", town.offering_table(1), 156, 500, box=(-12, -10, 12, 0))
-    m.model("offer_b", town.offering_table(2, food=False), 486, 452, box=(-12, -10, 12, 0))
+    m.model("offer_b", town.offering_table(2, food=False), 420, 462, box=(-12, -10, 12, 0))
     # the gate from the terraces: two posts and a wall of field stone along the foot of the hill
     kit.gate_post(m, 284, H - 4); kit.gate_post(m, 356, H - 4)
     m.model("nr_foot_w", town.drystone((272 - 44) / 16.0, h=0.9, seed=13), 44, H - 2, box=None)
@@ -228,13 +330,13 @@ def necro_road():
     m.solid(0, H - 12, 296, H); m.solid(344, H - 12, W, H)
     m.marker("npc", 350, 640, who="namtar")
     m.marker("npc", 148, 512, who="gran_dur")
-    m.marker("npc", 504, 462, who="belu")
+    m.marker("npc", 438, 474, who="belu")
     m.marker("npc", 520, 300, who="goat_tomb")
     for i, x in enumerate((402, 414, 426, 438)):
         m.marker("npc", x, 296, who=f"queue_{i}")
     for i, (x, y) in enumerate(((150, 270), (96, 330), (300, 224), (520, 180))):
         m.enemy("unremembered", x, y, f"nr_u{i}")
-    for i, (x, y) in enumerate(((420, 470), (220, 520), (330, 262))):
+    for i, (x, y) in enumerate(((330, 470), (220, 520), (330, 262))):
         m.enemy("scarab", x, y, f"nr_s{i}")
     m.spawn("south", 320, H - 30, "up")
     m.spawn("north", 320, 86, "down")
@@ -252,38 +354,39 @@ def necropolis():
     W, H = TW * 16, TH * 16
     m = MapBuilder("necropolis", TW, TH, (10, 12, 28, 255), music="hill")
     T = m.lay(seed=211)
+    town.STYLE = tombs.LOOK
+    B = [(tombs.rich(), 200, 380), (tombs.knocker(), 112, 520), (tombs.five(), 246, 540), (tombs.pillow(), 484, 372), (tombs.reader(), 540, 612)]
+    town.STYLE = None
     land = T.ragged(T.rect(46, 60, W - 92, H), 14, 56, seed=35) | T.ragged(T.rect(-30, -30, W + 60, 174), 9, 34, seed=34) | T.rect(40, H - 26, W - 80, 26)
     cleft = T.ragged(T.disc(664, 256, 112, 96) | T.rect(690, 176, 90, 160), 7, 22, seed=36)
     isle = T.ragged(T.disc(664, 262, 34, 50), 3, 10, seed=37)
     land = (land & ~cleft) | isle
-    T.earth(T.all(), seed=1, base=3.3, ramp='ash', pebbles=0.014)
-    T.grass(T.ragged(T.disc(130, 190, 104, 66) | T.disc(660, 540, 76, 56) | T.disc(100, 540, 66, 50) | T.disc(430, 250, 44, 30), 5, 12, seed=2),
-            seed=3, ramp='sere', base=2.7, tufts=0.07)
+    straw(T)
     coast(T, land, seed=38)
     T.rock(isle, seed=39, base=3.5)
-    # the avenue from the gate up to the king's door, and the court in front of it
+    # the avenue from the gate up to the king's door, the court in front of it, and a path from every door to the avenue
     avenue = T.rect(364, 188, 40, H - 188)
     court = T.rect(272, 118, 224, 74)
-    T.slabs(avenue | court, seed=4, rows=(12,), wmin=16, wmax=20, ramp='pale', base=3.4, jitter=0.9, crack=0.1, whole=False, wear=0.6)
+    paths = (T.rect(192, 380, 16, 36) | T.rect(192, 400, 172, 16) |                       # the rich man's
+             T.rect(115, 520, 16, 48) | T.rect(115, 552, 249, 16) | T.rect(238, 540, 16, 16) |      # the man who knocks, and next door
+             T.rect(476, 372, 16, 24) | T.rect(404, 384, 88, 12) |                        # the watchman's
+             T.rect(558, 612, 16, 16) | T.rect(404, 614, 170, 14))                        # the scribe's
+    for k, (xa, ya, xb, yb) in enumerate(((124, 284, 280, 392), (64, 424, 168, 530), (204, 456, 298, 550), (436, 250, 532, 384), (482, 528, 606, 620))):
+        yard(T, xa, ya, xb, yb, seed=k + 5)
+    ways(T, avenue | court, paths, seed=4)
     T.border(court, 'lapis', 3.0, 2, 1.2)
     # the court of the game, east of the avenue
     game = T.rect(474, 400, 144, 92)
     T.slabs(game, seed=5, rows=(10, 11), wmin=12, wmax=18, ramp='flag', base=3.3, moss=0.0, whole=False)
     T.border(game, 'pale', 4.2, 1, 1.1)
-    for (x, y, w, h, sd) in ((56, 372, 84, 78, 46), (612, 500, 98, 62, 47), (420, 214, 66, 58, 48)):
-        plot(T, x, y, w, h, sd)
-    TOMBS = [('flat', 190, 338, 6.5, 3.0, 1.8, 11, True), ('vault', 176, 482, 6.0, 2.8, 1.7, 12, False), ('step', 300, 612, 4.5, 2.8, 1.4, 14, False),
-             ('vault', 566, 612, 6.0, 2.8, 1.7, 15, True), None, ('flat', 480, 330, 5.0, 2.6, 1.6, 16, False)]
-    # (the gap in the list is where a stepped tomb stood before the Generals' Barrow was dug out: the others keep their doors' words)
+    for (x, y, w, h, sd) in ((296, 440, 56, 64, 46), (612, 500, 98, 62, 47), (60, 300, 60, 64, 48)):
+        grave_plot(T, x, y, w, h, sd)
+    asphodel(T, ((150, 400), (250, 400), (84, 536), (150, 536), (300, 556), (440, 392), (530, 392), (500, 626), (596, 626), (80, 190), (190, 190),
+                 (340, 210), (424, 210), (340, 500), (424, 300), (640, 590), (60, 590)))
     GB = (676, 474, 3.0)                                 # the Generals' Barrow: the mouth of its passage, and how big it is
-    BARROWS = [(150, 598, 2.4, 13, True), (276, 440, 1.8, 18, True)]
-    for tb in TOMBS:
-        if tb is None: continue
-        (st, x, y, w, d, h, sd, lamp) = tb
-        T.contact(x - w * 8, y - d * 16, x + w * 8, y, reach=5, strength=1.4)
+    for (b, x, y) in B:
+        hkit.contact(T, b, x, y)
     T.contact(GB[0] - GB[2] * 14, GB[1] - GB[2] * 30, GB[0] + GB[2] * 14, GB[1] - 4, reach=7, strength=1.4)
-    for (x, y, r, sd, lamp) in BARROWS:
-        T.contact(x - r * 14, y - r * 30, x + r * 14, y - 4, reach=6, strength=1.3)
     T.contact(0, 0, W, 108, reach=9, strength=1.7)
     g = m.bake()
     void = fall(m, g, land, 213)
@@ -323,10 +426,13 @@ def necropolis():
     m.model("np_wall_w", town.drystone((336 - 44) / 16.0, h=0.9, seed=21), 44, H - 2, box=None)
     m.model("np_wall_e", town.drystone((W - 44 - 432) / 16.0, h=0.9, seed=22), 432, H - 2, box=None)
     m.solid(0, H - 12, 360, H); m.solid(408, H - 12, W, H)
-    for i, tb in enumerate(TOMBS):
-        if tb is None: continue
-        (st, x, y, w, d, h, sd, lamp) = tb
-        kit.tomb(m, x, y, w, d, h, sd, st, lamp, text=door(i + 5))
+    # ---- the houses of the great dead, each on its own ground
+    houses_of(m, B, IN_HILL)
+    hkit.gong(m, 152, 530, "np_knocker_gong")
+    kit.brazier(m, 516, 386, False, "np_pillow_sign")
+    for (x, ya, yb, sd) in ((116, 290, 384, 1), (272, 290, 384, 2), (56, 430, 524, 3), (160, 430, 524, 4), (196, 462, 544, 5), (290, 462, 544, 6),
+                            (474, 534, 616, 7), (598, 534, 616, 8)):
+        hkit.hedge_sn(m, x, ya, yb, sd, leaf=THORN)
     # the Generals' Barrow: the biggest mound on the hill, one door, and a standard either side that neither army will take down first
     gx, gy, gr = GB
     m.model("great_barrow", bprops.great_barrow(gr, 5), gx, gy, box=None, lights=False)
@@ -338,11 +444,9 @@ def necropolis():
                                               "{g}'ONE BARROW. ONE DOOR. THE CITY WAS NOT MADE OF MONEY.'{/}~~"
                                               "In the dream the door of the barrow stands open, as it does awake.^Nobody on this hill locks anything. Nobody is expected to leave.")
     m.light(gx, gy - 14, 2.6, (1.0, 0.70, 0.36), 0.4, h=0.8)
-    for i, (x, y, r, sd, lamp) in enumerate(BARROWS):
-        kit.tumulus(m, x, y, r, sd, lamp, text=barrow(i + 2))
-    # the garden of the dead: bare trees, two fire altars that have gone out, and the stone they used to light
-    for i, (x, y) in enumerate(((70, 168), (116, 224), (200, 152), (236, 232), (66, 262), (156, 280))):
-        kit.dead_tree(m, x, y, i + 2)
+    # the garden of the dead: its trees in two rows, two fire altars that have gone out, and the stone they used to light
+    for (x, y) in ((70, 168), (134, 152), (200, 152), (70, 232), (134, 250), (200, 232)):
+        thorn_tree(m, x, y)
     kit.stele(m, 134, 182, 1, uid="stele_tar", text="stele")
     kit.brazier(m, 104, 194, False, "garden_0")
     kit.brazier(m, 164, 194, False, "garden_1")
@@ -350,37 +454,40 @@ def necropolis():
     # the stone on the island, and what somebody left with it
     kit.stele(m, 664, 240, 2, uid="stele_ash", text="stele")
     kit.chest(m, 664, 290, "isle_vessel", "vessel")
-    # graves, stones, lamps along the avenue
-    kit.graves(m, 66, 392, 3, 2, seed=6); kit.graves(m, 622, 520, 4, 2, seed=7); kit.graves(m, 430, 234, 2, 1, seed=8)
-    for i, (x, y) in enumerate(((330, 560), (438, 560), (330, 440), (438, 440), (330, 320), (438, 320), (330, 240), (438, 240))):
+    # graves in rows; stones and lamps along the avenue, a pair to every pair
+    kit.graves(m, 304, 462, 2, 2, seed=6); kit.graves(m, 622, 520, 4, 2, seed=7); kit.graves(m, 70, 322, 2, 2, seed=8)
+    for i, (x, y) in enumerate(((330, 590), (438, 590), (330, 500), (438, 500), (330, 320), (438, 320), (330, 240), (438, 240))):
         if i % 2 == 0: kit.spirit_lamp(m, x, y)
-        else: kit.stele(m, x, y, i, text=epitaph(6 + i // 2))
+        else: kit.stele(m, x, y, i, text=epitaph((6, 10, 11, 9)[i // 2]))
     # the court of the game: four columns that held a roof once, the board, two seats
     for i, (x, y) in enumerate(((484, 416), (606, 416), (484, 488), (606, 488))):
         m.model(f"col_{i % 2}", necro.broken_column(1.4 - 0.5 * (i % 2), i, fallen=(i == 1)), x, y, box=(-5, -9, 5, -1))
     m.model("game_board", town.game_board(), 546, 452, box=(-8, -10, 8, 0), kind="look", data={"id": "game_board"})
     m.model("stone_seat", necro.stone_seat(), 520, 452, box=(-5, -8, 5, 0))
     m.model("stone_seat", necro.stone_seat(), 572, 452, box=(-5, -8, 5, 0))
-    m.model("offer_c", town.offering_table(3), 262, 352, box=(-12, -10, 12, 0))
+    m.model("offer_c", town.offering_table(3), 300, 404, box=(-12, -10, 12, 0))
     m.model("offer_d", town.offering_table(4, food=False), 640, 624, box=(-12, -10, 12, 0))
-    for sd, (x, y) in enumerate(((66, 330), (700, 356), (440, 620), (604, 146))):
+    for sd, (x, y) in enumerate(((66, 400), (700, 356), (440, 560), (604, 146))):
         kit.rock(m, x, y, sd + 3)
-    for i, (x, y) in enumerate(((704, 560), (60, 590), (520, 560), (560, 172))):
-        kit.dead_tree(m, x, y, i)
-    for i, (x, y) in enumerate(((240, 290), (104, 470), (520, 250), (620, 380), (230, 560), (470, 590), (86, 300), (590, 200))):
-        kit.thorn(m, x, y, i)
-    for i, (x, y) in enumerate(((236, 346), (120, 492), (444, 344), (620, 624), (340, 624), (712, 500), (512, 512))):
+    # the hill's trees, in rows: along the west edge, either side of the gate, behind the court of the game
+    for (x, y) in ((60, 480), (60, 556), (60, 620), (320, 622), (448, 600), (704, 560), (704, 620), (640, 380), (560, 172), (620, 172), (300, 300), (444, 300)):
+        thorn_tree(m, x, y)
+    for (x0, y0) in ((296, 590), (420, 430), (620, 596)):                    # thorn, in blocks
+        for dx in (0, 14, 28):
+            for dy in (0, 12):
+                kit.thorn(m, x0 + dx, y0 + dy, 0)
+    for i, (x, y) in enumerate(((286, 398), (84, 590), (452, 344), (620, 624), (340, 624), (712, 500), (512, 512))):
         kit.urn(m, x, y, i)
-    for i, (x, y) in enumerate(((300, 270), (580, 340), (90, 470))):
+    for i, (x, y) in enumerate(((300, 270), (580, 340), (90, 600))):
         kit.bones(m, x, y, i)
     m.marker("npc", 527, 453, who="general_a")
     m.marker("npc", 565, 453, who="general_b")
-    m.marker("npc", 250, 530, who="poet")
+    m.marker("npc", 320, 584, who="poet")
     m.marker("npc", 300, 172, who="doorman")
-    m.marker("npc", 420, 590, who="goat_hill")
-    for i, (x, y) in enumerate(((110, 300), (240, 400), (640, 580), (540, 230), (90, 300), (210, 290))):
+    m.marker("npc", 428, 596, who="goat_hill")
+    for i, (x, y) in enumerate(((90, 280), (300, 420), (640, 580), (540, 230), (150, 270), (230, 270))):
         m.enemy("unremembered", x, y, f"np_u{i}")
-    for i, (x, y) in enumerate(((560, 540), (310, 500), (110, 440))):
+    for i, (x, y) in enumerate(((450, 520), (340, 470), (60, 420))):
         m.enemy("scarab", x, y, f"np_s{i}")
     m.spawn("south", 384, H - 30, "up")
     m.spawn("door", 384, 138, "down")

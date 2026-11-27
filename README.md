@@ -24,6 +24,14 @@ In chapter two he climbs the Hill of Sleepers for the Dawn Horn, the one thing t
 
 *The Lower Town, forty nights in: eight houses, no two alike, each on its own plot.*
 
+![The Hill of Sleepers](docs/screens/55-the-hill-of-sleepers.png)
+
+*The Hill of Sleepers: the king's door, the avenue up to it, and the houses of the great dead, each on its own ground.*
+
+![The map](docs/screens/56-the-map.png)
+
+*The map page: the whole country as one picture, a tenth the size.*
+
 | | |
 |---|---|
 | ![The watch house](docs/screens/45-the-watch-house.png) | ![Ilu-Bani's hall](docs/screens/46-ilu-banis-hall.png) |
@@ -32,6 +40,10 @@ In chapter two he climbs the Hill of Sleepers for the Dawn Horn, the one thing t
 | The lamp seller's: every lamp in the shop lit, forty nights running. His door opens when his sign is burning | The tablet house. The stick has been about to come down for forty nights, and the boy under it has had time to think |
 | ![On Ilu-Bani's roof](docs/screens/49-on-ilu-banis-roof.png) | ![The table she keeps](docs/screens/50-the-table-she-keeps.png) |
 | Out of the rooms above and on to the roof: the way in was a tunnel a prisoner dug with a spoon | Widow Ilta's house has one more room in the dream: a table laid for two, and his sandals wet from the road |
+| ![The two vaults](docs/screens/51-the-two-vaults.png) | ![Nine thousand and eight](docs/screens/52-nine-thousand-and-eight.png) |
+| Two vaults under one roof line, one door between them, bolted from inside: the way in is to be asleep | A shepherd who has counted his flock since the god lay down, and has just lost his place |
+| ![Laid for twelve](docs/screens/53-laid-for-twelve.png) | ![Tablet nine of sixty](docs/screens/54-tablet-nine-of-sixty.png) |
+| A table laid for twelve, and the only one who came | A scribe on tablet nine of sixty, and the one person who has to listen |
 | ![Up the stair](docs/screens/37-up-the-stair.png) | ![The goat's roof](docs/screens/38-the-goats-roof.png) |
 | The stair up the front of the bakery is a stair. A roof is a place: go in at the door up there, or leave by the nearest edge | The house the goat stands on. The street door is barred from inside; the ladder is somebody else's, borrowed forty nights ago |
 | ![The Seven Jars](docs/screens/39-the-seven-jars.png) | ![The weavers'](docs/screens/40-the-weavers.png) |
@@ -138,6 +150,19 @@ And the goat. The goat is everywhere.
 - **Stairs, ladders, roofs.** The stair up the front of a house is a stair: walk on at its foot and Azar climbs to the roof. Ladders too. A roof is a place. Walk about on it, go in at the door up there, and leave by whichever edge is nearest: he hops down.
 - **Some doors are shut.** The counting house opens to its gong, for people who have come to pay. The weavers bolted their street door ten years ago and come and go by the roof, like the cats. The goat's house is barred from inside, by somebody who then left through the roof. The board behind the counter of the Seven Jars is bolted from underneath: the way under it is the cellar door in the alley, or the hole at the foot of the sea cliffs that the crabs use.
 - **Things worth finding.** The goat keeps a key. The collector keeps a strongroom. The potter walled up his own cash room from the inside, and the plaster is still soft in one place. Under the flour bin in the bakery there is a stair. And in the oracle's house there is a door that is only there when your eyes are shut.
+
+## The Houses of the Dead
+
+- **Nine houses, and somebody home in eight.** Up on the Hill of Sleepers it is the dead who cannot sleep, so their lamps are lit and their doors are answered. The town they keep is laid out like the one below it, in the stone the dead prefer: walls the white of bone, roofs of bronze tile gone green, straw where there was grass, hedges of thorn that died years ago and are clipped all the same, one kind of tree, and a stone by every door that says who is behind it.
+- **On the Road of the Dead.** A brick vault with a moon over the door and the cleanest step on the hill; inside, Amat is scrubbing a floor that was clean before you were born. A long low tomb with a flock cut along the front of it, nose to tail; inside, a shepherd has been counting them since the god lay down, and you have just made him lose his place. A stepped tomb built a little taller than its neighbours on purpose, its door bricked up from the inside. And two vaults under one roof line with one door between them: they were married fifty years, and have spent every night since on whose side is whose.
+- **On the hill.** A rich man's tomb with a porch of alabaster and a table laid for twelve; he is the only one who came. A vault with a gong at the door and a man inside who knocks, not to be let out, only to know that somebody is there. A door with BACK IN FIVE MINUTES chalked on it under forty nights of dust. A scribe on tablet nine of sixty, and the one person who has to listen. And an old night watchman, three hundred years owed, plumping a pillow that has been stone since they laid him on it.
+- **The ways in.** Four doors stand open. The stepped tomb is entered from its roof: up the steps, down the hatch. The man who knocks answers a gong. The watchman will not open to the dark: light the fire bowl at his door. Nobody is coming to the door of the two vaults, but the dead do not dream: walk in at it asleep, when there is nobody behind it to hold it shut, and draw the bolt from inside. And the house whose owner is out can only be reached by the hole that robbers dug into the house next door.
+- **Asleep, the hill is empty.** In the dream there is nobody in any of these rooms. After the dawn they have all gone to bed at last, and every coffin says the same thing.
+
+## One land
+
+- **One kit for the whole world.** The towns, the olive terraces, the sea cliffs, the temple yard and the Hill are laid out with the same pieces: ground kept in a weave of tufts (grass below, straw on the Hill), ways with one kerb round them, ledges of the hill's own rock with grass over the lip and steps cut through, one tree to a country and that one planted in rows, hedges clipped square, flowers in threes, and a board where a way begins.
+- **The map is one land.** The map page shows the whole country as one picture, a tenth the size: the places themselves, set where they lie, with the sea along the south, the rock of the Hill to the west and the road of the dead climbing it, the rest of the sleeping city inside its wall, and the ziggurat standing over the temple yard.
 
 ## Controls
 

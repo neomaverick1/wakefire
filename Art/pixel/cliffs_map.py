@@ -8,6 +8,7 @@ from px import Canvas, R
 import region_art as G
 import town
 import kit
+import hkit
 from mapkit import MapBuilder
 
 TW, TH = 56, 36
@@ -65,14 +66,18 @@ def build():
     big = lambda mask: np.kron(mask, np.ones((C, C), bool))
     sea = big(water)
     # the clifftop
-    T.grass(T.all(), seed=1, flowers=0.008, tufts=0.03, fringe=0)
-    T.earth(T.ragged(T.stroke([(0, 320), (120, 318), (200, 350), (258, 372), (262, 400)], 20) | T.stroke([(120, 318), (300, 250), (440, 150), (470, 120)], 14), 4, 9, seed=2),
-            seed=3, base=4.1, ramp='dust', pebbles=0.01)
+    hkit.green(T, T.all(), seed=1)
+    hkit.track(T, T.stroke([(0, 320), (120, 318), (200, 350), (258, 372), (262, 400)], 20) | T.stroke([(120, 318), (300, 250), (440, 150), (470, 120)], 14), seed=3)
     # the rocky rim where the clifftop ends above the sea
     T.rock(T.ragged(T.rect(508, 96, 56, 322), 4, 8, seed=4) | T.rect(520, 96, 40, 318), seed=5)
     # the beach, the cove across the water
     T.sand(T.rect(0, 380, 560, 150) | T.rect(800, 96, 96, 236), seed=6)
     T.water(T.ragged(sea, 3, 11, seed=9), seed=7, deep=46.0)
+    # flowers on the clifftop, where somebody planted them; and on the sand, what the sea leaves, in threes
+    for (x, y) in ((30, 290), (30, 350), (150, 290), (232, 340), (330, 226), (420, 130), (60, 60), (300, 60), (480, 300), (200, 200)):
+        hkit.flowers(T, x, y, 'wyr'[(x + y) % 3])
+    for (x, y) in ((60, 500), (150, 440), (300, 506), (420, 450), (500, 506), (830, 240), (850, 300)):
+        hkit.flowers(T, x, y, 'w', leaf='sand')
     # the pier
     pier = T.rect(496, 440, 144, 32)
     T.planks(pier, seed=8, w=6, along='x')
@@ -85,7 +90,6 @@ def build():
     m.set_into_ground(town.steps(38 / 16.0, n=5, rise=1.0, run=1.1), 242, 414)
     # (a hole at the foot of the low cliff: the way the crabs go under the town, and so can a man on his knees)
     m.solid(0, 380, 112, 414); m.solid(128, 380, 240, 414); m.solid(112, 380, 128, 404); m.solid(282, 380, 520, 414)
-    import hkit
     m.model("cave_mouth", hkit.cave_mouth(3), 120, 415, box=None, shadow=False, lights=False)
     m.exit(114, 404, 126, 411, "lowtown_in", "beer_cave_in")
     m.spawn("beer_cave", 120, 428, "down")
@@ -110,10 +114,14 @@ def build():
     for x in (512, 628):
         kit.torch(m, x, 446, light=4.0)
     # clifftop dressing
-    for (x, y, sd) in ((80, 120, 1), (200, 80, 2), (420, 180, 3), (120, 290, 4), (380, 330, 5)):
-        kit.olive(m, x, y, sd)
-    for k, (x, y) in enumerate(((300, 200), (316, 210), (40, 220), (460, 250), (476, 262), (230, 340))):
-        kit.bush(m, x, y, k)
+    # the town's own tree, in a row along the way out to the point, and three more back from the road
+    for (x, y) in ((80, 120), (200, 96), (320, 150), (120, 284), (380, 330), (60, 220)):
+        hkit.tree(m, x, y)
+    for (x0, y0) in ((296, 200), (456, 250)):                                     # myrtle, in blocks of four
+        for dx in (0, 16):
+            for dy in (0, 12):
+                kit.bush(m, x0 + dx, y0 + dy, 1)
+    hkit.name_post(m, 226, 362, "cl_name", "{g}THE SEA CLIFFS.{/}^{t}NO BATHING. NO FISHING. NO FEEDING THE CRABS.{/}| The crabs have never been able to read. It has not held them back.")
     for (x, y, sd) in ((60, 470, 1), (380, 440, 2), (180, 520, 0), (840, 190, 3), (820, 320, 1), (340, 70, 4)):
         kit.rock(m, x, y, sd)
     # ---------------------------------------------------------------- where the clifftop and the beaches stop

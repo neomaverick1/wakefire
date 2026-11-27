@@ -9,6 +9,7 @@ import ashkel_art as A
 import region_art as G
 import town
 import kit
+import hkit
 from mapkit import MapBuilder
 
 CHEST = '/srv/Wakefire/Assets/Wakefire/Resources/Objects/chest.png'
@@ -46,6 +47,13 @@ def temple_yard():
     # two courts of pale stone, and between them the chasm
     courts = T.rect(32, 340, W - 64, H - 340) | T.rect(32, 58, W - 64, 142)
     T.slabs(courts, seed=72, rows=(12,), wmin=16, wmax=16, ramp='pale', base=4.0, jitter=0.9, crack=0.06, whole=False, wear=0.5, moss=0.05)
+    # the temple's gardens: a lawn either side of the way in each court, kept, with a kerb of pale stone
+    for k, (x, y, w, h) in enumerate(((60, 372, 204, 164), (376, 372, 204, 164), (60, 92, 180, 92), (400, 92, 180, 92))):
+        lawn = T.rect(x, y, w, h)
+        hkit.green(T, lawn, seed=5 + k)
+        T.border(lawn, ramp='pale', tone=4.9, width=2, hgt=1.2)
+        for (fx, fy, kind) in ((x + 8, y + 8, 'w'), (x + w - 22, y + 8, 'r'), (x + 8, y + h - 22, 'y'), (x + w - 22, y + h - 22, 'w')):
+            hkit.flowers(T, fx, fy, kind)
     # the way to the door: paler still, between two bands of glazed brick studded with gold
     way = T.rect(300, 58, 40, 142) | T.rect(300, 340, 40, H - 340)
     T.slabs(way, seed=73, rows=(12,), wmin=20, wmax=20, ramp='pale', base=4.8, jitter=0.5, crack=0.03, whole=False, wear=0.3)
@@ -106,8 +114,8 @@ def temple_yard():
         kit.brazier(m, x, y, lit=True)
     kit.brazier_frames(m)
     kit.sign(m, 360, 470, "sign_yard", "sign_yard")
-    for (x, y, sd) in ((60, 560, 0), (580, 560, 1), (70, 420, 2), (570, 430, 3)):
-        kit.palm(m, x, y, sd)
+    for (x, y) in ((76, 552), (564, 552), (76, 420), (564, 420)):          # (one palm, the same at every corner)
+        kit.palm(m, x, y, 0)
     for (x, y, sd) in ((180, 520, 1), (470, 540, 2), (176, 122, 3), (464, 122, 4)):
         m.model(f"planter_{sd}", town.planter(sd), x, y, box=(-14, -10, 14, 0))
     m.light(320, 260, 7.0, (0.55, 0.62, 1.0), 0.45, flicker=False, h=0.4)

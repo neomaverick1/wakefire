@@ -144,6 +144,7 @@ namespace Wakefire
         }
 
         readonly System.Collections.Generic.List<Vector2> graves = new System.Collections.Generic.List<Vector2>();
+        static readonly string[] TombHouses = { "nr_sweeper", "nr_shepherd", "nr_proud", "nr_couple", "np_rich", "np_knocker", "np_five", "np_reader", "np_pillow" };
         float graveClock;
 
         void SetupHill(string map, Map m)
@@ -159,8 +160,12 @@ namespace Wakefire
             {
                 // every door on the hill has somebody snoring behind it
                 foreach (var pr in m.props)
-                    if (pr && pr.data.s != null && (pr.data.s.StartsWith("tomb_") || pr.data.s.StartsWith("tumulus_") || pr.data.s.StartsWith("grave_")))
-                        graves.Add(pr.basePos + new Vector2(0, pr.data.s.StartsWith("grave_") ? 0.9f : 1.4f));
+                {
+                    if (!pr || pr.data.s == null) continue;
+                    // (a house of the dead is a prop hung from the top of its picture: its roof is where the snoring comes out)
+                    if (System.Array.IndexOf(TombHouses, pr.data.s) >= 0) graves.Add(pr.basePos + new Vector2(0, -0.6f));
+                    else if (pr.data.s.StartsWith("tumulus_") || pr.data.s.StartsWith("grave_")) graves.Add(pr.basePos + new Vector2(0, pr.data.s.StartsWith("grave_") ? 0.9f : 1.4f));
+                }
                 if (map == "necro_road") Unblock(394, 286, 446, 300);
             }
             switch (map)

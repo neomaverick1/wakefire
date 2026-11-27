@@ -21,7 +21,7 @@ MT = Mats(0, 0)
 
 
 # ------------------------------------------------------------------ the wall of a room
-def house_wall(length, doors=(), clear=(), plaster=('limewash', 4.4), dado=('red', 3.4), band=None, foot='brick', hang=(), beams=True, h=2.75, d=0.25, seed=0):
+def house_wall(length, doors=(), clear=(), plaster=('limewash', 4.4), dado=('red', 3.4), band=None, foot='brick', hang=(), beams=True, h=2.75, d=0.25, seed=0, fresh=False):
     """A room's north wall, running east from the origin. plaster: its colour; dado: the painted
     lower part; band: a painted line of pattern under the ceiling ('zigzag', 'cones', 'lines', 'writing');
     hang: (x, what) = what is on it or let into it, x in tiles from its west end: 'window', 'niche' (a lamp,
@@ -29,6 +29,8 @@ def house_wall(length, doors=(), clear=(), plaster=('limewash', 4.4), dado=('red
     m = Model()
     r = rnd(seed)
     body = M(plaster[0], plaster[1], m_plaster(bricks=True, crack=True), ramp2='brick')
+    if fresh:                       # a wall somebody keeps: no brick showing, not a crack in it
+        body = M(plaster[0], plaster[1], m_mottle(24, 0.3))
     top = M(plaster[0], plaster[1] + 0.5, m_mottle(14, 0.3))
     m.part(); m.box(0, 0, 0, length, d, h, body, top=top)
     if foot == 'stone':
@@ -675,7 +677,7 @@ class House(Floor):
         main = abs(length * 16 - (end - start)) < 2
         hang = [(hx - start / 16.0, what) for (hx, what) in L.get('hang', ()) if 0.6 < hx - start / 16.0 < length - 0.6] if main else ()
         return house_wall(length, doors, clear, plaster=L.get('plaster', ('limewash', 4.4)), dado=L.get('dado', ('red', 3.4)), band=L.get('band'),
-                          foot=L.get('foot', 'brick'), hang=hang, beams=L.get('beams', True), seed=self.seed + rm.c * 7 + rm.r)
+                          foot=L.get('foot', 'brick'), hang=hang, beams=L.get('beams', True), seed=self.seed + rm.c * 7 + rm.r, fresh=L.get('fresh', False))
 
     def floor_look(self, T, rm, sd, whole, fx, fy, fw, fh):
         kind = rm.look.get('floor', 'earth')

@@ -122,7 +122,7 @@ namespace Wakefire
                     return true;
                 }
             }
-            return false;
+            return SpawnTombs(who, at);
         }
     }
 }
