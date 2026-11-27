@@ -56,7 +56,7 @@ ROADS = [(('lowtown', (480, 0)), ('ashkel', (480, 480))), (('ashkel', (480, 30))
 INSIDE = {'zig_1': ('temple_yard', 320, 70), 'zig_2': ('temple_yard', 320, 70), 'zig_3': ('temple_yard', 320, 70), 'zig_hi': ('temple_yard', 320, 70),
           'crypt': ('terraces', 420, 30), 'barrow': ('necropolis', 676, 470),
           'tomb_1': ('necropolis', 384, 100), 'tomb_2': ('necropolis', 384, 100), 'tomb_3': ('necropolis', 384, 100)}
-W, H = 292, 218
+W, H = 292, 228
 
 
 def clay(w, h, seed=7):

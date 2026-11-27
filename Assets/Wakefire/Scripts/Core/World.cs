@@ -46,6 +46,8 @@ namespace Wakefire
             Busy = false;
         }
 
+        float darkFor;
+
         void Update()
         {
             TouchControls.Poll();
@@ -56,6 +58,14 @@ namespace Wakefire
             if (!p || !m || Busy) return;
             if (p.state == Player.State.Dead) { StartCoroutine(Respawn()); return; }
             if (p.state != Player.State.Free) return;
+            // nothing may leave him walking about in the dark: if the screen is still black with nobody holding it so
+            // (no scene playing, no title up, no way through a door), the game lifts it itself
+            if (Fade.Amount > 0.98f && Title.I == null && !(Story.I && Story.I.Running))
+            {
+                darkFor += Time.unscaledDeltaTime;
+                if (darkFor > 1.2f) { darkFor = 0; Debug.LogWarning("[game] the screen was left dark; lifting it"); StartCoroutine(Fade.In(0.4f)); }
+            }
+            else darkFor = 0;
             bool inside = false;
             foreach (var mk in m.data.markers)
             {

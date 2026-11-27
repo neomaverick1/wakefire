@@ -258,7 +258,9 @@ namespace Wakefire
                 case Mode.Pick:
                     if (sel == Save.Slots) { mode = Mode.Erase; sel = Mathf.Max(0, FirstWith(true)); Redraw(); return; }
                     leaving = true;
-                    StartCoroutine(Leave(sel));
+                    // (run by the game, not by the title: the title is gone before the dark has lifted off the place,
+                    //  and a routine dies with whatever was running it)
+                    Game.I.StartCoroutine(Leave(sel));
                     return;
                 case Mode.Erase:
                     if (sel == Save.Slots) { mode = Mode.Pick; sel = Save.Slot; Redraw(); return; }

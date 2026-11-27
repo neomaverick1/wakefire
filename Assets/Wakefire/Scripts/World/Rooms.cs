@@ -33,7 +33,8 @@ namespace Wakefire
         readonly Transform[] dark = new Transform[4];
         Rect shown;
         static readonly Color Moonlit = new Color(0.80f, 0.82f, 0.97f), Unlit = new Color(0.085f, 0.08f, 0.14f), Dim = new Color(0.36f, 0.33f, 0.46f),
-                              Lamplit = new Color(0.70f, 0.60f, 0.52f);          // a room of a house with its lamps burning: warm, and not as bright as the moon makes the street
+                              Lamplit = new Color(0.70f, 0.60f, 0.52f),          // a room of a house with its lamps burning: warm, and not as bright as the moon makes the street
+                              Bright = new Color(0.98f, 0.84f, 0.62f);           // a room with every lamp in it lit: the lamp seller's
 
         public static string VisitedFlag(string mapName, string room) => "room_" + mapName + "_" + room;
 
@@ -170,7 +171,7 @@ namespace Wakefire
         }
 
         /// <summary>What light a room has before anything in it burns.</summary>
-        Color Light(Room r) => Dark(r) ? Unlit : r != null && r.Is("dim") ? Dim : r != null && r.Is("lamp") ? Lamplit : Moonlit;
+        Color Light(Room r) => Dark(r) ? Unlit : r != null && r.Is("dim") ? Dim : r != null && r.Is("bright") ? Bright : r != null && r.Is("lamp") ? Lamplit : Moonlit;
 
         /// <summary>A room with no light of its own until its fires are lit.</summary>
         public bool Dark(Room r) => r != null && r.Is("dark") && !Story.Has("lit_" + Game.I.CurrentMap + "_" + r.id);

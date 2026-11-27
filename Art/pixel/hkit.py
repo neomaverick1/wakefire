@@ -219,6 +219,41 @@ def fence_sn(m, x, y0, y1, seed=0):
     m.model(f"fencen_{D}_{seed}", fence_ns(D / 16.0, seed), x, y1, box=(0, -D, 2, 0))
 
 
+def plot(m, x0, y0, x1, y1, gates=(), sides='swe', seed=0, plaster=1, lamp=()):
+    """Low walls round a plot (x0, y0)-(x1, y1), with a way through wherever a path goes in.
+    gates: (side, a, b) = the opening, along that side. lamp: which gates have a lit pier."""
+    g = {s: sorted((a, b) for (sd, a, b) in gates if sd == s) for s in 'nswe'}
+    k = [0]
+
+    def run(a, b, cuts):
+        out = []
+        for (ca, cb) in cuts:
+            if ca > a: out.append((a, ca))
+            a = max(a, cb)
+        if a < b: out.append((a, b))
+        return out
+    if 's' in sides:
+        for (a, b) in run(x0, x1, g['s']):
+            wall_ew(m, a, b, y1, seed + k[0], plaster); k[0] += 1
+        for i, (a, b) in enumerate(g['s']):
+            gate_pier(m, a - 4, y1 + 1, seed, plaster, lamp=('s', i) in lamp)
+            gate_pier(m, b + 4, y1 + 1, seed + 1, plaster, lamp=('s', i) in lamp)
+    if 'n' in sides:
+        for (a, b) in run(x0, x1, g['n']):
+            wall_ew(m, a, b, y0 + 6, seed + k[0], plaster); k[0] += 1
+        for i, (a, b) in enumerate(g['n']):
+            gate_pier(m, a - 4, y0 + 7, seed, plaster)
+            gate_pier(m, b + 4, y0 + 7, seed + 1, plaster)
+    ya = y0 + (6 if 'n' in sides else 0); yb = y1 - (6 if 's' in sides else 0)
+    for sd, x in (('w', x0), ('e', x1 - 6)):
+        if sd not in sides: continue
+        for (a, b) in run(ya, yb, g[sd]):
+            wall_ns(m, x, a, b, seed + k[0], plaster); k[0] += 1
+        for i, (a, b) in enumerate(g[sd]):
+            gate_pier(m, x + 3, a, seed, plaster, lamp=(sd, i) in lamp)
+            gate_pier(m, x + 3, b + 8, seed + 1, plaster, lamp=(sd, i) in lamp)
+
+
 # ------------------------------------------------------------------ the ground of a tidy town
 def calm(T, mask, ramp='dust', base=4.2, seed=1, amp=0.5, pebbles=0.0015):
     """Swept ground: one colour, a breath of a second, a pebble now and then."""
@@ -305,7 +340,7 @@ def place(m, b, X, Y, inside=None, say=None, face="down"):
         m.exit(cx - dw + 2, Y - 9, cx + dw - 2, Y - 4, inside, name + "_in")
         if i in b.leaves:
             lk, lw, lh, lb = b.leaves[i]
-            when = f"gong:{b.key}_gong" if kind == 'gong' else f"on:{b.key}_latch"
+            when = {'gong': f"gong:{b.key}_gong", 'lit': f"lit:{b.key}_sign"}.get(kind, f"on:{b.key}_latch")
             m.model(f"{b.key}_leaf{i}", houses.leaf(lk, lw, lh, lb), cx, Y, box=(-dw, -9, dw, 0), kind="bars", shadow=False, lights=False,
                     data={"id": f"{b.key}_door", "text": when, "who": "door|" + say.get(i, "Shut."), "say": say.get(('open', i))})
 

@@ -13,7 +13,7 @@ namespace Wakefire
         public static Player I;
         public enum State { Free, Attack, Roll, Nod, Use, Hurt, Dead, Talk, Cutscene, ItemGet, Guard, Throw, Stone, Rail }
         /// <summary>What the action button would do this moment.</summary>
-        public enum Act { None, Talk, Open, Read, Look, Guard, Take, Lower }
+        public enum Act { None, Talk, Open, Read, Look, Guard, Take, Lower, Climb }
         public Act Action { get; private set; }
         public bool Guarding => state == State.Guard;
         /// <summary>Stone, for as long as the Wakefire takes to burn it off him.</summary>
@@ -427,14 +427,19 @@ namespace Wakefire
         {
             var n = NpcInFront();
             if (n != null && n.talk != null) return Act.Talk;
-            var pr = PropInFront(0.6f, Acts);
+            var pr = ActProp();
             if (pr != null && pr.Kind == "dreamthing") return Act.Take;
             if (pr != null && pr.Kind == "standard" && !Story.Has(pr.data.id)) return Act.Lower;
             if (pr != null)
                 return pr.Kind == "chest" || pr.Kind == "bigchest" || pr.Kind == "lockdoor" || pr.Kind == "bigdoor" || pr.Kind == "gate" || pr.Kind == "latch" ? Act.Open
                      : pr.Kind == "sign" ? Act.Read : pr.Kind == "npc" ? Act.Talk : Act.Look;
+            if (RailNear(out _, out _)) return Act.Climb;
             return hasShield ? Act.Guard : Act.None;
         }
+
+        /// <summary>What the action button would act on. Something of the dream that can be taken comes before
+        /// anything that can only be looked at: the fire in a bowl, before the bowl.</summary>
+        Prop ActProp() => PropInFront(0.6f, p => p.Kind == "dreamthing" && Pocket.There(p)) ?? PropInFront(0.6f, Acts);
 
         bool stepPuff;
         float pushClock;
@@ -721,8 +726,10 @@ namespace Wakefire
                 Story.Run(sleeper ? Story.I.FirstNightTalk(n) : n.talk(), n);
                 return true;
             }
-            var pr = PropInFront(0.6f, Acts);
+            var pr = ActProp();
             if (pr != null) { Interacted?.Invoke(pr); return true; }
+            // at the foot of a stair or a ladder, or back at the head of one: he takes it
+            if (RailNear(out var mk, out bool foot)) { StartRail(mk, foot); return true; }
             return false;
         }
 

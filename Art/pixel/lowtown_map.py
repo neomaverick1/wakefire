@@ -34,47 +34,12 @@ PLACES = [
 SAY = {
     'lt_weavers': {0: "Bolted. The sisters who weave here have not spoken to each other in nine years, or to the street in ten.^"
                       "There is a ladder at the east end. The cats use it."},
-    'lt_goat': {0: "Barred from inside, with two planks and a spite.^Nobody has lived here since before the sleep. Somebody keeps the roof very tidy.",
+    'lt_goat': {0: "Barred from inside, with two planks and a spite.^Nobody has lived here since before the sleep. Somebody keeps the roof very tidy, and there is a ladder up to it.",
                 ('open', 0): "The bar comes off. The door of the goat's house stands open.^The goat does not use it. The goat has never needed a door."},
     'lt_tax': {0: "The door of the counting house. There is more bronze on it than on a shield.^"
                   "It opens to the gong, for people who have come to pay. Nobody has rung it in forty nights. Nobody rang it much before.",
                ('open', 0): "The gong sings, and somewhere inside a bolt remembers its duty.^The counting house is open for business. It is the only thing in Ashkel that is."},
 }
-
-
-def plot(m, x0, y0, x1, y1, gates=(), sides='swe', seed=0, plaster=1, lamp=()):
-    """Low walls round a plot (x0, y0)-(x1, y1), with a way through wherever a path goes in.
-    gates: (side, a, b) = the opening, along that side. lamp: which gates have a lit pier."""
-    g = {s: sorted((a, b) for (sd, a, b) in gates if sd == s) for s in 'nswe'}
-    k = [0]
-
-    def run(a, b, cuts):
-        out = []
-        for (ca, cb) in cuts:
-            if ca > a: out.append((a, ca))
-            a = max(a, cb)
-        if a < b: out.append((a, b))
-        return out
-    if 's' in sides:
-        for (a, b) in run(x0, x1, g['s']):
-            hkit.wall_ew(m, a, b, y1, seed + k[0], plaster); k[0] += 1
-        for i, (a, b) in enumerate(g['s']):
-            hkit.gate_pier(m, a - 4, y1 + 1, seed, plaster, lamp=('s', i) in lamp)
-            hkit.gate_pier(m, b + 4, y1 + 1, seed + 1, plaster, lamp=('s', i) in lamp)
-    if 'n' in sides:
-        for (a, b) in run(x0, x1, g['n']):
-            hkit.wall_ew(m, a, b, y0 + 6, seed + k[0], plaster); k[0] += 1
-        for i, (a, b) in enumerate(g['n']):
-            hkit.gate_pier(m, a - 4, y0 + 7, seed, plaster)
-            hkit.gate_pier(m, b + 4, y0 + 7, seed + 1, plaster)
-    ya = y0 + (6 if 'n' in sides else 0); yb = y1 - (6 if 's' in sides else 0)
-    for sd, x in (('w', x0), ('e', x1 - 6)):
-        if sd not in sides: continue
-        for (a, b) in run(ya, yb, g[sd]):
-            hkit.wall_ns(m, x, a, b, seed + k[0], plaster); k[0] += 1
-        for i, (a, b) in enumerate(g[sd]):
-            hkit.gate_pier(m, x + 3, a, seed, plaster, lamp=(sd, i) in lamp)
-            hkit.gate_pier(m, x + 3, b + 8, seed + 1, plaster, lamp=(sd, i) in lamp)
 
 
 def build():
@@ -140,9 +105,9 @@ def build():
 
     # ================================================================ the plots
     # under the wall: the orchard, the goat's house, the well court, the oracle's
-    plot(m, 16, 48, 248, 212, gates=[('s', 108, 132)], sides='se', seed=1, plaster=1, lamp=[('s', 0)])
-    plot(m, 256, 48, 440, 212, gates=[('s', 327, 351)], sides='swe', seed=5, plaster=3, lamp=[('s', 0)])
-    plot(m, 752, 48, 952, 212, gates=[('s', 840, 864)], sides='sw', seed=9, plaster=1, lamp=[('s', 0)])
+    hkit.plot(m, 16, 48, 248, 212, gates=[('s', 108, 132)], sides='se', seed=1, plaster=1, lamp=[('s', 0)])
+    hkit.plot(m, 256, 48, 440, 212, gates=[('s', 327, 351)], sides='swe', seed=5, plaster=3, lamp=[('s', 0)])
+    hkit.plot(m, 752, 48, 952, 212, gates=[('s', 840, 864)], sides='sw', seed=9, plaster=1, lamp=[('s', 0)])
     for (x, y) in ((528, 216), (736, 216)):                       # the court is open to the lane: piers and nothing between
         hkit.gate_pier(m, x, y, 3, 2, lamp=True)
     for (x, y) in ((528, 64), (736, 64)):
@@ -151,10 +116,10 @@ def build():
     hkit.wall_ns(m, 738, 48, 212, 15, 2)
     # the market row: a wall shuts the west end; the caravan yard has its own
     hkit.wall_ew(m, 10, 36, FM, 17, 4)
-    plot(m, 672, 248, 944, 384, gates=[('w', 296, 328)], sides='nw', seed=21, plaster=4, lamp=[('w', 0)])
+    hkit.plot(m, 672, 248, 944, 384, gates=[('w', 296, 328)], sides='nw', seed=21, plaster=4, lamp=[('w', 0)])
     # behind the market street: the bakery's and the pottery's, each with a gate on the lane to the quay
-    plot(m, 24, 450, 446, 668, gates=[('e', 624, 656)], sides='nse', seed=25, plaster=2, lamp=[('e', 0)])
-    plot(m, 520, 450, 768, 668, gates=[('w', 608, 640)], sides='nsw', seed=31, plaster=0, lamp=[('w', 0)])
+    hkit.plot(m, 24, 450, 446, 668, gates=[('e', 624, 656)], sides='nse', seed=25, plaster=2, lamp=[('e', 0)])
+    hkit.plot(m, 520, 450, 768, 668, gates=[('w', 608, 640)], sides='nsw', seed=31, plaster=0, lamp=[('w', 0)])
     hkit.wall_ns(m, 762, 456, 662, 37, 0)
 
     # ================================================================ what stands in them

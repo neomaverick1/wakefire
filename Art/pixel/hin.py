@@ -151,6 +151,22 @@ def bed(seed=0, colour='red', w=1.0, l=1.9, made=True):
     return m
 
 
+def bed_h(seed=0, colour='red', l=2.2, w=0.95):
+    """A bed set along a wall, for somebody to be asleep on: head to the west on the pillow, the blanket
+    kicked down to the foot of it (it has been a warm forty nights)."""
+    m = Model(); mt = Mats(seed, 0)
+    m.part()
+    for x in (0.03, l - 0.12):
+        for y in (0.03, w - 0.12):
+            m.box(x, y, 0, x + 0.09, y + 0.09, 0.3, mt.beam)
+    m.part(); m.box(0, 0, 0.2, l, w, 0.3, mt.wood_h, top=M('linen', 4.3, m_mottle(6, 0.3), soft=True))
+    m.part(); m.box(0, 0, 0.3, 0.07, w, 0.6, mt.wood_h, top=M('wood', 4.9))
+    m.part(); m.blob(0.3, w / 2, 0.36, 0.17, w * 0.34, 0.07, M('linen', 4.9, soft=True), n=8, rings=4)
+    bl = M(colour, 3.7, m_stripes(5, 'u'), ramp2='cream', soft=True)
+    m.part(); m.blob(l - 0.32, w / 2, 0.38, 0.24, w * 0.42, 0.09, bl, n=8, rings=4, seed=seed, bump=0.2)
+    return m
+
+
 def table(w=1.5, d=0.9, h=0.5, seed=0, things=None):
     """things: 'coins', 'cups', 'bread', 'scales', 'tablets', 'bones' (knuckle-bones: the oracle's), 'dough'."""
     m = Model(); mt = Mats(seed, 0)
@@ -379,7 +395,7 @@ def basket(seed=0, full=None):
     m = Model()
     m.part(); m.turned(0, 0.25, [(0.16, 0), (0.24, 0.16), (0.26, 0.3), (0.23, 0.32)], M('reed', 4.0, m_reeds(2)), n=10, cap=M('dark', 1.6), squash=0.85)
     if full:
-        col = {'wool': ('linen', 4.9), 'bread': ('straw', 4.0), 'fish': ('bronze', 4.4), 'onions': ('ochre', 4.4)}[full]
+        col = {'wool': ('linen', 4.9), 'bread': ('straw', 4.0), 'fish': ('bronze', 4.4), 'onions': ('ochre', 4.4), 'figs': ('fig', 3.4)}[full]
         m.part()
         for k in range(5):
             a = k * 1.3 + seed
@@ -461,6 +477,153 @@ def cellar_door(open_=True):
         m.part()
         for k in range(3):
             m.box(-0.56, 0.12 + k * 0.26, 0.0, 0.56, 0.2 + k * 0.26, 0.05 - 0.01 * k, M('stone', 4.2 - 0.9 * k))
+    return m
+
+
+def table_with(w=1.5, d=0.9, h=0.5, seed=0, things='game'):
+    """A table and what is on it: 'game' (the game of twenty squares, half played), 'figs' (two bowls, two cups, set
+    for two), 'lamps' (a dozen for sale, three of them burning), 'toys' (what was taken off the boys)."""
+    m = table(w, d, h, seed, None)
+    mt = Mats(seed, 0)
+    if things == 'game':
+        m.part(); m.box(w / 2 - 0.42, d / 2 - 0.16, h, w / 2 + 0.42, d / 2 + 0.16, h + 0.04, M('wood', 3.4), top=M('lapis', 3.4, m_ashlar(3, 3), ramp2='bone'))
+        for k, (px, py, col) in enumerate(((-0.3, 0.0, 'bone'), (-0.1, 0.06, 'dark'), (0.12, -0.04, 'bone'), (0.3, 0.05, 'dark'), (0.56, 0.2, 'bone'), (-0.58, -0.22, 'dark'))):
+            m.part(); m.cyl(w / 2 + px, d / 2 + py, h + (0.04 if abs(px) < 0.42 else 0), h + (0.08 if abs(px) < 0.42 else 0.04), 0.04, M(col, 4.6 if col == 'bone' else 1.8), n=6)
+        for k in range(3):
+            m.part(); m.blob(0.2 + 0.1 * k, d - 0.22, h + 0.03, 0.035, 0.035, 0.03, M('bone', 4.8), n=4, rings=3, seed=k)
+    elif things == 'figs':
+        for sx in (0.3, w - 0.3):
+            m.part(); m.turned(sx, d / 2, [(0.05, h), (0.15, h + 0.06), (0.16, h + 0.08)], mt.pot2, n=8, cap=M('fig', 3.0))
+            for k in range(3):
+                m.part(); m.blob(sx + 0.06 * math.cos(k * 2.1), d / 2 + 0.05 * math.sin(k * 2.1), h + 0.11, 0.05, 0.045, 0.05, M('fig', 3.4, soft=True), n=5, rings=3, seed=k)
+            m.part(); m.turned(sx + (0.2 if sx < w / 2 else -0.2), d / 2 - 0.2, [(0.03, h), (0.05, h + 0.11)], mt.pot, n=6, cap=mt.dark)
+        jar(m, mt, w / 2, d / 2 + 0.12, h, s=0.46, kind=1, mat=mt.pot2)
+    elif things == 'lamps':
+        k = 0
+        for ly in (0.2, d - 0.22):
+            for lx in np.arange(0.2, w - 0.1, 0.26):
+                m.part(); m.blob(lx, ly, h + 0.04, 0.085, 0.06, 0.045, mt.pot if k % 2 else mt.pot2, n=7, rings=3)
+                if k % 4 == 1:
+                    m.part(); m.blob(lx + 0.07, ly, h + 0.13, 0.035, 0.03, 0.06, Mat(RAMPS['glow'], 2.6, glow=True), n=5, rings=3)
+                k += 1
+        m.light(w / 2, d / 2 - 0.3, h + 0.3, 3.2, (1.0, 0.74, 0.42), 0.6)
+    elif things == 'toys':
+        m.part(); m.blob(0.3, 0.3, h + 0.08, 0.09, 0.09, 0.09, M('red', 3.6, m_stripes(2, 'u'), ramp2='cream', soft=True), n=7, rings=4)      # a ball
+        m.part(); m.beam((0.5, 0.2, h + 0.03), (1.1, 0.5, h + 0.03), PX, M('wood', 4.6)); m.box(0.56, 0.16, h, 0.62, 0.32, h + 0.05, M('wood', 4.0))      # a wooden sword
+        m.part(); m.beam((0.9, 0.62, h + 0.02), (1.3, 0.7, h + 0.02), 0.5 * PX, M('straw', 4.4)); m.blob(1.3, 0.7, h + 0.03, 0.06, 0.04, 0.02, M('cedar', 3.6, soft=True), n=5, rings=3)   # a sling
+        for k in range(4):
+            m.part(); m.blob(0.2 + 0.09 * k, d - 0.18, h + 0.03, 0.035, 0.035, 0.03, M('bone', 4.8), n=4, rings=3, seed=k)                              # knuckle-bones
+    return m
+
+
+def keys_peg():
+    """A board on the wall with pegs in it, and on one of them a ring of keys."""
+    m = Model()
+    m.part(); m.box(-0.4, -0.05, 1.3, 0.4, 0, 1.5, M('wood', 4.0, m_planks(3, 'h')))
+    m.part()
+    for px in (-0.26, 0.0, 0.26):
+        m.box(px - PX / 2, -0.14, 1.38, px + PX / 2, -0.05, 1.42, M('wood', 4.8))
+    m.part(); m.face([(0.0 + 0.1 * math.cos(a), 1.26 + 0.1 * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 9, endpoint=False)], -0.13, M('bronze', 4.4, gloss=0.03))
+    m.part(); m.face([(0.0 + 0.06 * math.cos(a), 1.26 + 0.06 * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 7, endpoint=False)], -0.135, M('wood', 4.0, m_planks(3, 'h')))
+    m.part()
+    for k, kx in enumerate((-0.06, 0.02, 0.09)):
+        m.box(kx - PX / 2, -0.14, 0.98 - 0.03 * k, kx + PX / 2, -0.13, 1.18, M('bronze', 4.6, gloss=0.03))
+    return m
+
+
+def bolt():
+    """A bolt of bronze on the inside of a door that does not look like a door from the other side."""
+    m = Model()
+    m.part(); m.box(-0.3, -0.05, 0.9, 0.3, 0, 1.1, M('wood', 3.6, m_planks(3, 'h')))
+    m.part(); m.box(-0.36, -0.1, 0.96, 0.2, -0.05, 1.04, M('bronze', 4.4, gloss=0.03))
+    m.part(); m.box(0.06, -0.16, 0.94, 0.12, -0.1, 1.06, M('bronze', 5.0, gloss=0.04))
+    return m
+
+
+def strongbox(seed=0):
+    """A chest of cedar under bands of bronze, the size of a bed. He sits on it. He has sat on it so long it has a dip."""
+    m = Model(); mt = Mats(seed, 0)
+    m.part(); m.box(-0.8, 0, 0, 0.8, 0.8, 0.6, M('cedar', 3.9, m_planks(4, 'h')), top=M('cedar', 4.4, m_planks(4, 'h')))
+    m.part()
+    for bx in (-0.6, 0.0, 0.52):
+        m.box(bx, -PX / 2, 0, bx + 0.08, 0.8 + PX / 2, 0.62, M('bronze', 4.2, gloss=0.03))
+    m.part(); m.box(-0.08, -0.03, 0.26, 0.08, 0, 0.44, M('bronze', 4.8, gloss=0.04))
+    m.part(); m.box(-0.84, -0.03, 0.56, 0.84, 0.83, 0.62, M('bronze', 3.8, gloss=0.03), top=M('cedar', 4.5, m_planks(4, 'h')))
+    return m
+
+
+def logs(n=5, seed=0, l=1.6):
+    """Cedar in the log, stacked: what the house was built on, in every sense."""
+    m = Model(); r = rnd(seed)
+    k = 0
+    for row in range(3):
+        for i in range(n - row):
+            x = i * 0.36 + row * 0.18
+            rad = 0.17 + float(r.uniform(-0.02, 0.02))
+            m.part(); m.limb([(x, 0.05, 0.17 + row * 0.3), (x, 0.05 + l, 0.17 + row * 0.3)], [rad, rad], M('cedar', 3.6 + 0.3 * (k % 2), m_planks(3, 'u', knots=False)), n=8)
+            m.part(); m.face([(x + rad * math.cos(a), 0.17 + row * 0.3 + rad * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 9, endpoint=False)], 0.04, M('wood', 4.8, town.m_rings(2)))
+            k += 1
+    return m
+
+
+def lamp_rack(frame=0, w=1.6, seed=0):
+    """Shelves of lamps, every one burning. It is the brightest thing in Ashkel after the god."""
+    m = Model(); mt = Mats(seed, 0)
+    h = 1.75
+    m.part()
+    for x in (0, w - 0.08):
+        m.box(x, 0, 0, x + 0.08, 0.4, h, mt.beam)
+    q = 0
+    for k in range(3):
+        z = 0.2 + k * 0.6
+        m.part(); m.box(0, 0, z - 0.05, w, 0.4, z, mt.wood_h, top=M('wood', 4.8))
+        cx = 0.22
+        while cx < w - 0.15:
+            m.part(); m.blob(cx, 0.2, z + 0.045, 0.085, 0.06, 0.045, mt.pot if q % 2 else mt.pot2, n=7, rings=3)
+            m.part(); m.blob(cx + 0.07, 0.2, z + 0.13 + 0.01 * ((frame + q) % 2), 0.035, 0.03, 0.06 + 0.01 * ((frame + q) % 2), Mat(RAMPS['glow'], 2.6, glow=True), n=5, rings=3)
+            cx += 0.3; q += 1
+    m.light(w / 2, -0.2, 1.0, 4.2, (1.0, 0.74, 0.42), 0.7)
+    return m
+
+
+def frog_jar():
+    """A jar with a cloth tied over it, and holes in the cloth."""
+    m = Model(); mt = Mats(3, 0)
+    jar(m, mt, 0, 0.2, 0, s=0.7, kind=0, mat=mt.pot2, n=9)
+    m.part(); m.blob(0, 0.2, 0.5, 0.13, 0.11, 0.04, M('linen', 4.8, soft=True), n=7, rings=3)
+    return m
+
+
+def sandals():
+    """A pair of sandals, side by side, toes to the door."""
+    m = Model()
+    for sx in (-0.1, 0.1):
+        m.part(); m.box(sx - 0.07, 0.05, 0, sx + 0.07, 0.4, 0.03, M('cedar', 3.6, soft=True), top=M('cedar', 4.2, soft=True))
+        m.part(); m.box(sx - 0.07, 0.24, 0.03, sx + 0.07, 0.28, 0.08, M('cedar', 3.0))
+    return m
+
+
+def lesson():
+    """The lesson: a slab of clay the height of a boy, on a frame, with today's line on it in the master's hand."""
+    m = Model(); mt = Mats(5, 0)
+    m.part()
+    for sx in (-0.5, 0.5):
+        m.beam((sx, 0.3, 0), (sx * 0.8, 0.1, 1.5), 1.2 * PX, mt.beam)
+    m.part(); m.box(-0.6, 0.06, 0.5, 0.6, 0.14, 1.46, M('clay', 4.2, town.m_cuneiform(5)), top=M('clay', 4.8))
+    m.part(); m.box(-0.64, 0.04, 0.44, 0.64, 0.16, 0.5, M('wood', 4.2))
+    return m
+
+
+def tray_stand():
+    """A folding stand with a tray on it: cups, a jug, and dates that are forty nights past their best."""
+    m = Model(); mt = Mats(7, 0)
+    m.part()
+    for (a, b) in (((-0.3, 0.1), (0.3, 0.4)), ((0.3, 0.1), (-0.3, 0.4))):
+        m.beam((a[0], a[1], 0), (b[0], b[1], 0.6), PX, mt.beam)
+    m.part(); m.turned(0, 0.25, [(0.3, 0.6), (0.34, 0.64)], M('bronze', 4.4, gloss=0.03), n=10, cap=M('bronze', 3.6))
+    jar(m, mt, 0.0, 0.25, 0.62, s=0.4, kind=1, mat=M('bronze', 4.4, gloss=0.03))
+    for k, cx in enumerate((-0.18, 0.18)):
+        m.part(); m.turned(cx, 0.2, [(0.03, 0.62), (0.05, 0.72)], M('bronze', 4.6, gloss=0.03), n=6, cap=M('dark', 1.4))
     return m
 
 

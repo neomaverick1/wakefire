@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Wakefire
 {
-    public static class HousesTest
+    public static partial class HousesTest
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void Register() => AutoTest.Scenes["houses"] = Run;

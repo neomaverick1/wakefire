@@ -279,7 +279,8 @@ def barrow():
            "{g}'BALTU'S SLINGERS. MOTTO: FROM OVER THERE.'{/}^Underneath: {g}'A SLINGER FEARS TWO THINGS: A POLISHED SHIELD, AND HIS OWN AIM.'{/}")
     X, Y = blue.p(60, 184)
     m.model("tripod", bprops.tripod(), X, Y, box=(-6, -8, 6, 0), kind="look",
-            data={"id": "say", "text": "A bronze bowl on three legs, cold. The ash in it is older than the city wall.~~"
+            data={"id": "say", "text": "A bronze bowl on three legs. The ash in it is older than the city wall, and over the ash hangs the blue ghost of a fire.^"
+                                       "Your hand goes straight through it. It is only burning in the dream. It would have to be taken there.~~"
                                        "In the dream somebody has kept the fire in.^It burns blue, and the heat of it goes the wrong way: into the fire, not out."})
     F.dreamthing(blue, 60, 185, "bw_fire", "flame", "dream_fire", lambda fi: bprops.tripod(True, fi), box=(-6, -8, 6, 0), source=True, frames=4)
     X, Y = blue.p(348, 200); m.model("rack_blue", bprops.shield_rack('blue'), X, Y, box=(-13, -5, 13, 0))

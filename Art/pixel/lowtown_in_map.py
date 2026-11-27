@@ -122,14 +122,14 @@ def build():
     F.who(shop, 144, 118, "urbau")
     F.lights(shop)
     # ---- the bedroom over it
-    F.put("in_bed_red", hin.bed(1, 'red'), bed, 136, 94, box=(0, -30, 16, 0))
+    F.put("in_bed_gran", hin.bed_h(1, 'red'), bed, 132, 92, box=(0, -14, 35, 0))
     F.put("in_bed_blue", hin.bed(2, 'blue', made=False), bed, 264, 94, box=(0, -30, 16, 0))
     F.put("in_cradle", hin.cradle(1), bed, 240, 112, box=(0, -8, 14, 0))
     F.put("in_water", hin.water_stand(1), bed, 164, 70, box=(-4, -5, 4, 0))
     F.put("in_lampstand", hin.lamp_stand, bed, 248, 70, box=(-3, -4, 3, 0), frames=2)
     F.chest(bed, 148, 148, "lt_bk_bed", "shekels:15")
     F.hatch(bed, 262, 146, "bk_bed_hatch", NAME, "bk_shop_up", "bk_bed_dn", w=24, d=18)
-    F.who(bed, 144, 82, "granny")
+    F.who(bed, 150, 87, "granny")
     F.who(bed, 272, 80, "cat_bed")
     F.lights(bed)
     # ---- the flour cellar

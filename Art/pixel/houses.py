@@ -7,7 +7,7 @@ import sys
 sys.path.insert(0, '/srv/Wakefire/Art/pixel')
 import numpy as np
 from forge import (Model, M, Mat, RAMPS, hash2, vnoise, fbm, m_brick, m_ashlar, m_plaster, m_planks, m_mottle,
-                   m_stripes, m_reeds, m_glazed)
+                   m_stripes, m_reeds, m_glazed, m_clumps)
 import town
 from town import Mats, PX, rnd, door, window, beam_ends, parapet, jar, stairs, ladder, cloth, merlons
 
@@ -720,56 +720,62 @@ def goat_house():
 
 # ------------------------------------------------------------------ the gate square
 def watch_house():
-    """The night watch's own. A tower at one corner with the watch fire on it, shields along the front in the
+    """The night watch's own. A tower at one corner with the watch fire on it, shields over the bench in the
     order they were won, and over the door the lamp that is never put out, which is why Azar could read."""
-    w, d, h = 9.5, 4.0, 2.9
+    w, d, h = 9.5, 4.0, 3.0
     mt = Mats(41, 3)
     m = Model()
     x0, x1 = -w / 2, w / 2
     shell(m, mt, x0, x1, d, h, plinth=M('sandstone', 3.7, m_ashlar(12, 6)), foot=0.7)
     crown = M('sandstone', 4.5, m_mottle(9, 0.3))
-    parapet(m, mt, x0 + 2.6, 0, x1, d, h, h=0.22, mat=crown)
-    merlons(m, crown, x0 + 2.7, x1, 0, 3 * PX, h + 0.22, mw=0.46, mh=0.32)
+    tw, th = 2.5, 5.0
+    parapet(m, mt, x0 + tw, 0, x1, d, h, h=0.22, mat=crown, gap=(x1 - 0.62, x1))
+    merlons(m, crown, x0 + tw + 0.1, x1 - 0.7, 0, 3 * PX, h + 0.22, mw=0.46, mh=0.32)
     # the tower
-    tw, th = 2.6, 5.0
-    m.part(); m.box(x0, 0, 0, x0 + tw, tw, th, mt.wall, top=mt.roof)
-    m.part(); m.box(x0 - PX, -PX, 0, x0 + tw + PX, tw, 0.7, M('sandstone', 3.7, m_ashlar(12, 6)), top=M('sandstone', 4.6))
-    parapet(m, mt, x0, 0, x0 + tw, tw, th, h=0.22, mat=crown)
-    merlons(m, crown, x0, x0 + tw, 0, 3 * PX, th + 0.22, mw=0.46, mh=0.32)
-    m.part(); m.quad((x0 + tw / 2 - 0.12, -0.03, 3.5), (x0 + tw / 2 + 0.12, -0.03, 3.5), (x0 + tw / 2 + 0.12, -0.03, 4.2), (x0 + tw / 2 - 0.12, -0.03, 4.2), mt.dark)
-    m.part(); m.quad((x0 + tw / 2 - 0.12, -0.03, 1.6), (x0 + tw / 2 + 0.12, -0.03, 1.6), (x0 + tw / 2 + 0.12, -0.03, 2.3), (x0 + tw / 2 - 0.12, -0.03, 2.3), mt.dark)
+    m.part(); m.box(x0, -PX, 0, x0 + tw, tw, th, mt.wall, top=mt.roof)
+    m.part(); m.box(x0 - PX, -2 * PX, 0, x0 + tw + PX, tw, 0.7, M('sandstone', 3.7, m_ashlar(12, 6)), top=M('sandstone', 4.6))
+    parapet(m, mt, x0, -PX, x0 + tw, tw, th, h=0.22, mat=crown)
+    merlons(m, crown, x0, x0 + tw, -PX, 2 * PX, th + 0.22, mw=0.46, mh=0.32)
+    for z in (1.6, 3.5):
+        m.part(); m.quad((x0 + tw / 2 - 0.12, -PX - 0.03, z), (x0 + tw / 2 + 0.12, -PX - 0.03, z), (x0 + tw / 2 + 0.12, -PX - 0.03, z + 0.7), (x0 + tw / 2 - 0.12, -PX - 0.03, z + 0.7), mt.dark)
+        m.part(); m.box(x0 + tw / 2 - 0.2, -PX - 0.07, z - PX, x0 + tw / 2 + 0.2, -PX, z, crown)
     # the watch fire, in its iron basket
     bx, by = x0 + tw / 2, tw / 2
     m.part(); m.turned(bx, by, [(0.1, th), (0.14, th + 0.5), (0.4, th + 0.62), (0.46, th + 0.86), (0.36, th + 0.86)], M('iron', 3.2), n=10, cap=Mat(RAMPS['glow'], 1.4, town.m_coals(), glow=True))
     town.flame(m, bx, by, th + 0.86, s=1.25, frame=0, seed=4)
     m.light(bx, by - 0.5, th + 1.2, 6.0, (1.0, 0.68, 0.34), 0.85)
-    # the door, the lamp over it, the shields
+    # the door standing open (somebody left in a hurry, forty nights ago), the lamp over it
     dx = 1.2
-    big_door(m, mt, dx, 0, w=1.4, h=2.0, bands=2, frame=M('sandstone', 4.2, m_ashlar(8, 6)))
-    lamp(m, mt, dx, -0.2, 2.42, strength=0.7, radius=3.4)
-    m.part(); m.box(dx - 0.16, -0.24, 2.3, dx + 0.16, 0, 2.36, mt.beam)
-    for k, sx in enumerate((-1.3, -0.5, 2.9, 3.7)):
+    jamb = M('sandstone', 4.2, m_ashlar(8, 6))
+    m.part(); m.box(dx - 0.86, -0.1, 0, dx - 0.7, 0, 2.16, jamb)
+    m.box(dx + 0.7, -0.1, 0, dx + 0.86, 0, 2.16, jamb)
+    doorway(m, mt, dx, 0, w=1.4, h=2.0, glow=True, ajar=0.3, leaf=M('cedar', 4.1, m_studs(5), ramp2='bronze'))
+    # the rule of the watch, cut over the door, and the lamp it is read by
+    m.part(); m.box(dx - 0.9, -0.08, 2.16, dx + 0.9, 0, 2.4, M('sandstone', 4.5, town.m_cuneiform(4)), top=M('sandstone', 4.9))
+    lamp(m, mt, dx, -0.2, 2.54, strength=0.7, radius=3.4)
+    for wx in (-1.6, -0.5):
+        window(m, mt, wx, 0, 2.24, 0.3, 0.42, lit=True, bars=True)
+    # the bench the day watch sat on, and over it the shields
+    m.part(); m.box(-2.1, -0.44, 0, 0.1, -0.1, 0.34, mt.wall_plain, top=mt.trim)
+    for k, sx in enumerate((-1.75, -1.15, -0.55, 0.0)):
         col = ('bronze', 'bronze', 'gold', 'bronze')[k]
-        m.part(); m.turned(sx, -0.03, [(0.0, 1.7), (0.3, 1.7)], M(col, 4.2, gloss=0.03), n=12)
-        m.part(); m.face([(sx + 0.3 * math.cos(a), 1.7 + 0.3 * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 12, endpoint=False)], -0.05, M(col, 4.2 + 0.2 * (k % 2), gloss=0.03))
-        m.part(); m.face([(sx + 0.08 * math.cos(a), 1.7 + 0.08 * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 8, endpoint=False)], -0.07, M(col, 5.0, gloss=0.04))
-    # spears racked by the door; the bench the day watch sat on
-    m.part(); m.box(2.3, -0.12, 0.9, 3.3, -0.06, 0.98, mt.beam)
+        m.part(); m.face([(sx + 0.26 * math.cos(a), 1.75 + 0.26 * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 12, endpoint=False)], -0.05, M(col, 4.2 + 0.2 * (k % 2), gloss=0.03))
+        m.part(); m.face([(sx + 0.07 * math.cos(a), 1.75 + 0.07 * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 8, endpoint=False)], -0.07, M(col, 5.0, gloss=0.04))
+    # the roof: the rack the rattles hang on, a mat
+    m.part(); m.box(0.0, 1.2, h, 1.6, 2.4, h + 0.5 * PX, mt.reed)
+    m.part(); m.box(-1.8, 3.2, h, -0.2, 3.3, h + 1.0, mt.beam)
     for k in range(4):
-        sxp = 2.42 + k * 0.25
-        m.part(); m.beam((sxp, -0.2, 0), (sxp, -0.08, 2.5), 0.7 * PX, mt.beam)
-        m.part(); m.limb([(sxp, -0.08, 2.5), (sxp, -0.07, 2.78)], [0.05, 0.005], mt.bronze, n=4)
-    m.part(); m.box(-2.0, -0.44, 0, 0.0, -0.1, 0.34, mt.wall_plain, top=mt.trim)
+        m.part(); m.box(-1.6 + k * 0.4, 3.14, h + 0.5, -1.5 + k * 0.4, 3.2, h + 0.86, M('wood', 4.6))
     stairs(m, mt, x1 - 2.7, x1, 0, h)
-    return Building('ak_watch', m, w, d, h, doors=[(dx, 'door')], stair=(x1 - 2.7, x1), blocks=[(x0, 0, x0 + tw, tw)],
-                    extra=[(-2.0, -0.45, 0.0, 0), (2.3, -0.3, 3.3, 0)])
+    return Building('ak_watch', m, w, d, h, doors=[(dx, 'open')], stair=(x1 - 2.7, x1), walk=(x0 + tw, x1), door_w=1.2,
+                    tall=[(x0, x0 + tw, 2.0, 0.0)], blocks=[(-1.9, 3.0, -0.1, d)], extra=[(-2.1, -0.45, 0.1, 0)])
 
 
 def merchant_house():
     """The house of Ilu-Bani, who sold the temple its cedar. Piers and recesses along the front, as on the temple
     itself, which the temple minded; a band of cones in three colours; a porch on two pillars; and above, set
     back, the rooms with the round-headed windows where the family slept, and sleeps."""
-    w, d, h = 11.0, 4.6, 3.1
+    w, d, h = 11.0, 4.5, 3.0
     mt = Mats(43, 1)
     m = Model()
     x0, x1 = -w / 2, w / 2
@@ -781,25 +787,24 @@ def merchant_house():
             continue
         m.part(); m.box(cx - 0.3, -0.16, 0.5, cx + 0.3, 0, h, pier, top=M('limewash', 4.9))
     m.part(); m.box(x0 - PX, -0.18, 1.72, x1 + PX, d, 2.08, M('cream', 4.2, m_cones(8, 3), ramp2='red'))
-    m.part(); m.box(x0 - 1.5 * PX, -0.2, h - 0.16, x1 + 1.5 * PX, d + PX, h, M('limewash', 4.8), top=M('limewash', 5.0))
+    m.part(); m.box(x0 - 1.5 * PX, -0.2, h - 0.16, x1 + 1.5 * PX, d + PX, h - 0.02, M('limewash', 4.8), top=M('limewash', 5.0))
     parapet(m, mt, x0, 0, x1, d, h, h=0.2, mat=M('limewash', 4.6))
-    # the porch
+    # the porch: shallow, on two pillars
     for sx in (-1.15, 1.15):
-        add(m, town.pillar(2.3), (sx, -1.25, 0))
-    m.part(); m.box(-1.5, -1.5, 2.36, 1.5, 0, 2.56, M('cedar', 4.0, m_planks(4, 'h')), top=mt.roof)
-    m.part(); m.box(-1.56, -1.56, 2.56, 1.56, 0, 2.66, M('limewash', 4.8), top=M('limewash', 5.0))
-    big_door(m, mt, 0.0, 0, w=1.6, h=2.1, bands=3, frame=M('limewash', 4.4))
+        add(m, town.pillar(2.3), (sx, -0.85, 0))
+    m.part(); m.box(-1.5, -1.1, 2.36, 1.5, 0, 2.56, M('cedar', 4.0, m_planks(4, 'h')), top=mt.roof)
+    m.part(); m.box(-1.56, -1.16, 2.56, 1.56, 0, 2.66, M('limewash', 4.8), top=M('limewash', 5.0))
+    big_door(m, mt, 0.0, 0, w=1.6, h=2.1, bands=3, frame=M('limewash', 4.4), ajar=True)
     for sx in (-1.0, 1.0):
         lamp(m, mt, sx * 0.98, -0.2, 1.5, strength=0.5, radius=2.4)
-    m.part(); m.box(-1.6, -1.7, 0, 1.6, 0, 2 * PX, mt.stone)
-    # palms in tubs, either end of the porch
+    m.part(); m.box(-1.6, -1.25, 0, 1.6, 0, 2 * PX, mt.stone)
     for sx in (-2.6, 2.6):
         m.part(); m.turned(sx, -0.6, [(0.3, 0), (0.36, 0.36), (0.3, 0.42)], M('clay', 4.0), n=10, cap=M('wood', 2.2))
         add(m, town.palm(int(sx * 3) + 9, 1.9), (sx, -0.6, 0.3))
     # the upper rooms, set back, with their round-headed windows
-    ux0, ux1, ud, uh = -3.6, 3.6, 2.4, 2.2
+    ux0, ux1, ud, uh = -3.5, 3.5, 2.5, 2.25
     m.part(); m.box(ux0, d - ud, h, ux1, d, h + uh, mt.wall, top=mt.roof)
-    m.part(); m.box(ux0 - PX, d - ud - PX, h + uh - 0.16, ux1 + PX, d, h + uh, M('limewash', 4.8), top=M('limewash', 5.0))
+    m.part(); m.box(ux0 - PX, d - ud - PX, h + uh - 0.16, ux1 + PX, d, h + uh - 0.02, M('limewash', 4.8), top=M('limewash', 5.0))
     parapet(m, mt, ux0, d - ud, ux1, d, h + uh, h=0.19, mat=M('limewash', 4.6))
     for k, wx in enumerate((-2.6, -1.5, 1.5, 2.6)):
         arched(m, mt, wx, d - ud, 0.5, (h + 0.7, h + 1.6), mt.glow if k in (1, 2) else mt.dark, rise=0.25)
@@ -807,63 +812,64 @@ def merchant_house():
         if k in (1, 2):
             m.light(wx, d - ud - 0.5, h + 1.2, 2.6, (1.0, 0.74, 0.4), 0.5)
     m.push((0, 0, h))
-    door(m, mt, 0.0, d - ud, w=0.9, h=1.6)
+    doorway(m, mt, 0.0, d - ud, w=0.9, h=1.6, glow=True, ajar=0.35)
     m.pop()
-    # the roof in front of them: a rug, cushions, a brazier
-    m.part(); m.box(-1.6, 0.5, h, 1.6, 1.7, h + 0.5 * PX, M('red', 3.4, m_zigzag(8, 3, 2), ramp2='gold'))
-    for k, (cx, cy) in enumerate(((-1.0, 1.0), (0.9, 1.2), (0.1, 0.8))):
+    # the roof in front of them: a rug, cushions
+    m.part(); m.box(-1.6, 0.45, h, 1.6, 1.3, h + 0.5 * PX, M('red', 3.4, m_zigzag(8, 3, 2), ramp2='gold'))
+    for k, (cx, cy) in enumerate(((-3.6, 1.0), (3.5, 1.2), (4.2, 0.8))):
         m.part(); m.blob(cx, cy, h + 0.1, 0.24, 0.2, 0.09, M(('blue', 'fig', 'ochre')[k], 4.0, soft=True), n=7, rings=3, seed=k)
-    return Building('ak_merchant', m, w, d, h, doors=[(0.0, 'door')], upper=(ux0, ux1, ud, uh), roof_door=0.0,
-                    extra=[(-1.5, -1.5, -0.8, 0), (0.8, -1.5, 1.5, 0), (-3.0, -1.0, -2.2, 0), (2.2, -1.0, 3.0, 0)])
+    return Building('ak_merchant', m, w, d, h, doors=[(0.0, 'barred')], upper=(ux0, ux1, ud, uh), roof_door=0.0, walk=(x0, x1), door_w=1.5,
+                    leaves={0: ('big', 1.6, 2.1, 3)},
+                    extra=[(-1.32, -1.02, -0.98, -0.68), (0.98, -1.02, 1.32, -0.68), (-2.98, -0.98, -2.22, -0.26), (2.22, -0.98, 2.98, -0.26)])
 
 
 def tablet_house():
     """The tablet house, where the sons of Ashkel learn to write and wish they were dead. A long room with its
     windows too high to look out of. Today's tablets are on the roof to dry, in rows, forty nights dry."""
-    w, d, h = 10.0, 3.6, 2.6
+    w, d, h = 10.0, 3.5, 2.5
     mt = Mats(47, 0)
     m = Model()
     x0, x1 = -w / 2, w / 2
     shell(m, mt, x0, x1, d, h)
     parapet(m, mt, x0, 0, x1, d, h)
     beam_ends(m, mt, x0 + 0.3, x1 - 0.3, 0, h - 0.42)
+    dx = 2.4
     for k in range(6):
         wx = x0 + 1.0 + k * 1.3
-        if abs(wx - 3.2) < 1.0:
+        if abs(wx - dx) < 1.0:
             continue
-        window(m, mt, wx, 0, 1.78, 0.36, 0.36, lit=(k == 2), bars=False)
-    dx = 3.2
+        window(m, mt, wx, 0, 1.7, 0.36, 0.36, lit=(k == 2), bars=False)
     red = M('red', 3.4)
     m.part(); m.box(dx - 0.72, -0.08, 0, dx - 0.56, 0, 1.86, red)
     m.box(dx + 0.56, -0.08, 0, dx + 0.72, 0, 1.86, red)
     m.box(dx - 0.72, -0.1, 1.86, dx + 0.72, 0, 2.0, red)
-    door(m, mt, dx, 0, w=1.05, h=1.8)
-    # the tablet over the door: the first line every boy copies
-    m.part(); m.box(dx - 0.8, -0.07, 2.06, dx + 0.8, 0, 2.5, M('clay', 4.4, town.m_cuneiform(4)), top=M('clay', 4.8))
+    doorway(m, mt, dx, 0, w=1.05, h=1.8, glow=True, ajar=0.36)
+    m.part(); m.box(dx - 0.8, -0.07, 2.02, dx + 0.8, 0, 2.4, M('clay', 4.4, town.m_cuneiform(4)), top=M('clay', 4.8))
     # the bench the length of the wall, and on it what was handed in
-    m.part(); m.box(x0 + 0.4, -0.46, 0, 2.2, -0.1, 0.36, mt.wall_plain, top=mt.trim)
+    m.part(); m.box(x0 + 0.4, -0.46, 0, 1.4, -0.1, 0.36, mt.wall_plain, top=mt.trim)
     clay = [M('clay', 4.3, m_mottle(4, 0.5)), M('clay', 3.7, m_mottle(4, 0.5)), M('sandstone', 4.3, m_mottle(4, 0.4))]
     r = rnd(8)
     for k in range(7):
         bx = x0 + 0.8 + k * 0.72
         for q in range(int(r.integers(1, 5))):
             m.part(); m.box(bx - 0.2 + r.uniform(-0.03, 0.03), -0.38 + r.uniform(-0.02, 0.02), 0.36 + q * 0.06, bx + 0.2, -0.16, 0.42 + q * 0.06, clay[(k + q) % 3], top=clay[(k + q + 1) % 3])
-    # a cane, leaning by the door
-    m.part(); m.beam((dx + 1.0, -0.14, 0), (dx + 0.94, -0.04, 1.3), 0.6 * PX, M('reed', 4.6))
-    # the roof: today's lines, in rows
-    for ry in np.arange(0.6, 3.0, 0.5):
-        for rx in np.arange(x0 + 0.6, x1 - 2.4, 0.56):
+    # the roof: today's lines, in rows, with a way left along the front and at the east end
+    for ry in np.arange(0.9, 3.1, 0.5):
+        for rx in np.arange(x0 + 0.6, x1 - 2.9, 0.56):
             if hash2(int(rx * 10), int(ry * 10), 3) < 0.12:
                 continue
             m.part(); m.box(rx, ry, h, rx + 0.4, ry + 0.3, h + 0.05, clay[int(hash2(int(rx * 7), int(ry * 9), 5) * 3)], top=clay[int(hash2(int(rx * 3), int(ry * 5), 7) * 3)])
-    ladder(m, mt, x1 - 1.0, 0, h, lean=0.45, w=0.4)
-    return Building('ak_tablets', m, w, d, h, doors=[(dx, 'door')], ladders=[x1 - 1.0], blocks=[(x0 + 0.4, 0.4, x1 - 2.2, 3.1)], extra=[(x0 + 0.4, -0.5, 2.2, 0)])
+    trapdoor(m, mt, 3.7, 2.2, h)
+    ladder(m, mt, 4.3, 0, h, lean=0.45, w=0.4)
+    return Building('ak_tablets', m, w, d, h, doors=[(dx, 'open')], ladders=[4.3], walk=(x0, x1), hatch=(3.7, 2.2),
+                    blocks=[(x0 + 0.45, 0.8, x1 - 2.6, 3.3)], extra=[(x0 + 0.4, -0.5, 1.4, 0)])
 
 
-def sleepwalker_house():
-    """Lime-washed, blue at the door and the shutters, and the door standing open, as it has every night since he
-    was a boy. His bed is on the roof. The blanket is where he left it, which is on the ladder."""
-    w, d, h = 6.5, 3.4, 2.5
+def ilta_house():
+    """Widow Ilta's. Lime-washed, blue at the door and the shutters, and the door standing open, as it has every
+    night since she took to walking. Her bed is on the roof, where it is cool. The blanket is where she left it,
+    which is on the ladder."""
+    w, d, h = 6.5, 3.5, 2.5
     mt = Mats(53, 1)
     m = Model()
     x0, x1 = -w / 2, w / 2
@@ -881,22 +887,22 @@ def sleepwalker_house():
     # the door itself, swung right out into the street
     m.part(); m.quad((dx + 0.52, -0.04, 0), (dx + 0.98, -0.78, 0), (dx + 0.98, -0.78, 1.8), (dx + 0.52, -0.04, 1.8), blue, two=True)
     m.part(); m.box(dx - 0.7, -0.36, 0, dx + 0.7, 0, 2 * PX, mt.stone)
-    for wx in (1.0, 2.3):
-        shutters(m, wx, 0, 1.36, colour='blue', shut=False, w=0.46)
+    shutters(m, 1.0, 0, 1.36, colour='blue', shut=False, w=0.46)
     # the ladder, and the blanket
     ladder(m, mt, 2.4, 0, h, lean=0.5, w=0.4)
     m.part(); m.quad((2.2, -0.3, 1.2), (2.6, -0.3, 1.2), (2.6, -0.16, 1.9), (2.2, -0.16, 1.9), M('red', 3.6, m_stripes(4, 'v'), ramp2='cream', soft=True), two=True)
     # the bed on the roof, empty
-    m.part(); m.box(-2.4, 1.2, h, -0.6, 2.2, h + 0.26, mt.wood_h, top=M('linen', 4.4, soft=True))
-    m.part(); m.box(-2.4, 1.2, h + 0.26, -2.0, 2.2, h + 0.36, M('linen', 4.8, soft=True))
-    jar(m, mt, 0.2, 2.4, h, s=0.8, kind=0)
-    return Building('ak_walker', m, w, d, h, doors=[(dx, 'open')], ladders=[2.4], blocks=[(-2.5, 1.1, -0.5, 2.3)], extra=[(dx + 0.5, -0.8, dx + 1.0, 0)])
+    m.part(); m.box(-2.4, 1.6, h, -0.6, 2.6, h + 0.26, mt.wood_h, top=M('linen', 4.4, soft=True))
+    m.part(); m.box(-2.4, 1.6, h + 0.26, -2.0, 2.6, h + 0.36, M('linen', 4.8, soft=True))
+    jar(m, mt, 0.3, 2.8, h, s=0.8, kind=0)
+    return Building('ak_ilta', m, w, d, h, doors=[(dx, 'open')], ladders=[2.4], walk=(x0, x1),
+                    blocks=[(-2.5, 1.5, -0.5, 2.9), (0.0, 2.5, 0.7, 3.2)], extra=[(dx + 0.5, -0.8, dx + 1.0, 0)])
 
 
 def lamp_house():
     """The lamp-seller's. Every niche in the front of it has one of his lamps in it, and every one of them was lit
     the night the god lay down. He has not been awake to put them out, and oil was cheap that week."""
-    w, d, h = 7.5, 3.4, 3.0
+    w, d, h = 7.5, 3.5, 3.0
     mt = Mats(59, 2)
     m = Model()
     x0, x1 = -w / 2, w / 2
@@ -904,13 +910,13 @@ def lamp_house():
     parapet(m, mt, x0, 0, x1, d, h)
     beam_ends(m, mt, x0 + 0.3, x1 - 0.3, 0, h - 0.42)
     dx = 1.6
-    door(m, mt, dx, 0, w=1.0, h=1.75)
+    doorway(m, mt, dx, 0, w=1.0, h=1.75, glow=True, ajar=0.36)
     k = 0
     for row, z in enumerate((0.86, 1.56, 2.2)):
         for nx in np.arange(x0 + 0.7, x1 - 0.5, 0.95):
             if abs(nx - dx) < 0.95 and z < 2.0:
                 continue
-            lit = hash2(k, row, 11) < 0.78
+            lit = hash2(k * 7 + row * 13, row * 5 + 3, 23) < 0.88
             m.part(); m.box(nx - 0.2, -0.03, z, nx + 0.2, 0, z + 0.36, mt.glow_dim if lit else mt.dark)
             m.part(); m.box(nx - 0.24, -0.07, z - PX, nx + 0.24, 0, z, mt.trim)
             m.part(); m.blob(nx, -0.05, z + 0.06, 0.09, 0.05, 0.05, mt.pot if k % 2 else mt.pot2, n=7, rings=3)
@@ -919,7 +925,7 @@ def lamp_house():
                 if k % 3 == 0:
                     m.light(nx, -0.4, z + 0.2, 2.0, (1.0, 0.72, 0.38), 0.45)
             k += 1
-    # a trestle of them outside, for sale; and the roof, where the spoiled ones go
+    # a trestle of them outside, for sale
     m.part(); m.box(-2.6, -0.8, 0.5, -0.4, -0.36, 0.56, mt.wood_h, top=M('wood', 4.8))
     for sx in (-2.5, -0.5):
         m.part(); m.box(sx - PX, -0.7, 0, sx + PX, -0.5, 0.5, mt.beam)
@@ -927,9 +933,88 @@ def lamp_house():
         m.part(); m.blob(-2.4 + q * 0.36, -0.58, 0.6, 0.09, 0.06, 0.05, mt.pot if q % 2 else mt.pot2, n=7, rings=3)
     for q in range(9):
         m.part(); m.blob(-2.6 + (q % 5) * 0.4, 1.0 + (q // 5) * 0.5, h + 0.05, 0.1, 0.07, 0.05, M('clay', 3.4), n=6, rings=3, seed=q)
-    return Building('ak_lamps', m, w, d, h, doors=[(dx, 'door')], extra=[(-2.7, -0.85, -0.3, 0)])
+    return Building('ak_lamps', m, w, d, h, doors=[(dx, 'lit')], leaves={0: ('plain', 1.0, 1.75, 2)}, extra=[(-2.7, -0.85, -0.3, 0)])
+
+
+# ------------------------------------------------------------------ what stands in the yards
+def fig_tree(seed=0, size=1.25):
+    """A fig, forty years old: a grey trunk that forks low, a wide dark head, and the fruit showing in it."""
+    r = rnd(seed); m = Model()
+    bark = M('stone', 3.6, m_mottle(5, 0.4))
+    leaf_ = M('green', 3.0, m_clumps(6), soft=True)
+    s = size
+    m.part()
+    m.limb([(0, 0.3, 0), (0.05, 0.3, 0.45 * s), (-0.1, 0.32, 0.9 * s)], [0.24 * s, 0.2 * s, 0.14 * s], bark, n=7)
+    m.limb([(0.03, 0.3, 0.4 * s), (-0.6 * s, 0.3, 1.0 * s), (-1.0 * s, 0.3, 1.3 * s)], [0.15 * s, 0.1 * s, 0.05 * s], bark, n=6)
+    m.limb([(0.05, 0.3, 0.45 * s), (0.6 * s, 0.34, 1.05 * s), (1.05 * s, 0.3, 1.35 * s)], [0.14 * s, 0.1 * s, 0.05 * s], bark, n=6)
+    m.part()
+    n = 13
+    for i in range(n):
+        a_ = 2 * math.pi * i / n + r.uniform(-0.2, 0.2)
+        rad = r.uniform(0.7, 1.25) * s
+        cx = math.cos(a_) * rad; cy = 0.35 + math.sin(a_) * rad * 0.5
+        cz = (1.6 + r.uniform(-0.15, 0.3) - 0.12 * rad) * s
+        rr = r.uniform(0.46, 0.66) * s
+        m.blob(cx, cy, cz, rr, rr * 0.85, rr * 0.78, leaf_, seed=seed * 7 + i, bump=0.14, n=9, rings=5)
+    for i in range(4):
+        m.blob(r.uniform(-0.5, 0.5) * s, 0.35, (1.95 + r.uniform(0, 0.25)) * s, 0.62 * s, 0.5 * s, 0.5 * s, leaf_, seed=seed * 7 + 31 + i, bump=0.14, n=9, rings=5)
+    m.part()
+    fig = M('fig', 3.2, soft=True)
+    for i in range(16):
+        a_ = r.uniform(0, 2 * math.pi); rad = r.uniform(0.3, 1.2) * s
+        m.blob(math.cos(a_) * rad, 0.05 + abs(math.sin(a_)) * 0.1, (1.1 + r.uniform(0, 0.9)) * s, 0.06, 0.05, 0.07, fig, n=5, rings=3, seed=i)
+    return m
+
+
+def pell(seed=0):
+    """What the watch hits instead of each other: a post as thick as a man, bound with rope where a man is softest,
+    with an old shield nailed to it."""
+    m = Model(); mt = Mats(seed, 0)
+    m.part(); m.cyl(0, 0.2, 0, 1.5, 0.17, M('wood', 3.8, m_planks(3, 'v')), n=9, cap=M('wood', 4.6))
+    m.part(); m.cyl(0, 0.2, 0.62, 1.0, 0.19, M('straw', 4.0, m_stripes(2, 'u')), n=9)
+    m.part(); m.box(-0.5, 0.17, 1.14, 0.5, 0.23, 1.24, M('wood', 4.2))
+    m.part(); m.face([(-0.42 + 0.2 * math.cos(a), 1.02 + 0.2 * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 10, endpoint=False)], 0.14, M('bronze', 3.8, m_mottle(3, 0.5)))
+    m.part()
+    for z in (0.36, 0.5, 1.32):                              # where it has been hit
+        m.box(-0.19, 0.0, z, 0.19, 0.03, z + PX, M('wood', 2.4))
+    return m
+
+
+def butt(seed=0):
+    """A target of coiled straw on three legs. There are arrows in it. There are more in the wall behind it."""
+    m = Model(); mt = Mats(seed, 0)
+    m.part()
+    for a in (-0.4, 0.4):
+        m.beam((a, 0.25, 0), (a * 0.5, 0.3, 1.2), 1.2 * PX, mt.beam)
+    m.beam((0, 0.7, 0), (0, 0.34, 1.2), 1.2 * PX, mt.beam)
+    for k, (rad, col, tone) in enumerate(((0.52, 'straw', 4.2), (0.36, 'red', 3.4), (0.2, 'straw', 4.6), (0.08, 'red', 3.6))):
+        m.part(); m.face([(rad * math.cos(a), 0.86 + rad * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 14, endpoint=False)], 0.2 - 0.01 * k, M(col, tone, m_stripes(2, 'u') if col == 'straw' else None, soft=True))
+    m.part()
+    for (ax, az) in ((0.3, 1.1), (-0.34, 0.66), (0.1, 0.5)):
+        m.beam((ax, 0.16, az), (ax + 0.05, -0.2, az + 0.06), 0.5 * PX, M('wood', 4.8))
+        m.box(ax + 0.03, -0.24, az + 0.03, ax + 0.07, -0.18, az + 0.1, M('linen', 4.8))
+    return m
+
+
+def tortoise(seed=0):
+    """A tortoise. It was not asleep before, it is not asleep now, and nobody has ever been able to tell."""
+    m = Model()
+    m.part(); m.blob(0, 0.22, 0.12, 0.2, 0.16, 0.12, M('olive', 3.2, m_ashlar(4, 3)), n=9, rings=4)
+    m.part()
+    for (lx, ly) in ((-0.14, 0.12), (0.14, 0.12), (-0.14, 0.32), (0.14, 0.32)):
+        m.blob(lx, ly, 0.04, 0.05, 0.05, 0.04, M('olive', 2.4), n=5, rings=3)
+    m.part(); m.blob(0.22, 0.2, 0.1, 0.06, 0.05, 0.05, M('olive', 2.8), n=6, rings=3)
+    return m
+
+
+def rules_stone():
+    """The rules of the night watch, cut in a slab let into the wall by the door."""
+    m = Model()
+    m.part(); m.box(-0.45, 0, 0.5, 0.45, 0.08, 1.7, M('sandstone', 4.2, town.m_cuneiform(4)), top=M('sandstone', 4.8))
+    m.part(); m.box(-0.5, -0.02, 0.44, 0.5, 0.1, 0.5, M('sandstone', 3.6))
+    return m
 
 
 ALL = [('bakery', bakery), ('tax office', tax_office), ('oracle', oracle_house), ('pottery', pottery), ('beer house', beer_house),
        ('weavers', weavers), ('net loft', net_loft), ('goat house', goat_house), ('watch house', watch_house),
-       ('merchant', merchant_house), ('tablet house', tablet_house), ('sleepwalker', sleepwalker_house), ('lamp seller', lamp_house)]
+       ('merchant', merchant_house), ('tablet house', tablet_house), ('sleepwalker', ilta_house), ('lamp seller', lamp_house)]

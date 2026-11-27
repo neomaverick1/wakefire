@@ -120,7 +120,7 @@ namespace Wakefire
                             "My boy sleeps in his boat. I sleep in my nets. His mother slept in a bed, and look where it got her.| Comfortable. It got her comfortable."), 0.3f);
                     return true;
             }
-            return false;
+            return SpawnGate(who, at);
         }
     }
 }

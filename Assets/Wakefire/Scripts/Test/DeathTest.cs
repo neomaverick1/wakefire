@@ -131,7 +131,7 @@ namespace Wakefire
             yield return t.Shot("d7-title-one-gone");
             Title.TestPick = "2";
             yield return new WaitForSecondsRealtime(1.8f);
-            Check($"5. journey 2 from the title: {g.CurrentMap}, {p.coins} coins", Title.I == null && g.CurrentMap == "lowtown" && p.coins == 40 && p.state == Player.State.Free && Save.Slot == 1);
+            Check($"5. journey 2 from the title: {g.CurrentMap}, {p.coins} coins, the dark lifted ({Fade.Amount:0.00})", Title.I == null && g.CurrentMap == "lowtown" && p.coins == 40 && p.state == Player.State.Free && Save.Slot == 1 && Fade.Amount <= 0.01f);
             Controls.FakePress = Controls.Pause;
             yield return new WaitForSecondsRealtime(0.4f);
             yield return Do("title", 0.8f);

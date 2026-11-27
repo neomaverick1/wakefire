@@ -7,6 +7,7 @@ namespace Wakefire
         public static string Name(string map) => map switch
         {
             "ashkel" => "The Temple Gate",
+            "ashkel_in" => "The Temple Gate",
             "lowtown" => "The Lower Town",
             "lowtown_in" => "The Lower Town",
             "terraces" => "The Olive Terraces",

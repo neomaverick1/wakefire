@@ -16,12 +16,22 @@ In chapter two he climbs the Hill of Sleepers for the Dawn Horn, the one thing t
 
 ## Screens
 
+![The square before the Temple Gate](docs/screens/44-the-gate-square.png)
+
+*The square before the Temple Gate: the watch house and its drill yard, the cedar merchant's with its pool, the night market, the lamp seller's, the tablet house, and Widow Ilta's under the fig she planted.*
+
 ![The Lower Town](docs/screens/43-the-lower-town.png)
 
 *The Lower Town, forty nights in: eight houses, no two alike, each on its own plot.*
 
 | | |
 |---|---|
+| ![The watch house](docs/screens/45-the-watch-house.png) | ![Ilu-Bani's hall](docs/screens/46-ilu-banis-hall.png) |
+| The watch house: one of the day watch face down on the game of twenty squares, one asleep at attention, one in his bunk and wanting it in the book | The cedar merchant's hall. He barred his front door against the whole of Ashkel, and did not think to bar his cellar against the watch house |
+| ![The lamp seller's](docs/screens/47-the-lamp-sellers.png) | ![The tablet house](docs/screens/48-the-tablet-house.png) |
+| The lamp seller's: every lamp in the shop lit, forty nights running. His door opens when his sign is burning | The tablet house. The stick has been about to come down for forty nights, and the boy under it has had time to think |
+| ![On Ilu-Bani's roof](docs/screens/49-on-ilu-banis-roof.png) | ![The table she keeps](docs/screens/50-the-table-she-keeps.png) |
+| Out of the rooms above and on to the roof: the way in was a tunnel a prisoner dug with a spoon | Widow Ilta's house has one more room in the dream: a table laid for two, and his sandals wet from the road |
 | ![Up the stair](docs/screens/37-up-the-stair.png) | ![The goat's roof](docs/screens/38-the-goats-roof.png) |
 | The stair up the front of the bakery is a stair. A roof is a place: go in at the door up there, or leave by the nearest edge | The house the goat stands on. The street door is barred from inside; the ladder is somebody else's, borrowed forty nights ago |
 | ![The Seven Jars](docs/screens/39-the-seven-jars.png) | ![The weavers'](docs/screens/40-the-weavers.png) |
@@ -112,6 +122,13 @@ Every tomb door, gravestone and coffin on the hill has something to say if you s
 
 And the goat. The goat is everywhere.
 
+## The Gate Square
+
+- **Five houses round the square, each its own.** The watch house, with a tower at one corner, the watch fire on top of it and the rule of the watch cut over the door; its drill yard beside it, with the pell the watch hits instead of each other. The house of Ilu-Bani, who sold the Temple its cedar: piers down the front like the Temple's own, a porch on two pillars, rooms above with round-headed windows, and a walled garden with a pool. The lamp seller's, every niche in the front of it burning. The tablet house, with today's lines drying on the roof. Widow Ilta's, blue at the door, her bed on the roof and a fig tree in the yard that she planted the week her husband went out for figs.
+- **Twelve rooms.** The guardroom, the tower room over it and the lock-up under it. Ilu-Bani's cellar, his hall with a pool let into the floor, and the rooms above. The schoolroom, and the room where the master keeps what he takes off the boys. Widow Ilta's kitchen. The lamp seller's shop, the brightest room in Ashkel, and the oil cellar under it, which he keeps dark on purpose.
+- **Fourteen sleepers, a hound, a cat, a tortoise and a frog.** The day watch: one face down on the game of twenty squares, one throw from winning; one asleep at attention; one in his bunk, off duty, who wants to know whether this counts as his rest day. Their one prisoner, asleep with an arm down the hole he spent a year digging. Ilu-Bani, on his feet with one hand flat on his strongbox. The master of the tablet house with the stick raised, a boy under it, a boy asleep along a bench, and a boy in the corner with his face to the wall who has not been told he may turn round.
+- **The ways in.** The watch house stands open: somebody left in a hurry. Ilu-Bani's front door is barred from inside. The cell keys hang on a peg within reach of the cell, the prisoner's tunnel comes up in the merchant's cellar, and from inside the bar lifts out. The lamp seller's door opens when his sign is lit, and his sign is the one flame on the front of his house that is out. The tablet house has a ladder, a roof, a hatch, and a grille that unbolts from the far side. And Widow Ilta's has a door that is only there when your eyes are shut.
+
 ## The Lower Town
 
 - **Every house is its own house.** Eight buildings, no two alike, each on its own walled plot with a paved path from its door to the street: Hesha's bakery with its hatch of loaves and the bedroom over the shop; the Seven Jars, long and low, with a roof to drink on; the weavers', with forty nights of dry cloth still hanging from the gallery; the counting house, in dressed stone to the height of a man, because the first two were of brick; Ummi the oracle's, under a beehive dome; Kesh's pottery and the loft he keeps the sacred jars in; the net loft on the quay, roofed with the hull of a boat; and the house the goat stands on.
@@ -134,7 +151,7 @@ And the goat. The goat is everywhere.
 
 **One button for whatever is in front of you.** The action button talks to a person, opens a chest or a door, reads a sign and looks at anything worth a look. When there is nothing in front of Azar and he carries the Bronze Mirror Shield, holding the button raises it. He walks slowly and keeps facing the way he faced, a blow from the front glances off, and fire goes back where it came from. What comes down from above, like a mace, does not stop for a shield.
 
-**Stairs, ladders and roofs.** Walk on at the foot of a stair that runs up the front of a house, or up at the foot of a ladder, and Azar climbs it; walk back on at the top and he comes down. On a roof, lean on the edge and he hops to the street.
+**Stairs, ladders and roofs.** At the foot of a stair or a ladder the action button says **Climb**: one press and Azar goes the whole way up by himself; at the top it says Climb again, and takes him down. Walking on at the foot does the same. On a roof, lean on the edge and he hops to the street.
 
 **Edges and holes.** Walk into the edge of a raised floor from above, lean on it for a moment, and Azar hops down; the way back up is the steps. Lean on the lip of a hole that has light coming up it and he jumps: there is a floor under it. A hole with nothing coming up it is still a hole.
 

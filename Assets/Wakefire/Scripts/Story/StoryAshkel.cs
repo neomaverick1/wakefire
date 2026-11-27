@@ -16,7 +16,7 @@ namespace Wakefire
             {
                 if (mk.kind != "npc") continue;
                 var at = Map.ToWorld(mk.x, mk.y);
-                Spawn(mk.who, at);
+                if (!SpawnHouse(mk.who, at)) Spawn(mk.who, at);
             }
             propHandler = OnProp;
             // what was done here stays done

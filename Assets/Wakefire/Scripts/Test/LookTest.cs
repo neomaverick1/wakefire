@@ -31,7 +31,10 @@ namespace Wakefire
                 }
                 var p = Player.I;
                 Dream.I.SetInstant(false);
+                // -wfGhost: he is not there at all, so nothing pushes him out of a wall the picture is centred on
+                if (Boot.Flag("-wfGhost")) p.enabled = false;
                 p.pos = Map.ToWorld(x, y);
+                p.transform.position = new Vector3(p.pos.x, p.pos.y, 0);
                 p.Face(Facing.Down);
                 g.View.SnapTo(p.pos);
                 yield return new WaitForSeconds(0.5f);
