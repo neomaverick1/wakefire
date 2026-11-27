@@ -120,6 +120,8 @@ def temple_yard():
         m.model(f"planter_{sd}", town.planter(sd), x, y, box=(-14, -10, 14, 0))
     m.light(320, 260, 7.0, (0.55, 0.62, 1.0), 0.45, flicker=False, h=0.4)
     m.marker("npc", 140, 500, who="goat_yard")
+    # the temple's own seal, the size of a barrel, rolling the way between the gate and the bridge and sealing the ground
+    m.marker("enemy", 320, 384, who="seal", id="ty_seal", text="once beat:320,384;320,500")
     m.spawn("south", 320, 552, "up")
     m.spawn("door", 320, 80, "down")
     m.exit(296, H - 8, 344, H, "ashkel", "gate")

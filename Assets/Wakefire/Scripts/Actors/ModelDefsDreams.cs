@@ -62,6 +62,27 @@ namespace Wakefire
             debt.Own("slam", "Sword_Regular_C", 0.20f, 1.00f, loop: false, fade: 0.06f);
             debt.Own("yes", "Yes", loop: false, fade: 0.10f);
             Add("debt", debt);
+
+            // the Underbed's arm: all elbows, on the floor, and as long as four men are tall. It has two squares of the
+            // stage each way to lie in.
+            var reach = Built(1.33f, a => ReachProp.Make(a), 2);
+            reach.Time("idle", 8f, 8);
+            Add("reach", reach);
+
+            // ...and the bed all the rest of it is under
+            var bedstead = Built(1.33f, a => BedProp.Make(a), 2);
+            bedstead.Time("idle", 8f, 8);
+            Add("bedstead", bedstead);
+
+            // the Seal: a barrel of lapis that rolls by itself. Two tiles from cap to cap.
+            var seal = Built(1f, a => SealProp.Make(a), 2);
+            seal.Time("idle", 8f, 8);
+            Add("seal", seal);
+
+            // ...and what it prints: a spearman of unfired clay, as deep as a thumbnail (the game flattens him)
+            var print = Human(1.46f, Cast.PrintMan);
+            print.Own("thrust", "Spell_Simple_Shoot", loop: false, fade: 0.05f).With(Gesture.Level);
+            Add("print", print);
         }
     }
 }

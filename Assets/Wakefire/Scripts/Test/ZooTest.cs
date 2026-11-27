@@ -199,6 +199,26 @@ namespace Wakefire
                 Figure("moth", "wrap", c + new Vector2(3.2f, -2.8f), Facing.Down, "dragnet");
                 Figure("moth", "spent", c + new Vector2(6.8f, -2.6f), Facing.Down, "dragnet");
             }
+            else if (what == "dream6")
+            {
+                Figure("moth", "idle", c + new Vector2(-4.5f, 1.2f), Facing.Down, "seal");
+                Figure("sentinel", "idle", c + new Vector2(1.0f, 2.4f), Facing.Right, "print");
+                var w = Figure("sentinel", "walk", c + new Vector2(3.0f, 2.4f), Facing.Left, "print");
+                Figure("sentinel", "thrust", c + new Vector2(6.0f, 2.4f), Facing.Right, "print");
+                Figure("sentinel", "lie", c + new Vector2(1.5f, -2.4f), Facing.Down, "print");
+                // (edge-on: flattened the way the game flattens them)
+                foreach (var f in new[] { Facing.Down, Facing.Up })
+                {
+                    var e = Figure("sentinel", "idle", c + new Vector2(f == Facing.Down ? 4.5f : 6.5f, -2.4f), f, "print");
+                    if (e.model) e.model.rig.localScale = Vector3.Scale(new Vector3(0.13f, 1f, 1f), Vector3.one * e.model.def.scale);
+                }
+            }
+            else if (what == "dream5")
+            {
+                Figure("moth", "idle", c + new Vector2(-5.0f, 3.0f), Facing.Down, "reach");
+                Figure("moth", "idle", c + new Vector2(5.0f, 3.0f), Facing.Down, "reach");
+                Figure("moth", "idle", c + new Vector2(0f, -1.0f), Facing.Down, "bedstead");
+            }
             else if (what == "dream4")
             {
                 Figure("captain", "sleepwalk", c + new Vector2(-6.5f, 2.2f), Facing.Down, "watchman");

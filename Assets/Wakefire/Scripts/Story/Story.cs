@@ -63,6 +63,8 @@ namespace Wakefire
             if (Game.CommonProp(pr)) return;
             // things that only have something to say about themselves (a barred way, a wreck, the boats):
             // the map carries the words, "waking~~dream" when the dream sees it differently
+            // (the heap at the end of the Underbed's run, and whatever of his it has under it)
+            if (pr.Kind == "look" && pr.data != null && pr.data.id == "under_hoard") { Run(UnderHoard()); return; }
             if (pr.Kind == "look" && pr.data != null && pr.data.id == "say" && !string.IsNullOrEmpty(pr.data.text))
             {
                 // "waking~~dream~~after": a third part is what it says once the dead of the hill are asleep

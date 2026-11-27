@@ -252,12 +252,17 @@ namespace Wakefire
                 "yawn" => Yawn.Spawn(at),
                 "watch" => SleepWatch.Spawn(at),
                 "debt" => Debt.Spawn(at),
+                "reach" => Reach.Spawn(at),
+                "underbed" => Underbed.Spawn(at),
+                "seal" => Seal.Spawn(at),
                 _ => null,
             };
             if (!e) return null;
             e.markerId = mk.id;
             if (!string.IsNullOrEmpty(mk.text) && mk.text.StartsWith("once")) e.spawnId = mk.id;
             if (e is SleepWatch sw) sw.SetBeat(mk.text);
+            if (e is Reach rc) rc.Read(mk.text);
+            if (e is Seal sl) sl.SetBeat(mk.text);
             // "hold:FLAG": a clay soldier that stands like the statue it is until the story has that flag
             if (e is ClaySoldier cs && !string.IsNullOrEmpty(mk.text) && mk.text.Contains("hold:"))
                 cs.holdFlag = mk.text.Substring(mk.text.IndexOf("hold:") + 5).Split(' ')[0];

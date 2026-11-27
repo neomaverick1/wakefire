@@ -119,6 +119,7 @@ namespace Wakefire
             public float shieldWide = 1f, shieldTall = 1f;   // a warden's is the size of a door
             public float metal = 1f;             // how bright the plate is: 1 polished bronze, 0 fired clay
             public bool lampLit = true;          // the lamp in his fist: burning, or out
+            public float bladeMetal = 1f;        // a spearhead of bronze, or (0) of the same clay as the rest of him
         }
 
         public static void Azar(ModelActor m) => Soldier(m, new Look());
@@ -128,6 +129,17 @@ namespace Wakefire
             tunic = new Color(0.36f, 0.56f, 0.36f), tunicFold = new Color(0.27f, 0.45f, 0.29f), crest = new Color(0.10f, 0.09f, 0.12f),
             cape = new Color(0.16f, 0.24f, 0.20f), hasBlade = false, hasLantern = false, hasSpear = true, hasShield = true,
             shield = new Color(0.30f, 0.48f, 0.32f),
+        });
+
+        /// <summary>A Print: a spearman pressed in wet clay by the temple's seal and got up out of it. All one clay,
+        /// paler where the light falls and darker in the cut; no shield, because the seal-cutter ran out of room.</summary>
+        public static void PrintMan(ModelActor m) => Soldier(m, new Look
+        {
+            plateSkin = true, metal = 0f, skin = new Color(0.80f, 0.69f, 0.52f), bronze = new Color(0.72f, 0.60f, 0.44f),
+            tunic = new Color(0.74f, 0.62f, 0.46f), tunicFold = new Color(0.56f, 0.45f, 0.32f), trim = new Color(0.86f, 0.76f, 0.58f),
+            leather = new Color(0.52f, 0.41f, 0.29f), crest = new Color(0.62f, 0.50f, 0.36f), crestHeight = 0.08f, eyes = new Color(0.30f, 0.22f, 0.15f),
+            blade = new Color(0.84f, 0.74f, 0.56f), flame = new Color(0.84f, 0.74f, 0.56f), bladeMetal = 0f,
+            hasCape = false, hasBlade = false, hasLantern = false, hasSpear = true, hasShield = false,
         });
 
         public static void Sentinel(ModelActor m) => Soldier(m, new Look
@@ -275,7 +287,7 @@ namespace Wakefire
             {
                 kit.On("hand_r").Frame(grip, across, fingers, palm);
                 kit.Paint(look.leather).Ribbon(new[] { new Vector2(0, -1.02f), new Vector2(0, 0.78f) }, new[] { 0.04f, 0.04f }, 0.04f);
-                kit.Paint(look.blade, 1).Ribbon(new[] { new Vector2(0, -1.02f), new Vector2(0, -1.10f), new Vector2(0, -1.22f), new Vector2(0, -1.34f) }, new[] { 0.05f, 0.11f, 0.08f, 0.012f }, 0.035f);
+                kit.Paint(look.blade, look.bladeMetal).Ribbon(new[] { new Vector2(0, -1.02f), new Vector2(0, -1.10f), new Vector2(0, -1.22f), new Vector2(0, -1.34f) }, new[] { 0.05f, 0.11f, 0.08f, 0.012f }, 0.035f);
                 // an ox-goad has a hook under the point, for turning a bull's head
                 if (look.goad)
                     kit.Paint(look.blade, 1).Ribbon(new[] { new Vector2(0.01f, -1.04f), new Vector2(0.10f, -1.09f), new Vector2(0.15f, -1.00f), new Vector2(0.11f, -0.92f) }, new[] { 0.045f, 0.045f, 0.035f, 0.008f }, 0.03f);

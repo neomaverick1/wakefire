@@ -6,15 +6,16 @@ watch of Ashkel buried its own, and kept two things for the night the city would
 
 The stair comes down from the shrine. West, along the watch's own walk, is the armoury, and the
 blade behind a stone that has to be pushed. East is the dormitory, which is long, because the
-watch was: the key is in it, behind olive roots only a blade cuts, with the jackals. North,
-through the locked door, the hall of lamps, a stone and a plate; west of that the jackals' run,
-which doubles back on itself, and at the end of it the den, its mother, and the Wakefire in its
-cage. The way back out of the den was bricked up long ago. The dream never heard about the
+watch was, and under every bed in it is the same thing: the key is at the far end, behind olive
+roots only a blade cuts. North, through the locked door, the hall of lamps, a stone and a plate,
+and enough light that nothing comes out; west of that the crawl, which is the way it goes about
+under the floor, and at the end of that the room where it keeps what it takes, the bed all the
+rest of it is under, and the Wakefire in its cage. The way back out of the den was bricked up long ago. The dream never heard about the
 bricks.
 
 The stair hall is on two levels: the locked door stands on a terrace, up a flight of steps. And
-behind the dormitory is the watch's old larder, on no plan since the jackals found it: one way
-in is the way the jackals go, through a hole at the foot of the dormitory wall; the other is
+behind the dormitory is the watch's old larder, on no plan since something else found it: one way
+in is the way that goes, through a hole at the foot of the dormitory wall; the other is
 the larder's own stair, which comes up under the stone in the hall of lamps."""
 import sys
 sys.path.insert(0, '/srv/Wakefire/Art/pixel')
@@ -30,13 +31,21 @@ def bed(F, rm, x, y, k, text, sleeper=True):
     F.look(f"crypt_bed_{k if sleeper else 'empty'}", dprops.stone_bed(sleeper, k), rm, x, y, BED, text)
 
 
+def hole(F, rm, x, y, uid, extra=""):
+    """A hole come up through the flags, no wider than an arm needs, and the arm."""
+    X, Y = rm.p(x, y)
+    o = F.m.model("reach_hole", dprops.reach_hole(), X, Y, box=None, shadow=False, lights=False)
+    o["y"] -= 14; o["py"] -= 14                                     # (it lies on the floor: whoever stands by it is drawn over it)
+    F.m.marker("enemy", X, Y, who="reach", id=uid, text="once out:s" + extra)
+
+
 def rack(F, rm, x, text):
     X, Y = rm.p(x, NW)
     F.m.model("spear_rack", dprops.spear_rack(), X, Y + 2, box=(-13, -4, 13, 0), kind="look", data={"id": "say", "text": text}, shadow=False)
 
 
 def sandals():
-    """What the jackals have been taking, one at a time, for four hundred years."""
+    """What has been going missing from under the beds, one at a time, for four hundred years."""
     import numpy as np
     m = Model()
     rng = np.random.default_rng(3)
@@ -59,8 +68,8 @@ def crypt():
     arms = F.room("arms", 0, 1, name="The Armoury", opts="dim")
     beds = F.room("beds", 3, 1, 2, 1, name="The Long Sleep", opts="dim")
     lamps = F.room("lamps", 2, 0, name="The Hall of Lamps", opts="dim")
-    run = F.room("run", 1, 0, name="The Jackals' Run", opts="dim")
-    den = F.room("den", 0, 0, name="The Den", opts="dim")
+    run = F.room("run", 1, 0, name="The Crawl", opts="dim")
+    den = F.room("den", 0, 0, name="Lost Property", opts="dim")
     den.mark = "mini"
     larder = F.room("larder", 3, 0, name="The Larder", opts="dim")
     larder.secret = True
@@ -76,10 +85,10 @@ def crypt():
     # the walk: a straight passage with a niche off it where the watch kept what it was not using
     walk.passage = True
     F.shape(walk, [(16, 92, 400, 164), (170, 48, 246, 92)])
-    # the run: it goes round a pier of the living rock, the way a jackal would rather than a mason
+    # the crawl: it goes round a pier of the living rock, the way something feeling its way would rather than a mason
     run.passage = True
     F.shape(run, [(16, 104, 150, 152), (104, 56, 150, 152), (104, 56, 312, 100), (266, 56, 312, 152), (266, 104, 400, 152)])
-    # the larder: a store the watch walled up when the jackals found it, which was the wrong order to do it in
+    # the larder: a store the watch walled up when something got into it, which was the wrong order to do it in
     F.shape(larder, [(96, 80, 320, 176), (56, 104, 360, 156), (168, 48, 248, 80)])
     F.burrow(beds, 410, "burrow_beds", "burrow_larder")
     F.lay()
@@ -115,9 +124,9 @@ def crypt():
     for (x, y) in ((200, 200), (216, 204), (384, 200)):
         kit.pot(m, *arms.p(x, y))
 
-    # ---------------------------------------------------------------- the dormitory: the key, the roots, the jackals
-    # the far end of the long room was walled off as a store; the jackals have it now, and the olive
-    # trees up the hill have grown a door across the only way in
+    # ---------------------------------------------------------------- the dormitory: the key, the roots, the beds
+    # the far end of the long room was walled off as a store; something keeps things there now, and
+    # the olive trees up the hill have grown a door across the only way in
     F.partition(beds, 120, 240, 176, h=1.2)
     F.partition(beds, 288, 816, 176, h=1.2)
     F.partition_ns(beds, 112, 150, 208, h=1.2)
@@ -128,18 +137,22 @@ def crypt():
     gone = "~~In the dream the bed is empty, and warm.^Wherever the First Watch goes at night, they don't take the stairs."
     bed(F, beds, 60, 84, 0, watch + gone)
     bed(F, beds, 116, 84, 1, "He was buried with his helmet on.^Regulations." + gone)
-    bed(F, beds, 172, 84, 2, "Somebody left this one a cup of beer.^Somebody has drunk it.| You suspect the jackals. You hope it was the jackals." + gone)
+    bed(F, beds, 172, 84, 2, "Somebody left this one a cup of beer.^Somebody has drunk it.| You do not look under the bed. Nobody ever has. That is how it has lasted." + gone)
     bed(F, beds, 244, 84, 3, watch + gone)
     bed(F, beds, 300, 84, 4, "This one is smiling.^It is the smile of a man whose relief turned up on time, once, and he never got over it." + gone)
     bed(F, beds, 356, 84, 0, "The last bed is empty, and made.^They are expecting somebody.| You decide not to work out who.", sleeper=False)
     F.chest(beds, 376, 200, "crypt_key", "key")
-    F.enemy(beds, "jackal", 180, 196, "crypt_j0")
-    F.enemy(beds, "jackal", 264, 192, "crypt_j1")
-    F.enemy(beds, "jackal", 330, 198, "crypt_j2")
+    # under five of the beds: an arm. (None where a torch burns: it will not put its hand in the light.) The one under
+    # the third bed puts him out in the larder, which is one way of finding the larder.
+    for k, (x, extra) in enumerate(((172, " to:burrow_larder"), (300, ""), (476, ""), (588, ""), (716, ""))):
+        X, Y = beds.p(x, 87)
+        m.marker("enemy", X, Y, who="reach", id=f"crypt_r{k}", text="once out:s" + extra)
+    # ...and one that has come up through the floor of the store, by the key
+    hole(F, beds, 318, 206, "crypt_r5")
     for k, (x, y) in enumerate(((150, 200), (316, 190), (220, 204))):
         kit.bones(m, *beds.p(x, y), k)
     F.torch(beds, 36, 190); F.torch(beds, 372, 120); F.torch(beds, 788, 120); F.torch(beds, 600, 150)
-    # ...and the far half of it: more of the watch, and what the jackals have been keeping at the end of their store
+    # ...and the far half of it: more of the watch, and what is kept at the end of the store
     bed(F, beds, 476, 84, 1, "This one has his boots on.^He meant to be up early." + gone)
     bed(F, beds, 532, 84, 2, "A watchman, and beside him a second, smaller pillow.^There is a dent in it the size of a cat.| There is no cat. You look." + gone)
     bed(F, beds, 588, 84, 3, watch + gone)
@@ -147,8 +160,7 @@ def crypt():
     bed(F, beds, 716, 84, 0, "He is holding a lamp with no oil in it.^Nobody has had the heart to take it off him. You are not going to be the first." + gone)
     bed(F, beds, 772, 84, 1, "The last sleeper in the row has turned his face to the wall.^Four hundred years of other people's snoring will do that." + gone)
     F.chest(beds, 792, 200, "crypt_hoard", "shekels:30")
-    F.enemy(beds, "jackal", 520, 196, "crypt_j5")
-    F.enemy(beds, "jackal", 690, 194, "crypt_j6")
+    hole(F, beds, 720, 204, "crypt_r6")
     for k, (x, y) in enumerate(((456, 200), (600, 196), (740, 204))):
         kit.bones(m, *beds.p(x, y), k + 1)
     for (x, y) in ((430, 150), (446, 154), (800, 150)):
@@ -159,27 +171,26 @@ def crypt():
     # ---------------------------------------------------------------- the larder, and the only way into it
     F.burrow_floor(larder, 150, 140, "burrow_larder", "burrow_beds")
     F.chest(larder, 286, 112, "crypt_larder", "shekels:40")
-    F.look("crypt_sandals", sandals(), larder, 230, 150, (-8, -6, 8, 0),
-           "Sandals. Four hundred years of them, and every one of them a left.^The First Watch was buried in its boots. The jackals have been correcting this, a night at a time.| "
-           "Nobody knows what they have against the right foot.")
+    # (the heap is where everything it takes ends up, his shekels with it: the game knows what to say about it)
+    m.model("crypt_sandals", sandals(), *larder.p(230, 150), box=(-8, -6, 8, 0), kind="look", data={"id": "under_hoard"})
     for k, (x, y) in enumerate(((120, 100), (300, 160), (200, 96), (90, 140), (330, 128), (250, 168))):
         kit.bones(m, *larder.p(x, y), k)
     for k, (x, y) in enumerate(((110, 162), (306, 92))):
         kit.urn(m, *larder.p(x, y), k + 1)
     for (x, y) in ((70, 112), (346, 150), (130, 88)):
         kit.pot(m, *larder.p(x, y))
-    F.enemy(larder, "jackal", 250, 140, "crypt_j9")
-    F.enemy(larder, "jackal", 196, 110, "crypt_j10")
+    # the heap is the end of its run: an arm lives in it
+    X, Y = larder.p(214, 152)
+    m.marker("enemy", X, Y, who="reach", id="crypt_r9", text="once out:s")
 
-    # ---------------------------------------------------------------- the watch walk, and the jackals' run
+    # ---------------------------------------------------------------- the watch walk, and the crawl
     F.torch(walk, 60, 100); F.torch(walk, 356, 100)
     rack(F, walk, 208, "The spare spears, in the niche where the watch kept what it was not using.^Also in the niche: a stool, a gaming board scratched on the floor, and four hundred years of somebody else's turn.")
     for (x, y) in ((182, 70), (234, 72)):
         kit.pot(m, *walk.p(x, y))
     kit.bones(m, *walk.p(300, 150), 1)
     F.torch(run, 126, 64); F.torch(run, 290, 64)
-    F.enemy(run, "jackal", 208, 80, "crypt_j7")
-    F.enemy(run, "jackal", 290, 130, "crypt_j8")
+    hole(F, run, 208, 82, "crypt_r7"); hole(F, run, 356, 130, "crypt_r8")
     for k, (x, y) in enumerate(((120, 140), (240, 90), (300, 70))):
         kit.bones(m, *run.p(x, y), k)
 
@@ -198,11 +209,10 @@ def crypt():
     F.partition_ns(lamps, 312, 48, 112)
     F.bars(lamps, 358, 118, "crypt_alcove", "lit:crypt_l0,crypt_l1", w=5.25, say="Both fires burn. In the corner, bars lift.^The watch keeps its word.")
     F.chest(lamps, 358, 92, "crypt_vessel", "vessel")
-    # two of the pack keep the hall; the moths that come to its lamps are only there for a dreamer
-    F.enemy(lamps, "jackal", 110, 150, "crypt_j3"); F.enemy(lamps, "jackal", 300, 120, "crypt_j4")
+    # four lamps, and nothing comes out where there is light: the moths that come to them are only there for a dreamer
     F.enemy(lamps, "moth", 210, 184, "crypt_m0"); F.enemy(lamps, "moth", 60, 100, "crypt_m1")
 
-    # ---------------------------------------------------------------- the den
+    # ---------------------------------------------------------------- lost property: the bed all the rest of it is under
     for (x, y) in ((92, 132), (324, 132), (128, 190), (288, 190)):
         F.pillar(den, x, y)
     F.partition_ns(den, 164, 48, 106)
@@ -216,7 +226,12 @@ def crypt():
     F.partition(den, 176, 240, 184, h=1.2, layer=1)
     F.partition_ns(den, 176, 182, 208, layer=1)
     F.partition_ns(den, 232, 182, 208, layer=1)
-    F.enemy(den, "den_mother", 208, 150, "crypt_mother", once=True)
+    F.enemy(den, "underbed", 208, 148, "crypt_mother", once=True)
+    # what it has had off the watch, in heaps
+    F.look("crypt_sandals", sandals(), den, 64, 104, (-8, -6, 8, 0),
+           "More sandals. Lefts.^And a helmet, a gaming piece, a great many spoons, and a tooth with a name scratched on it.| Everything that ever went under a bed in Ashkel, and was not there in the morning.")
+    F.look("crypt_sandals", sandals(), den, 352, 200, (-8, -6, 8, 0),
+           "A heap of single sandals, and on top of it one sock.^Nobody in Ashkel wears socks. You leave it exactly where it is.")
     for k, (x, y) in enumerate(((60, 80), (350, 96), (70, 196), (340, 196), (200, 160), (270, 120))):
         kit.bones(m, *den.p(x, y), k)
     for k, (x, y) in enumerate(((40, 120), (378, 180), (52, 172))):

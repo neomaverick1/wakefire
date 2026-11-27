@@ -1,5 +1,5 @@
 // What the dungeons do not put on their plans, and the floors above the floor:  -wfScene secrets
-// walks the crypt (a terrace, its ledge and its steps; the jackals' burrow and the larder), the
+// walks the crypt (a terrace, its ledge and its steps; the hole in the dormitory wall and the larder), the
 // ziggurat (a walled-up doorway and the room behind it, the stair that goes up from that room, the
 // stair that waits under the counting room, the oil chute and the store it comes down in), the
 // barrow (a doorway only a dreamer has, and the gallery), and the king's tomb (down the well into
@@ -154,7 +154,7 @@ namespace Wakefire
             at = Where("stair");
             Check($"the flight of steps takes him up (y {at.y:0})", at.y < 86);
             yield return t.Shot("c1-up-the-steps", 0.1f);
-            // ------------------------------------------------ the way the jackals go
+            // ------------------------------------------------ the way things go that have gone under a bed
             yield return Stand("beds", 410, 70, Facing.Up);
             Away();
             yield return t.Shot("c2-the-burrow", 0.1f);
@@ -171,7 +171,7 @@ namespace Wakefire
             yield return new WaitForSeconds(0.2f);
             Controls.FakePress = Controls.Interact;
             yield return Scene(0.5f);
-            Check($"what the jackals were keeping ({coins} -> {p.coins})", p.coins > coins);
+            Check($"what was being kept there ({coins} -> {p.coins})", p.coins > coins);
             yield return Stand("larder", 150, 152, Facing.Up);
             yield return Walk(Vector2.up, 1.5f, () => Game.Busy);
             yield return Scene(0.5f);

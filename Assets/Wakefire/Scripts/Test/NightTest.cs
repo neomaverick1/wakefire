@@ -1,7 +1,7 @@
 // The first night, played through: -wfScene night starts a new journey and takes Azar from his
 // post to the crypt under the shrine and back, the way a player has to. He starts with nothing;
 // the stone has to be pushed, the roots cut, the key found, the door unlocked, the plate weighted,
-// the Den Mother put down, and the only way out of her den is to go to sleep.
+// the first bed of the First Watch put down, and the only way out of its room is to go to sleep.
 using System.Collections;
 using UnityEngine;
 
@@ -110,7 +110,7 @@ namespace Wakefire
                 yield return t.Shot("n03-dur", 0.0f);
                 yield return Scene();
             }
-            // the terraces: the jackals are asleep with everything else, and the door is behind the altar
+            // the terraces: what hunts there is asleep with everything else, and the door is behind the altar
             Game.I.EnterMap("terraces", "east");
             Fade.Set(0);
             yield return new WaitForSeconds(0.5f);
@@ -146,17 +146,26 @@ namespace Wakefire
             p.pos = InRoom("stair", 390, 130);
             yield return Walk(Vector2.right, 0.8f);
             yield return Scene();
-            Check($"east is the dormitory ({Rooms.I.current.id}), with {Count<Jackal>()} jackals in it", Rooms.I.current.id == "beds" && Count<Jackal>() == 5);
+            Check($"east is the dormitory ({Rooms.I.current.id}), with {Count<Reach>()} arms under its beds and its floor", Rooms.I.current.id == "beds" && Count<Reach>() == 7);
             var roots = Map.Current.Find("crypt_roots");
             Check("roots are grown across the way", roots && roots.solid != null);
             var beds = Rooms.I.Find("beds");
             p.pos = InRoom("beds", 264, 132);
             yield return Walk(Vector2.down, 1.2f, 0.2f);
-            Check($"he cannot get through them ({(beds.rect.yMax - p.pos.y) * 16:0} px down the room), and the jackals cannot get at him ({p.health.hp}/{p.health.max})",
-                (beds.rect.yMax - p.pos.y) * 16 < 152 && p.health.hp == p.health.max);
+            Check($"he cannot get through them ({(beds.rect.yMax - p.pos.y) * 16:0} px down the room), and nothing has hold of him ({p.state}, {p.health.hp}/{p.health.max})",
+                (beds.rect.yMax - p.pos.y) * 16 < 152 && p.health.hp == p.health.max && p.state != Player.State.Held);
             yield return t.Shot("n06-roots", 0.2f);
-            yield return new WaitForSeconds(1.5f);
-            Check($"still unhurt after a while of them trying ({p.health.hp}/{p.health.max})", p.health.hp == p.health.max);
+            // (a bed with an arm under it is two strides off: for a man with no blade it only drums its fingers)
+            p.pos = InRoom("beds", 270, 124); p.Face(Facing.Up);
+            yield return new WaitForSeconds(1.6f);
+            int peeking = 0;
+            foreach (var e in Enemy.All) if (e is Reach r && r.shown > 0.5f && r.s == Reach.S.Under) peeking++;
+            yield return Scene();
+            Check($"with no blade on him, what is under the beds only drums its fingers at him ({peeking} showing, {p.state}, {p.health.hp}/{p.health.max})",
+                peeking >= 1 && p.health.hp == p.health.max && p.state != Player.State.Held && Story.Count("reach_peeks") > 0);
+            yield return t.Shot("n06a-drumming", 0.1f);
+            p.pos = InRoom("beds", 264, 132);
+            yield return Walk(Vector2.down, 1.2f, 0.2f);
             p.Face(Facing.Down);
             yield return new WaitForSeconds(0.2f);
             Check($"facing the roots the action button says {p.Action}", p.Action == Player.Act.Look);
@@ -211,15 +220,17 @@ namespace Wakefire
             yield return Press(Controls.Attack, 0.6f);
             Check($"one cut and the roots are gone for good ({Story.Has("cut_crypt_roots")})", !roots && Story.Has("cut_crypt_roots"));
             yield return t.Shot("n10-cut", 0.0f);
-            KillAll();
-            yield return new WaitForSeconds(0.8f);
-            Check($"the jackals can be killed ({Count<Jackal>()} left)", Count<Jackal>() == 0);
+            // (what is under the beds has its own test: here it is only in the way)
+            foreach (var e in Enemy.All.ToArray()) if (e is Reach) Object.Destroy(e.gameObject);
+            yield return new WaitForSeconds(0.3f);
+            // (now that he has a blade they have come out for him, and the game has had something to say about that)
+            yield return Scene();
             var keyChest = Map.Current.Find("crypt_key");
             p.pos = keyChest.basePos + new Vector2(0, -0.6f); p.Face(Facing.Up);
             yield return new WaitForSeconds(0.2f);
             yield return Press(Controls.Interact);
             yield return Scene();
-            Check($"their chest has the key ({p.keys})", p.keys == 1);
+            Check($"the chest in the store has the key ({p.keys})", p.keys == 1);
             // the locked door, the hall of lamps
             p.pos = InRoom("beds", 30, 130);
             yield return Walk(Vector2.left, 0.8f);
@@ -230,8 +241,8 @@ namespace Wakefire
             yield return Walk(Vector2.up, 1.3f);
             int mothsSeen = 0;
             foreach (var e in Enemy.All) if (e is Moth && e.Present) mothsSeen++;
-            Check($"north is the hall of lamps ({Rooms.I.current.id}), with {Count<Jackal>()} of the pack in it, and its moths are a dreamer's business ({mothsSeen} awake)",
-                Rooms.I.current.id == "lamps" && Count<Jackal>() == 2 && mothsSeen == 0);
+            Check($"north is the hall of lamps ({Rooms.I.current.id}): nothing comes up through a lit floor ({Count<Reach>()}), and its moths are a dreamer's business ({mothsSeen} awake)",
+                Rooms.I.current.id == "lamps" && Count<Reach>() == 0 && mothsSeen == 0);
             yield return t.Shot("n11-lamps", 0.2f);
             KillAll();
             yield return new WaitForSeconds(0.6f);
@@ -252,21 +263,22 @@ namespace Wakefire
             Check("the Wakefire's cage is shut", cage && cage.solid != null);
             p.pos = InRoom("lamps", 30, 130);
             yield return Walk(Vector2.left, 0.8f, 0.6f);
-            Check($"west is the jackals' run ({Rooms.I.current.id}), with {Count<Jackal>()} of them in it", Rooms.I.current.id == "run" && Count<Jackal>() == 2);
-            foreach (var e in Enemy.All.ToArray()) if (e is Jackal) Object.Destroy(e.gameObject);
+            Check($"west is the crawl ({Rooms.I.current.id}), with {Count<Reach>()} arms up through its floor", Rooms.I.current.id == "run" && Count<Reach>() == 2);
+            foreach (var e in Enemy.All.ToArray()) if (e is Reach) Object.Destroy(e.gameObject);
             p.health.hp = p.health.max;
             p.pos = InRoom("run", 30, 128);
             yield return Walk(Vector2.left, 0.8f, 0.6f);
-            Check($"and at the end of it the den ({Rooms.I.current.id}), and its mother is in ({Count<DenMother>()})", Rooms.I.current.id == "den" && Count<DenMother>() == 1);
+            Check($"and at the end of it the last room ({Rooms.I.current.id}), and the first bed is in it ({Count<Underbed>()})", Rooms.I.current.id == "den" && Count<Underbed>() == 1);
             yield return Scene();
             yield return t.Shot("n13-den", 0.5f);
             var shut = Map.Current.Find("crypt_shut");
             Check("the bars have dropped behind him", shut && shut.solid != null);
             yield return new WaitForSeconds(1.2f);
-            yield return t.Shot("n14-mother", 0.0f);
-            KillAll();
+            yield return t.Shot("n14-the-first-bed", 0.0f);
+            // (the fight has its own test: here the last cut is enough)
+            foreach (var e in Enemy.All.ToArray()) if (e is Underbed bed) { bed.health.hp = 1; bed.Cut(null); }
             yield return Scene(1.0f);
-            Check($"she can be put down ({Story.Has("dead_crypt_mother")}), and the cage lifts", Story.Has("dead_crypt_mother") && cage.solid == null);
+            Check($"it can be put down ({Story.Has("dead_crypt_mother")}), and the cage lifts", Story.Has("dead_crypt_mother") && cage.solid == null);
             Check("the bars behind him stay down", shut.solid != null);
             foreach (var e in Enemy.All.ToArray()) if (e) Object.Destroy(e.gameObject);
             var fire = Map.Current.Find("crypt_fire");
@@ -339,7 +351,7 @@ namespace Wakefire
             Game.I.EnterMap("terraces", "east");
             Fade.Set(0);
             yield return new WaitForSeconds(0.5f);
-            Check($"and the jackals are back on the terraces ({Enemy.All.Count})", Enemy.All.Count >= 5);
+            Check($"and the Wicks are out on the terraces ({Enemy.All.Count})", Enemy.All.Count >= 5);
             // the crypt can be walked again, and nothing in it shuts
             Game.I.EnterMap("crypt", "south");
             Fade.Set(0);
@@ -348,116 +360,6 @@ namespace Wakefire
             Check("afterwards the den's bars stand open", shut && shut.solid == null);
             Check("and the roots stay cut", !Map.Current.Find("crypt_roots"));
             t.Note(bad == 0 ? "NIGHT OK" : $"NIGHT: {bad} FAILED");
-        }
-
-        // ------------------------------------------------------------------------------------------
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        static void RegisterFight() => AutoTest.Scenes["mother"] = Fight;
-
-        /// <summary>The Den Mother against somebody who plays it straight: three flames, a blade, no shield.
-        /// He keeps his distance, steps out of the line when she gathers herself, and goes in when a
-        /// leap has left her winded. -wfScene mother, several rounds, and what each one cost.</summary>
-        static IEnumerator Fight(AutoTest t)
-        {
-            DialogueBox.AutoAdvance = 0.1f;
-            int wins = 0;
-            for (int round = 0; round < 4; round++)
-            {
-                Save.ClearAll(); Save.Use(0);
-                Game.I.Begin(false);
-                Story.Abort();
-                foreach (var f in new[] { "item_sword", "door_crypt_door", "on_crypt_plate", "cut_crypt_roots", "chest_crypt_sword" }) Story.Set(f);
-                Story.I.ApplyItems();
-                Random.InitState(1000 + round * 77);
-                Game.I.EnterMap("crypt", "south");
-                Fade.Set(0);
-                var p = Player.I;
-                p.SetState(Player.State.Free, "idle");
-                yield return new WaitForSeconds(0.3f);
-                p.pos = InRoom("den", 384, 128);
-                yield return new WaitForSeconds(1.2f);
-                yield return Scene();
-                DenMother m = null;
-                foreach (var e in Enemy.All) if (e is DenMother dm) m = dm;
-                if (!m) { t.Note("FAIL no den mother"); yield break; }
-                var den = Rooms.I.Find("den");
-                var floor = den.Floor;
-                float time = 0, swingCd = 0;
-                Vector2 dodge = Vector2.zero;
-                int leaps = 0, winded = 0, swings = 0, hp0 = p.health.hp;
-                bool wasLeaping = false, wasDazed = false, shot = false;
-                int maxPack = 0;
-                while (m && !m.health.Dead && p.state != Player.State.Dead && time < 150f)
-                {
-                    float dt = Time.deltaTime;
-                    time += dt; swingCd -= dt;
-                    var d = m.pos - p.pos;
-                    if (m.Leaping && !wasLeaping) leaps++;
-                    if (m.Dazed && !wasDazed) winded++;
-                    wasLeaping = m.Leaping; wasDazed = m.Dazed;
-                    int pack = 0;
-                    foreach (var e in Enemy.All) if (e is Jackal && !e.health.Dead) pack++;
-                    maxPack = Mathf.Max(maxPack, pack);
-                    // the nearest of the pack is dealt with first, if it is on top of him
-                    Enemy near = null;
-                    foreach (var e in Enemy.All)
-                        if (e is Jackal && !e.health.Dead && (!near || Vector2.Distance(e.pos, p.pos) < Vector2.Distance(near.pos, p.pos))) near = e;
-                    Vector2 go = Vector2.zero;
-                    bool swing = false;
-                    if (m.Winded)
-                    {
-                        go = d.magnitude > 1.25f ? d.normalized : Vector2.zero;
-                        swing = d.magnitude <= 1.6f;
-                        dodge = Vector2.zero;
-                    }
-                    else if (near && Vector2.Distance(near.pos, p.pos) < 1.7f)
-                    {
-                        var dn = near.pos - p.pos;
-                        go = dn.magnitude > 1.05f ? dn.normalized : Vector2.zero;
-                        swing = true;
-                        d = dn;
-                    }
-                    else if (m.Winding || m.Leaping)
-                    {
-                        // out of the line: pick the side with more room once, and keep to it
-                        if (dodge == Vector2.zero)
-                        {
-                            var perp = new Vector2(-d.y, d.x).normalized;
-                            var a = p.pos + perp * 3f; var b = p.pos - perp * 3f;
-                            dodge = Vector2.Distance(a, floor.center) < Vector2.Distance(b, floor.center) ? perp : -perp;
-                        }
-                        go = dodge;
-                    }
-                    else
-                    {
-                        // between leaps: back to the middle of the floor, and no nearer to her than he has to be
-                        dodge = Vector2.zero;
-                        var toMid = (floor.center - p.pos);
-                        go = d.magnitude < 2.6f ? (-d.normalized + toMid.normalized * 0.7f).normalized : toMid.magnitude > 1.5f ? toMid.normalized : Vector2.zero;
-                    }
-                    Controls.Fake = go;
-                    if (swing && swingCd <= 0 && p.state == Player.State.Free)
-                    {
-                        p.Face(Mathf.Abs(d.x) > Mathf.Abs(d.y) ? (d.x < 0 ? Facing.Left : Facing.Right) : (d.y < 0 ? Facing.Down : Facing.Up));
-                        Controls.FakePress = Controls.Attack;
-                        swings++; swingCd = 0.28f;
-                    }
-                    if (!shot && round == 0 && m.Leaping) { shot = true; yield return t.Shot("m1-leap", 0); }
-                    yield return null;
-                }
-                Controls.Fake = Vector2.zero;
-                bool won = !m || m.health.Dead;
-                if (won) wins++;
-                t.Note($"round {round}: {(won ? "won" : p.state == Player.State.Dead ? "FELL" : "ran out of time")} in {time:0}s, {swings} swings, {leaps} leaps of which {winded} ended in stone, " +
-                       $"pack up to {maxPack}, life {hp0} -> {p.health.hp}{(won ? "" : $", she had {m.health.hp}/{m.health.max} left")}");
-                yield return new WaitForSeconds(1.0f);
-                if (round == 0) yield return t.Shot("m2-after", 0);
-                // if he fell, let him be woken again before the next round starts over
-                for (float w = 0; w < 10f && (p.state == Player.State.Dead || Game.Busy); w += Time.deltaTime) yield return null;
-                yield return new WaitForSeconds(0.5f);
-                Story.Abort();
-            }
-            t.Note($"MOTHER: {wins}/4 rounds won by a plain fighter");
         }
     }
 }

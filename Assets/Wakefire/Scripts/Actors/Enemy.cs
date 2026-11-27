@@ -74,6 +74,9 @@ namespace Wakefire
         /// <summary>Nothing thinks while the story is speaking. For most that is all; for one whose states are short
         /// and are the whole point (the moment a Snuffer is on its side), the state's clock stands still as well.</summary>
         protected virtual bool WaitsOutStories => false;
+        /// <summary>Drawn earlier (under) or later (over) than its place on the floor would have it: something that lies
+        /// flat is under whoever stands there.</summary>
+        protected virtual int OrderBias => 0;
         protected abstract void Think(float dt, Player p);
         protected virtual void OnHurt(HitInfo h) { }
 
@@ -187,7 +190,7 @@ namespace Wakefire
         {
             transform.position = new Vector3(pos.x, pos.y, 0);
             anim.sr.transform.localPosition = new Vector3(0, Mathf.Round(hover * 16f) / 16f, 0);
-            int o = Map.Order(pos.y);
+            int o = Map.Order(pos.y) + OrderBias;
             anim.sr.sortingOrder = o;
             if (shadow) shadow.sortingOrder = o - 1;
         }

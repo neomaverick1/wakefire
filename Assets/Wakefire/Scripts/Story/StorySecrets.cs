@@ -32,7 +32,7 @@ namespace Wakefire
         public void Burrowed()
         {
             if (HallsQuiet || Bump("burrowed") != 0) return;
-            RunWhenFree(One(Narrate("Hands and knees, in the dark, the way the jackals go.^It is exactly as wide as a jackal. You are not, and you have the elbows to prove it.")));
+            RunWhenFree(One(Narrate("Hands and knees, in the dark, the way a thing goes that has gone under a bed.^It is exactly as wide as an arm. You are not, and you have the elbows to prove it.| The arm it was made for has rather more of them.")));
         }
 
         /// <summary>He jumped down a hole and there was a floor under it.</summary>

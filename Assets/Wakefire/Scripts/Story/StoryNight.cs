@@ -135,10 +135,11 @@ namespace Wakefire
                     break;
                 case "beds":
                     if (!Has("item_sword") && !Has("cut_crypt_roots") && Bump("beds_seen") == 0)
-                        RunWhenFree(One(Narrate("Three jackals look up from what they are eating.^They look at the roots between you and them. Then, with real regret, back at you.")));
+                        RunWhenFree(One(Narrate("Under every bed in the room, something moves at once.^Then it is still. All of it, at once.| You decide to walk down the middle of the room.")));
                     break;
                 case "den":
                     if (!Has("dead_crypt_mother")) RunWhenFree(DenScene(Bump("den_seen") == 0));
+                    else BedAtRest();
                     break;
             }
         }
@@ -147,15 +148,15 @@ namespace Wakefire
         {
             yield return Wait(0.25f);
             if (first)
-                yield return Narrate("Something in the dark is breathing.^Jackals have been denning down here longer than the watch has been forgetting to look.| This is the one the others bring it to.");
+                yield return Narrate("The first bed of the First Watch, in a room by itself, with everything the watch ever lost round it.^Nobody is in the bed.| Something under it is breathing. It is longer than the bed.");
             Music.Play("boss");
         }
 
-        /// <summary>Called by the Den Mother as she falls.</summary>
+        /// <summary>Called by the first bed as it comes down for the last time.</summary>
         public void DenCleared()
         {
             Music.Play(Map.Current.data.music);
-            RunWhenFree(One(Narrate("The den is quiet.^Behind the bars, something is still burning that has been burning for four hundred years.")));
+            RunWhenFree(One(Narrate("The room is quiet.^It is a bed. There is nothing under it but floor.| Behind the bars, something is still burning that has been burning for four hundred years.")));
         }
     }
 }

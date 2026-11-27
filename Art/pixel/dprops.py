@@ -168,11 +168,14 @@ def plaque(w=1.5):
 
 
 def stone_bed(sleeper=True, seed=0):
-    """A bed of the old watch: a stone slab on two blocks, and on most of them a watchman who went
-    off duty for good, under what is left of his cloak, his helmet still on."""
+    """A bed of the old watch: a stone slab on two low walls, open at the foot, and on most of them a
+    watchman who went off duty for good, under what is left of his cloak, his helmet still on. What is
+    under the slab is dark, and goes back further than the bed does."""
     m = Model()
     st = M('sandstone', 3.6, m_mottle(7, 0.4))
-    m.part(); m.box(-0.5, 0.0, 0, 0.5, 1.6, 0.34, st, top=M('sandstone', 4.1, m_mottle(7, 0.3)))
+    m.part(); m.box(-0.5, 0.0, 0, -0.34, 1.6, 0.21, st); m.box(0.34, 0.0, 0, 0.5, 1.6, 0.21, st)
+    m.part(); m.box(-0.34, 0.05, 0, 0.34, 1.6, 0.20, M('dark', 0.2))
+    m.part(); m.box(-0.5, 0.0, 0.21, 0.5, 1.6, 0.34, st, top=M('sandstone', 4.1, m_mottle(7, 0.3)))
     m.part(); m.box(-0.5, 1.3, 0.34, 0.5, 1.6, 0.44, M('sandstone', 3.9), top=M('sandstone', 4.4))       # the head-rest
     if sleeper:
         cloak = M(('red', 'blue', 'linen')[seed % 3], (2.4, 2.3, 3.0)[seed % 3], m_mottle(5, 0.5), soft=True)
@@ -185,6 +188,25 @@ def stone_bed(sleeper=True, seed=0):
     else:
         m.part(); m.box(-0.44, 0.1, 0.34, 0.44, 1.2, 0.38, M('linen', 4.0, soft=True), top=M('linen', 4.4, soft=True))
         m.part(); m.box(-0.44, 0.1, 0.38, 0.44, 0.34, 0.41, M('red', 2.6, soft=True), top=M('red', 3.0, soft=True))   # the blanket, folded back
+    return m
+
+
+def reach_hole():
+    """A hole come up through the flags from underneath, no wider than an arm needs: the stones round it
+    lifted and cracked, and nothing to be seen down it."""
+    import numpy as np
+    m = Model()
+    rng = np.random.default_rng(21)
+    dark = M('dark', 0.2)
+    m.part(); m.turned(0, 0, [(0.30, 0.0), (0.30, 0.02)], dark, n=12, cap=dark, squash=0.6)
+    st = M('sandstone', 3.2, m_mottle(7, 0.4))
+    m.part()
+    for k in range(9):
+        a = k / 9.0 * 6.283 + rng.uniform(-0.2, 0.2)
+        r = 0.36 + rng.uniform(0, 0.08)
+        m.push(at=(r * np.cos(a), r * 0.6 * np.sin(a), 0.0), rot=np.degrees(a) + rng.uniform(-20, 20))
+        m.box(-0.10, -0.06, 0.0, 0.10, 0.06, rng.uniform(0.03, 0.07), st)
+        m.pop()
     return m
 
 
